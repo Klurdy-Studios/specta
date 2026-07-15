@@ -8,6 +8,9 @@ Understand both project specifications and implementation.
 
 Specta parses markdown specifications and source code into a common graph representation.
 
+Parsed information feeds the Workspace Graph and is reused by Workflow Engine
+operations.
+
 ## User Stories
 
 - Parse markdown.
@@ -26,3 +29,4 @@ Specta parses markdown specifications and source code into a common graph repres
 - Specifications parsed.
 - Source code parsed.
 - Graph nodes created.
+- Parsed information is available to future workflows.

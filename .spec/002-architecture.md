@@ -78,30 +78,51 @@ As implementation progresses, code is attached to existing graph nodes instead o
                      Developer
                          │
                          ▼
-                 Specta CLI / MCP
+                 Agent Integration
                          │
                          ▼
-                 Command Dispatcher
+                  Workflow Engine
                          │
+                         ▼
+                  Workspace Graph
        ┌─────────────────┼─────────────────┐
        ▼                 ▼                 ▼
-    Planner        Context Engine      Validator
+    Planner        Context Engine   Validation Engine
        │                 │                 │
        └─────────────────┼─────────────────┘
                          ▼
-                  Workspace Graph
-                         │
-        ┌────────────────┼────────────────┐
-        ▼                ▼                ▼
-  Spec Parser      Code Parser      Git Parser
+               Scaffold Engine / Parsers
                          │
                          ▼
                     Repository
 ```
 
+Agent Integrations translate native coding-agent commands into Specta workflows.
+They provide the user experience; the Workflow Engine owns orchestration and the
+Workspace Graph remains the source of truth.
+
 ---
 
 # Core Components
+
+## Agent Integrations
+
+Agent Integrations are lightweight adapters that expose Specta workflows through
+the native interaction model of a coding agent. They provide a dedicated,
+familiar experience for Codex, Claude Code, Cursor, GitHub Copilot, VS Code,
+JetBrains and future agents.
+
+An integration is responsible only for user experience:
+
+- registering native workflow commands
+- presenting workflow progress and results
+- translating native command input into a workflow request
+- adapting rendered prompts and execution events to the host agent
+
+Integrations contain minimal business logic. They must not compile graphs,
+construct context, validate results or duplicate workflow policy.
+
+---
 
 ## CLI
 
@@ -110,13 +131,14 @@ Responsible for:
 - command parsing
 - configuration
 - workspace discovery
-- invoking services
+- invoking workflows
 
 Commands include:
 
 ```
 specta init
 specta plan
+specta implement
 specta scaffold
 specta compile
 specta context
@@ -126,25 +148,154 @@ specta explain
 specta mcp
 ```
 
+Commands execute named workflows rather than calling domain services directly. For
+example, `specta implement` coordinates graph compilation, context generation,
+an agent interaction, validation and graph updates through the Workflow Engine.
+
 The CLI should contain almost no business logic.
+
+The standalone CLI remains a portable workflow entry point. Agent Integrations
+are the primary user-facing experience when a developer is working inside a
+supported coding agent.
 
 ---
 
 ## MCP Server
 
-Provides tools for coding agents.
+MCP exposes reusable Specta capabilities to coding agents and integrations. It is
+not the primary workflow interface and does not determine when capabilities run.
+The Workflow Engine makes that decision when it executes a workflow.
 
 Examples:
 
+- compile()
 - context()
-- impact()
-- search()
-- requirements()
 - validate()
-- architecture()
-- tasks()
+- graph()
+- search()
 
-Coding agents should consume structured project knowledge rather than raw repository text whenever possible.
+These are low-level platform capabilities. Users should rarely invoke them
+directly; workflow commands orchestrate them automatically.
+
+---
+
+## Workflow Engine
+
+The Workflow Engine orchestrates development workflows for any compatible coding
+agent. Specta is not itself a coding agent: the engine coordinates deterministic
+project knowledge, prompts and validation around an external agent.
+
+Responsibilities:
+
+- select the appropriate workflow for a requested operation
+- load and render prompt templates
+- compile and update the Workspace Graph
+- invoke the Planner, Context Engine, Validator and Scaffold Engine
+- communicate with coding agents through Agent Adapters
+- manage task lifecycle, execution metadata and completion status
+- validate outcomes and attach resulting implementation metadata to the graph
+
+The Workflow Engine must not depend on a specific coding agent, model provider or
+integration surface.
+
+---
+
+## Prompt Templates
+
+Prompt templates define the conversational workflow, not one-off prompts. A
+template specifies workflow stages, required graph context, agent inputs,
+expected outputs and validation gates.
+
+Initial template families include:
+
+- plan
+- design
+- implement
+- review
+- validate
+- scaffold
+
+Templates are agent-agnostic. Before an Agent Adapter invokes a coding agent, the
+Workflow Engine injects project context, relevant specifications, optimized
+workspace context and workflow instructions. Agent Adapters translate the
+rendered request into each agent's native protocol.
+
+---
+
+## Workflow Commands
+
+Specta exposes workflow commands rather than low-level tools:
+
+- `specta-plan`
+- `specta-design`
+- `specta-scaffold`
+- `specta-implement`
+- `specta-review`
+- `specta-validate`
+- `specta-context`
+
+The workflow remains identical across agents while the command feels native:
+Codex may expose custom commands, Claude Code may expose slash commands, and VS
+Code may expose Command Palette actions. Future agents can present the same
+workflow through their own native interaction model.
+
+---
+
+## Agent Adapters
+
+Agent Adapters isolate the Workflow Engine from coding-agent-specific protocols.
+Each Agent Integration implements an Agent Adapter without changing workflow
+orchestration.
+
+An adapter is responsible for:
+
+- executing prompts or workflow requests
+- streaming responses and execution events
+- applying or reporting edits according to the integration's capabilities
+- collecting execution metadata
+- reporting completion, failure and cancellation
+
+Conceptually:
+
+```ts
+interface AgentAdapter {
+  execute(request: AgentExecutionRequest): AsyncIterable<AgentEvent>
+  applyEdits?(edits: ProposedEdit[]): Promise<EditApplicationResult>
+  collectMetadata(executionId: string): Promise<AgentExecutionMetadata>
+}
+```
+
+The Workflow Engine depends only on this contract. Adapters are integration
+plugins, not part of the deterministic core.
+
+---
+
+## Workflow Examples
+
+### Implement a task
+
+User executes:
+
+```
+specta implement authentication
+```
+
+The Workflow Engine compiles the workspace, updates the graph, resolves the task,
+compiles optimized context, invokes the coding agent, validates the implementation
+and updates the graph with the outcome.
+
+### Review a pull request
+
+User executes:
+
+```
+specta review pull-request
+```
+
+The Workflow Engine compiles the workspace, loads affected stories, gathers
+related architecture, invokes the coding agent and validates review findings.
+These are workflow stages, not implementation instructions embedded in an
+integration.
 
 ---
 
@@ -440,6 +591,9 @@ If code exists, implementation details are merged into the compiled context.
 
 The Context Engine always returns the smallest sufficient context.
 
+The Workflow Engine invokes the Context Engine as a workflow stage and supplies
+the compiled context to an Agent Adapter when an external coding agent is needed.
+
 ---
 
 # Context Compilation Pipeline
@@ -494,6 +648,9 @@ Validation occurs against:
 
 Future versions may validate semantic correctness using an LLM.
 
+The Workflow Engine invokes validation before completion and records the result in
+the Workspace Graph so later workflows can reason about the outcome.
+
 ---
 
 # Graph Queries
@@ -524,6 +681,13 @@ packages/
     parser-typescript/
     context/
     workspace/
+    workflow/
+    integrations/
+        codex/
+        claude/
+        cursor/
+        vscode/
+        shared/
     validator/
     cli/
     mcp/
@@ -602,6 +766,28 @@ Reads source code and produces graph nodes.
 
 ---
 
+### workflow
+
+- Workflow orchestration and execution
+- Prompt-template loading and rendering
+- Task lifecycle management
+- Agent Adapter contracts and adapter registration
+- Coordination of graph compilation, context generation and validation
+
+---
+
+### integrations
+
+- Isolated Agent Integrations for native agent user experiences
+- Agent Adapter implementations
+- Agent-specific command registration and response presentation
+- Shared portable prompt templates and workflow utilities
+
+Integrations must delegate workflow execution to `workflow` and must not contain
+domain or orchestration logic.
+
+---
+
 ### validator
 
 - Requirement validation
@@ -612,13 +798,13 @@ Reads source code and produces graph nodes.
 
 ### cli
 
-Thin interface around Specta services.
+Thin interface around Workflow Engine entry points.
 
 ---
 
 ### mcp
 
-Exposes Specta functionality to coding agents.
+Exposes reusable Specta capabilities to coding agents and integrations.
 
 ---
 
@@ -659,6 +845,9 @@ Examples:
 - LLM Providers
 - Importers
 - Scaffold Templates
+- Prompt Templates
+- Agent Adapters
+- Agent Integrations
 
 The core architecture should remain unchanged as new capabilities are added.
 
@@ -685,7 +874,7 @@ Focus entirely on developer workflows.
 - Higher implementation accuracy
 - Deterministic project understanding
 - Support for both greenfield and existing repositories
-- Compatibility with any coding agent through MCP
+- Compatibility with any coding agent through Agent Adapters and reusable MCP capabilities
 - Support single repositories and monorepos using the same architecture.
 
 # Design Principles
@@ -696,3 +885,10 @@ Focus entirely on developer workflows.
 - Planning artifacts and implementation artifacts coexist in the same graph.
 - Context compilation is performed at the Project level while respecting Workspace-level architecture, dependencies, and coding standards.
 - The Workspace Graph is the single source of truth for all planning, implementation, validation, and context generation.
+- The Workflow Engine coordinates workflows; coding agents perform agent-specific execution through adapters.
+- Specta Core is completely agent-agnostic.
+- Every coding agent is supported through an Agent Integration.
+- Agent Integrations provide the native user experience.
+- Workflow orchestration belongs exclusively to the Workflow Engine.
+- Business logic must never be duplicated inside integrations.
+- Prompt Templates are portable across integrations.

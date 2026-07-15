@@ -6,7 +6,8 @@ Generate project structure from planned modules.
 
 ## Description
 
-Scaffolding creates folders, placeholder files and implementation skeletons.
+Scaffolding is a workflow that creates folders, placeholder files and
+implementation skeletons.
 
 Business logic is intentionally excluded.
 
@@ -15,6 +16,7 @@ Business logic is intentionally excluded.
 - Scaffold backend services.
 - Scaffold frontend applications.
 - Scaffold shared packages.
+- Execute scaffolding from a supported coding agent.
 
 ## Deliverables
 
@@ -25,3 +27,5 @@ Business logic is intentionally excluded.
 - Folder structure generated.
 - Placeholder modules generated.
 - Existing files are preserved.
+- Generated structures update the Workspace Graph.
+- Scaffolding is executable through supported Agent Integrations.

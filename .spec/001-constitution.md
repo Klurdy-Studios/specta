@@ -23,7 +23,10 @@ Core must be language independent.
 
 Adapters implement language support.
 
-Interfaces (CLI, MCP, SDK) remain thin.
+Interfaces (CLI, MCP, SDK and editor integrations) remain thin.
+
+Workflow orchestration is agent-agnostic. Agent-specific communication belongs in
+adapters, never in Core or the Workflow Engine.
 
 ---
 
@@ -114,6 +117,8 @@ Planning exists as plugins.
 Validators exist as plugins.
 
 Models remain interchangeable.
+
+Prompt templates describe reusable workflows rather than agent-specific prompts.
 
 ---
 

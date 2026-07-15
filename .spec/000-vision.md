@@ -55,7 +55,10 @@ Specta reconstructs this structure and compiles it into optimized AI context.
 
 Specta is not an AI coding agent.
 
-Specta improves every coding agent.
+Specta orchestrates structured development workflows for every coding agent.
+
+Specta remains independent of any specific agent, including Codex, Claude Code
+and Cursor.
 
 Specta is deterministic before probabilistic.
 
@@ -76,3 +79,6 @@ Become the compiler infrastructure for AI-native software engineering.
 Just as LLVM became a compiler backend for many languages,
 
 Specta becomes the planning and context backend for AI development.
+
+It coordinates workflows around the Workspace Graph while external coding agents
+perform agent-specific execution.

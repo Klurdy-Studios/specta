@@ -6,7 +6,9 @@ Validate implementation against project intent.
 
 ## Description
 
-Validation ensures software satisfies requirements, architecture and acceptance criteria.
+Validation ensures software satisfies requirements, architecture and acceptance
+criteria. Implementation workflows execute validation automatically before
+completion.
 
 ## User Stories
 
@@ -14,6 +16,7 @@ Validation ensures software satisfies requirements, architecture and acceptance 
 - Validate architecture.
 - Validate acceptance criteria.
 - Validate tests.
+- Reuse validation through Workflow Engine or MCP.
 
 ## Deliverables
 
@@ -24,3 +27,5 @@ Validation ensures software satisfies requirements, architecture and acceptance 
 - Validation report generated.
 - Failed requirements identified.
 - Missing tests reported.
+- Implementation workflows validate outcomes automatically.
+- Validation remains available independently through Workflow Engine or MCP.

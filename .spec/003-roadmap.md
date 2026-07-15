@@ -10,7 +10,8 @@ Specta aims to become the development infrastructure layer for AI-assisted softw
 
 Rather than acting as another coding agent, Specta enables any coding agent to better understand software projects by transforming specifications and source code into a structured Workspace Graph and compiling optimized development context.
 
-The roadmap is organized around progressively improving planning, implementation, context compilation, and validation.
+The roadmap is organized around progressively improving planning, workflow
+orchestration, implementation, context compilation, and validation.
 
 ---
 
@@ -20,6 +21,8 @@ The roadmap is organized around progressively improving planning, implementation
 Planning
       ↓
 Workspace Graph
+      ↓
+Workflow Engine
       ↓
 Context Engine
       ↓
@@ -56,6 +59,22 @@ Demonstrate that structured project knowledge produces higher-quality AI coding 
 - Generate Epics
 - Generate Stories
 - Generate Tasks
+
+### Workflow Orchestration
+
+- Select and execute development workflows
+- Load agent-agnostic prompt templates
+- Coordinate graph compilation, context generation and validation
+- Define the Agent Adapter contract
+
+Initial workflows include plan, scaffold and validate. They coordinate services;
+they do not make Specta a coding agent.
+
+### Agent Integrations
+
+- Define native workflow commands for supported coding agents
+- Keep the Workflow Engine and Core agent-agnostic
+- Provide shared portable prompt templates and workflow utilities
 
 ### Scaffolding
 
@@ -101,13 +120,16 @@ Project Structure
 
 ### MCP
 
-Expose Specta through the Model Context Protocol.
+Expose reusable Specta capabilities through the Model Context Protocol. MCP is a
+capability surface, while the Workflow Engine determines when capabilities are
+used.
 
 ### CLI Commands
 
 ```
 specta init
 specta plan
+specta implement
 specta scaffold
 specta compile
 specta context
@@ -115,6 +137,9 @@ specta validate
 specta import
 specta mcp
 ```
+
+These are workflow entry points. Each orchestrates multiple internal services
+rather than calling a single engine directly.
 
 ---
 
@@ -129,7 +154,8 @@ The MVP is successful if Specta can:
 - Compile optimized context
 - Reduce prompt size
 - Improve implementation quality
-- Work with any MCP-compatible coding agent
+- Work with compatible coding agents through Agent Integrations
+- Expose reusable MCP capabilities for integrations and platform consumers
 
 ---
 
@@ -189,6 +215,14 @@ Allow developers to extend Specta.
 - Importers
 - Planning providers
 - LLM providers
+- Prompt template library
+- Agent adapters
+
+### Workflow SDK
+
+- Embed and extend Workflow Engine execution
+- Register prompt templates and Agent Adapters
+- Build community integrations without changing the Workflow Engine
 
 ### Integrations
 
@@ -207,10 +241,13 @@ Make Specta part of the everyday development workflow.
 
 ### Integrations
 
-- VS Code
-- Cursor
-- Claude Code
-- Codex CLI
+- Codex Integration
+- Claude Code Integration
+- Cursor Integration
+- VS Code Extension
+- JetBrains Plugin
+- GitHub Copilot Integration
+- Community Integrations
 - GitHub Actions
 
 ### Improvements

@@ -6,7 +6,9 @@ Allow Specta to integrate with existing planning systems.
 
 ## Description
 
-Import external specifications and export Specta artifacts.
+Import external specifications and export Specta artifacts. Imported artifacts
+immediately become part of the Workspace Graph and are available to future
+workflows.
 
 ## User Stories
 
@@ -25,3 +27,4 @@ Import external specifications and export Specta artifacts.
 - Imports succeed.
 - Graph populated.
 - Exports generated.
+- Imported artifacts are available to future workflows.

@@ -1,0 +1,16 @@
+{
+  "name": "@specta/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "specta": "./bin/specta.mjs"
+  },
+  "dependencies": {
+    "@specta/workspace": "workspace:*"
+  },
+  "scripts": {
+    "check": "node ../../node_modules/typescript/bin/tsc --noEmit",
+    "test": "node ../../node_modules/vitest/vitest.mjs run --passWithNoTests"
+  }
+}

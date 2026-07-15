@@ -1,0 +1,21 @@
+{
+  "name": "specta",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.5.0",
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "scripts": {
+    "build": "turbo run check",
+    "check": "turbo run check",
+    "test": "turbo run test",
+    "specta": "node --experimental-strip-types apps/cli/src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}
