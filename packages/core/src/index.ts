@@ -1,5 +1,6 @@
 export type WorkspaceId = string & { readonly __brand: "WorkspaceId" }
 export type ProjectId = string & { readonly __brand: "ProjectId" }
+export type PlanningId = string & { readonly __brand: "PlanningId" }
 
 export type ProjectKind = "application" | "library" | "package" | "service" | "unknown"
 export type PackageManager = "npm" | "pnpm" | "yarn" | "unknown"
@@ -37,9 +38,84 @@ export interface Project {
 }
 
 export interface WorkspaceArtifacts {
+  visionPath?: string
   constitutionPath?: string
   architecturePath?: string
+  roadmapPath?: string
+  planningPath?: string
   globalRulesPath?: string
+}
+
+export interface Vision {
+  id: PlanningId
+  title: string
+  problem: string
+  audience: string
+  outcome: string
+}
+
+export interface Constitution {
+  id: PlanningId
+  principles: string[]
+}
+
+export interface Architecture {
+  id: PlanningId
+  overview: string
+  components: string[]
+}
+
+export interface Roadmap {
+  id: PlanningId
+  milestones: string[]
+}
+
+export interface Task {
+  id: PlanningId
+  title: string
+  description: string
+}
+
+export interface Story {
+  id: PlanningId
+  title: string
+  description: string
+  acceptanceCriteria: string[]
+  tasks: Task[]
+}
+
+export interface Epic {
+  id: PlanningId
+  title: string
+  goal: string
+  stories: Story[]
+}
+
+export type PlanningRelationshipType = "CONTAINS" | "DEPENDS_ON" | "IMPLEMENTS"
+
+export interface PlanningRelationship {
+  type: PlanningRelationshipType
+  sourceId: PlanningId
+  targetId: PlanningId
+}
+
+export interface ProjectPlan {
+  vision: Vision
+  constitution: Constitution
+  architecture: Architecture
+  roadmap: Roadmap
+  epics: Epic[]
+  relationships: PlanningRelationship[]
+}
+
+export interface PlanningArtifact {
+  kind: "vision" | "constitution" | "architecture" | "roadmap" | "epic"
+  path: string
+}
+
+export interface PlanningArtifactSet {
+  rootPath: string
+  documents: PlanningArtifact[]
 }
 
 export interface Workspace {

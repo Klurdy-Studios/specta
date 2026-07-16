@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import { resolve } from "node:path"
+import { createWorkspaceRepository } from "@specta/config"
+import { nodeFileSystem } from "@specta/filesystem"
+import { createPlanWorkflow } from "@specta/workflow"
 import { createWorkspaceInitializer, type InitializeWorkspaceRequest } from "@specta/workspace"
 
 const [command, ...arguments_] = process.argv.slice(2)
 
-if (command !== "init") {
-  console.error("Usage: specta init [path] [--agent <integration>]")
-  process.exitCode = 1
-} else {
+if (command === "init") {
   try {
     const request = parseInitializeRequest(arguments_)
     const result = await createWorkspaceInitializer().initialize(request)
@@ -20,6 +20,22 @@ if (command !== "init") {
     console.error(error instanceof Error ? "specta: " + error.message : "specta: Unable to initialize workspace.")
     process.exitCode = 1
   }
+} else if (command === "plan") {
+  try {
+    const brief = arguments_.join(" ").trim()
+    if (brief.length === 0) throw new Error("Usage: specta plan <brief>")
+    const workspace = await createWorkspaceRepository(nodeFileSystem).load(resolve("."))
+    if (workspace === null) throw new Error("Initialize a Specta workspace before planning.")
+    const result = await createPlanWorkflow().execute({ workspace, brief })
+    console.log("Generated " + result.artifacts.documents.length + " planning artifacts.")
+    console.log("Planning artifacts: " + result.artifacts.rootPath)
+  } catch (error) {
+    console.error(error instanceof Error ? "specta: " + error.message : "specta: Unable to create a plan.")
+    process.exitCode = 1
+  }
+} else {
+  console.error("Usage: specta init [path] [--agent <integration>] | specta plan <brief>")
+  process.exitCode = 1
 }
 
 function parseInitializeRequest(arguments_: string[]): InitializeWorkspaceRequest {

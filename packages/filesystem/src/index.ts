@@ -1,4 +1,5 @@
-import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises"
+import { mkdir, readFile, readdir, rename, stat, writeFile } from "node:fs/promises"
+import { randomUUID } from "node:crypto"
 import { dirname } from "node:path"
 
 export interface FileSystem {
@@ -21,7 +22,9 @@ export const nodeFileSystem: FileSystem = {
   readText: (path) => readFile(path, "utf8"),
   async writeText(path, content) {
     await mkdir(dirname(path), { recursive: true })
-    await writeFile(path, content, "utf8")
+    const temporaryPath = path + ".tmp-" + randomUUID()
+    await writeFile(temporaryPath, content, "utf8")
+    await rename(temporaryPath, path)
   },
   async listDirectories(path) {
     const entries = await readdir(path, { withFileTypes: true })

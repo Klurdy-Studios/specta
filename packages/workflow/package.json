@@ -1,19 +1,19 @@
 {
-  "name": "@specta/cli",
+  "name": "@specta/workflow",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "bin": {
-    "specta": "./bin/specta.mjs"
+  "exports": {
+    ".": "./src/index.ts"
   },
   "dependencies": {
     "@specta/config": "workspace:*",
+    "@specta/core": "workspace:*",
     "@specta/filesystem": "workspace:*",
-    "@specta/workflow": "workspace:*",
-    "@specta/workspace": "workspace:*"
+    "@specta/planner": "workspace:*"
   },
   "scripts": {
     "check": "node ../../node_modules/typescript/bin/tsc --noEmit",
-    "test": "node ../../node_modules/vitest/vitest.mjs run --passWithNoTests"
+    "test": "node ../../node_modules/vitest/vitest.mjs run"
   }
 }

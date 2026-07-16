@@ -23,6 +23,15 @@ importers:
 
   apps/cli:
     dependencies:
+      '@specta/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@specta/filesystem':
+        specifier: workspace:*
+        version: link:../../packages/filesystem
+      '@specta/workflow':
+        specifier: workspace:*
+        version: link:../../packages/workflow
       '@specta/workspace':
         specifier: workspace:*
         version: link:../../packages/workspace
@@ -39,6 +48,30 @@ importers:
   packages/core: {}
 
   packages/filesystem: {}
+
+  packages/planner:
+    dependencies:
+      '@specta/core':
+        specifier: workspace:*
+        version: link:../core
+      '@specta/filesystem':
+        specifier: workspace:*
+        version: link:../filesystem
+
+  packages/workflow:
+    dependencies:
+      '@specta/config':
+        specifier: workspace:*
+        version: link:../config
+      '@specta/core':
+        specifier: workspace:*
+        version: link:../core
+      '@specta/filesystem':
+        specifier: workspace:*
+        version: link:../filesystem
+      '@specta/planner':
+        specifier: workspace:*
+        version: link:../planner
 
   packages/workspace:
     dependencies:
