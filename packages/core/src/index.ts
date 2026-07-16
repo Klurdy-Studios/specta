@@ -4,19 +4,36 @@ export type PlanningId = string & { readonly __brand: "PlanningId" }
 
 export type ProjectKind = "application" | "library" | "package" | "service" | "unknown"
 export type PackageManager = "npm" | "pnpm" | "yarn" | "unknown"
-export type AgentIntegration = string
+export type SkillTarget = string
 export type WorkflowTemplateId = "plan" | "design" | "scaffold" | "implement" | "review" | "validate" | "context"
 
-export interface WorkflowTemplate {
-  id: WorkflowTemplateId
-  path: string
+export interface WorkflowParameter {
+  name: string
+  description: string
+  required: boolean
+}
+
+export interface WorkflowDefinition {
+  name: string
+  description: string
+  parameters: WorkflowParameter[]
+  requires: string[]
+  produces: string[]
+  executionSteps: string[]
+  promptTemplate: string
+  artifactTemplates: string[]
+  completionCriteria: string[]
+  validationRequirements: string[]
+}
+
+export interface WorkflowManifest {
   version: 1
+  workflows: WorkflowDefinition[]
 }
 
 export interface WorkflowConfiguration {
-  integrations: AgentIntegration[]
-  templateSetVersion: 1
-  templates: WorkflowTemplate[]
+  skillTargets: SkillTarget[]
+  manifestPath: string
 }
 
 export const workflowTemplateIds: readonly WorkflowTemplateId[] = [
@@ -105,6 +122,19 @@ export interface ProjectPlan {
   architecture: Architecture
   roadmap: Roadmap
   epics: Epic[]
+  relationships: PlanningRelationship[]
+}
+
+export type PlanningStage = "foundation" | "architecture" | "roadmap" | "epics"
+
+export interface PlanningState {
+  brief: string
+  completedStages: PlanningStage[]
+  vision?: Vision
+  constitution?: Constitution
+  architecture?: Architecture
+  roadmap?: Roadmap
+  epics?: Epic[]
   relationships: PlanningRelationship[]
 }
 

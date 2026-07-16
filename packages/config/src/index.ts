@@ -3,8 +3,6 @@ import {
   isRecord,
   type Workspace,
   type WorkflowConfiguration,
-  type WorkflowTemplateId,
-  workflowTemplateIds,
 } from "@specta/core"
 import type { FileSystem } from "@specta/filesystem"
 import { join } from "node:path"
@@ -20,15 +18,10 @@ export interface WorkspaceRepository {
 export const workspaceManifestPath = (rootPath: string): string =>
   join(rootPath, SPECTA_DIRECTORY, WORKSPACE_MANIFEST)
 
-export function defaultWorkflowConfiguration(integrations: string[] = []): WorkflowConfiguration {
+export function defaultWorkflowConfiguration(skillTargets: string[] = []): WorkflowConfiguration {
   return {
-    integrations,
-    templateSetVersion: 1,
-    templates: workflowTemplateIds.map((id) => ({
-      id,
-      path: ".specta/workflows/" + id + ".md",
-      version: 1,
-    })),
+    skillTargets,
+    manifestPath: ".specta/workflows/manifest.json",
   }
 }
 
@@ -65,10 +58,14 @@ function parseWorkspace(value: unknown, manifestPath: string): Workspace {
   if (!value.projects.every(isProject)) {
     throw new ConfigurationError(`Specta configuration at ${manifestPath} contains an invalid project.`)
   }
-  if (value.workflow !== undefined && !isWorkflowConfiguration(value.workflow)) {
+  if (value.workflow !== undefined && !isWorkflowConfiguration(value.workflow) && !isLegacyWorkflowConfiguration(value.workflow)) {
     throw new ConfigurationError("Specta configuration at " + manifestPath + " contains invalid workflow configuration.")
   }
-  const workflow = value.workflow === undefined ? defaultWorkflowConfiguration() : value.workflow
+  const workflow = value.workflow === undefined
+    ? defaultWorkflowConfiguration()
+    : isLegacyWorkflowConfiguration(value.workflow)
+      ? defaultWorkflowConfiguration(value.workflow.integrations)
+      : value.workflow
   return { ...value, workflow } as unknown as Workspace
 }
 
@@ -79,18 +76,13 @@ function isProject(value: unknown): boolean {
 }
 
 function isWorkflowConfiguration(value: unknown): value is WorkflowConfiguration {
-  return isRecord(value) && value.templateSetVersion === 1 && Array.isArray(value.integrations) &&
-    value.integrations.every((integration) => typeof integration === "string" && integration.length > 0) &&
-    new Set(value.integrations).size === value.integrations.length &&
-    Array.isArray(value.templates) && value.templates.length === workflowTemplateIds.length &&
-    value.templates.every(isDefaultWorkflowTemplate) &&
-    new Set(value.templates.map((template) => isRecord(template) ? template.id : "")).size === workflowTemplateIds.length
+  return isRecord(value) && Array.isArray(value.skillTargets) &&
+    value.skillTargets.every((target) => typeof target === "string" && target.length > 0) &&
+    new Set(value.skillTargets).size === value.skillTargets.length &&
+    typeof value.manifestPath === "string" && value.manifestPath === ".specta/workflows/manifest.json"
 }
 
-function isDefaultWorkflowTemplate(value: unknown): boolean {
-  if (!isRecord(value) || typeof value.id !== "string" || typeof value.path !== "string" || value.version !== 1) {
-    return false
-  }
-  const id = value.id as WorkflowTemplateId
-  return workflowTemplateIds.includes(id) && value.path === ".specta/workflows/" + id + ".md"
+function isLegacyWorkflowConfiguration(value: unknown): value is { integrations: string[] } {
+  return isRecord(value) && Array.isArray(value.integrations) &&
+    value.integrations.every((integration) => typeof integration === "string" && integration.length > 0)
 }

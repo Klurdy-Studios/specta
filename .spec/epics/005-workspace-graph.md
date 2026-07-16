@@ -22,6 +22,8 @@ All workflows rely on the Workspace Graph as their source of truth.
 - Support context compilation.
 - Track workflow state where appropriate.
 - Apply incremental updates after workflow execution.
+- Preserve completed planning stages and expose their validated artifacts as
+  context for dependent workflows.
 
 ## Deliverables
 
@@ -37,3 +39,4 @@ All workflows rely on the Workspace Graph as their source of truth.
 - Graph persisted.
 - Workflow requests are served from the graph.
 - Workflow results update the graph incrementally.
+- Downstream planning workflows resolve their prerequisites from the graph.

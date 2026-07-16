@@ -3,4 +3,3 @@ dist/
 coverage/
 .turbo/
 .specta/cache/
-.specta/graph/

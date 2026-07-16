@@ -1,14 +1,14 @@
 {
-  "name": "@specta/workspace",
+  "name": "@specta/skills",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "dependencies": {
-    "@specta/config": "workspace:*",
     "@specta/core": "workspace:*",
     "@specta/filesystem": "workspace:*",
-    "@specta/skills": "workspace:*",
     "@specta/workflow": "workspace:*"
   },
   "scripts": {

@@ -36,11 +36,11 @@ describe("workspace discovery", () => {
     expect(second).toEqual({ workspace: first.workspace, created: false })
     expect(persisted).toEqual(first.workspace)
     expect(JSON.parse(await readFile(join(rootPath, "package.json"), "utf8"))).toEqual({ name: "single-repository" })
-    expect(first.workspace.workflow.integrations).toEqual([])
-    await expect(readFile(join(rootPath, ".specta", "workflows", "implement.md"), "utf8"))
-      .resolves.toContain("Specta implement workflow")
+    expect(first.workspace.workflow.skillTargets).toEqual([])
+    await expect(readFile(join(rootPath, ".specta", "workflows", "prompts", "plan-foundation.md"), "utf8"))
+      .resolves.toContain("Specta plan-foundation workflow")
     await expect(readFile(join(rootPath, "AGENTS.md"), "utf8"))
-      .resolves.toContain("Selected Agent Integrations: none.")
+      .resolves.toContain("Selected native Skill targets: none.")
     expect(await readFile(join(rootPath, ".specta", "workspace.json"), "utf8")).toBe(manifestBeforeRepeat)
     expect(await readFile(join(rootPath, "AGENTS.md"), "utf8")).toBe(agentsBeforeRepeat)
   })
@@ -103,30 +103,36 @@ describe("workspace discovery", () => {
 
     const initialized = await createWorkspaceInitializer().initialize({
       rootPath,
-      integrations: ["codex", "cursor"],
+      skillTargets: ["codex", "cursor"],
     })
     const agents = await readFile(join(rootPath, "AGENTS.md"), "utf8")
 
-    expect(initialized.workspace.workflow.integrations).toEqual(["codex", "cursor"])
+    expect(initialized.workspace.workflow.skillTargets).toEqual(["codex", "cursor"])
     expect(agents).toContain("# Team Guidance")
-    expect(agents).toContain("Selected Agent Integrations: codex, cursor.")
-    await writeFile(join(rootPath, ".specta", "workflows", "plan.md"), "# Team plan workflow\n", "utf8")
-    await createWorkspaceInitializer().initialize({ rootPath, integrations: ["codex", "cursor"] })
-    await expect(readFile(join(rootPath, ".specta", "workflows", "plan.md"), "utf8"))
+    expect(agents).toContain("Selected native Skill targets: codex, cursor.")
+    await expect(readFile(join(rootPath, ".specta", "skills", "codex", "plan", "SKILL.md"), "utf8"))
+      .resolves.toContain("Workflow: plan")
+    await expect(readFile(join(rootPath, ".specta", "skills", "codex", "plan-foundation", "SKILL.md"), "utf8"))
+      .resolves.toContain("Workflow: plan-foundation")
+    await expect(readFile(join(rootPath, ".specta", "skills", "cursor", "commands", "plan.md"), "utf8"))
+      .resolves.toContain("Target: cursor")
+    await writeFile(join(rootPath, ".specta", "workflows", "prompts", "plan.md"), "# Team plan workflow\n", "utf8")
+    await createWorkspaceInitializer().initialize({ rootPath, skillTargets: ["codex", "cursor"] })
+    await expect(readFile(join(rootPath, ".specta", "workflows", "prompts", "plan.md"), "utf8"))
       .resolves.toBe("# Team plan workflow\n")
 
     await expect(createWorkspaceInitializer().initialize({
       rootPath,
-      integrations: ["not-supported" as never],
-    })).rejects.toThrow("Unsupported Agent Integration")
+      skillTargets: ["../not-supported" as never],
+    })).rejects.toThrow("Invalid Skill target")
   })
 
-  it("rejects unsafe workflow template configuration", async () => {
+  it("rejects unsafe workflow manifest configuration", async () => {
     const rootPath = await useFixture("single-repository")
     await createWorkspaceInitializer().initialize({ rootPath })
     const manifestPath = join(rootPath, ".specta", "workspace.json")
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"))
-    manifest.workflow.templates[0].path = ".specta/workflows/../../AGENTS.md"
+    manifest.workflow.manifestPath = ".specta/workflows/../../AGENTS.md"
     await writeFile(manifestPath, JSON.stringify(manifest), "utf8")
 
     await expect(createWorkspaceInitializer().initialize({ rootPath }))

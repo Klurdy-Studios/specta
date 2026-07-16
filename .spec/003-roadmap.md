@@ -52,13 +52,12 @@ Demonstrate that structured project knowledge produces higher-quality AI coding 
 
 ### Planning
 
-- Generate Vision
-- Generate Constitution
-- Generate Architecture
-- Generate Roadmap
-- Generate Epics
-- Generate Stories
-- Generate Tasks
+- Generate planning progressively: Foundation (Vision and Constitution),
+  Architecture, Roadmap, then Epics.
+- Compile validated earlier artifacts into the context for each later stage.
+- Generate Stories, acceptance criteria and Tasks inside their owning Epic
+  Markdown document.
+- Incrementally update the Workspace Graph after every completed stage.
 
 ### Workflow Orchestration
 
@@ -73,6 +72,7 @@ they do not make Specta a coding agent.
 ### Native Agent Surfaces
 
 - Generate native workflow commands from Workflow Definitions
+- Generate stage-specific planning commands and Skills from the same definitions
 - Keep the Workflow Engine and Core agent-agnostic
 - Provide portable Skills and Prompt Templates
 
@@ -224,6 +224,7 @@ Allow developers to extend Specta.
 - Embed and extend Workflow Engine execution
 - Register Workflow Definitions and Prompt Templates
 - Build community-contributed Skills without changing the Workflow Engine
+- Support portable Markdown prompt and artifact templates
 
 ### Platform Connections
 

@@ -58,6 +58,18 @@ importers:
         specifier: workspace:*
         version: link:../filesystem
 
+  packages/skills:
+    dependencies:
+      '@specta/core':
+        specifier: workspace:*
+        version: link:../core
+      '@specta/filesystem':
+        specifier: workspace:*
+        version: link:../filesystem
+      '@specta/workflow':
+        specifier: workspace:*
+        version: link:../workflow
+
   packages/workflow:
     dependencies:
       '@specta/config':
@@ -84,6 +96,12 @@ importers:
       '@specta/filesystem':
         specifier: workspace:*
         version: link:../filesystem
+      '@specta/skills':
+        specifier: workspace:*
+        version: link:../skills
+      '@specta/workflow':
+        specifier: workspace:*
+        version: link:../workflow
 
 packages:
 

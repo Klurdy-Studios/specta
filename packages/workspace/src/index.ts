@@ -9,22 +9,15 @@ import {
   ConfigurationError,
   DiscoveryError,
   isRecord,
-  type AgentIntegration,
   type ProjectKind,
+  type SkillTarget,
   type Workspace,
   type WorkflowConfiguration,
 } from "@specta/core"
 import type { FileSystem } from "@specta/filesystem"
 import { nodeFileSystem } from "@specta/filesystem"
-
-const supportedAgentIntegrations = new Set<AgentIntegration>([
-  "codex",
-  "claude-code",
-  "cursor",
-  "github-copilot",
-  "vscode",
-  "jetbrains",
-])
+import { createSkillGenerator, isValidSkillTarget } from "@specta/skills"
+import { createWorkflowManifestRepository } from "@specta/workflow"
 
 export interface ProjectCandidate {
   name: string
@@ -50,7 +43,8 @@ export interface InitializeWorkspaceResult {
 
 export interface InitializeWorkspaceRequest {
   rootPath: string
-  integrations?: AgentIntegration[]
+  skillTargets?: SkillTarget[]
+  integrations?: SkillTarget[]
 }
 
 export interface WorkspaceInitializer {
@@ -94,21 +88,23 @@ export function createWorkspaceInitializer(
   fileSystem: FileSystem = nodeFileSystem,
 ): WorkspaceInitializer {
   return {
-    async initialize({ rootPath, integrations }) {
+    async initialize({ rootPath, skillTargets, integrations }) {
+      if (skillTargets !== undefined && integrations !== undefined) {
+        throw new ConfigurationError("Use skillTargets instead of integrations.")
+      }
+      const requestedSkillTargets = skillTargets ?? integrations
       const normalizedRoot = resolve(rootPath)
       const existing = await repository.load(normalizedRoot)
       if (existing) {
         const workspace: Workspace = {
           ...existing,
           rootPath: normalizedRoot,
-          workflow: integrations === undefined
+          workflow: requestedSkillTargets === undefined
             ? existing.workflow
-            : { ...existing.workflow, integrations: normalizeIntegrations(integrations) },
+            : { ...existing.workflow, skillTargets: normalizeSkillTargets(requestedSkillTargets) },
         }
-        const assetsChanged = await ensureWorkflowAssets(workspace, fileSystem)
-        if (assetsChanged || hasWorkspaceChanged(existing, workspace)) {
-          await repository.save(workspace)
-        }
+        await ensureWorkflowAssets(workspace, fileSystem)
+        await repository.save(workspace)
         return { workspace, created: false }
       }
 
@@ -124,7 +120,7 @@ export function createWorkspaceInitializer(
           id: projectId(discovered.rootPath, project.rootPath),
         })),
         artifacts: {},
-        workflow: createWorkflowConfiguration(integrations),
+        workflow: createWorkflowConfiguration(requestedSkillTargets),
       }
       await ensureWorkflowAssets(workspace, fileSystem)
       await repository.save(workspace)
@@ -133,36 +129,31 @@ export function createWorkspaceInitializer(
   }
 }
 
-function createWorkflowConfiguration(integrations: AgentIntegration[] | undefined): WorkflowConfiguration {
-  return defaultWorkflowConfiguration(normalizeIntegrations(integrations))
+function createWorkflowConfiguration(skillTargets: SkillTarget[] | undefined): WorkflowConfiguration {
+  return defaultWorkflowConfiguration(normalizeSkillTargets(skillTargets))
 }
 
-function normalizeIntegrations(integrations: AgentIntegration[] | undefined): AgentIntegration[] {
-  if (integrations === undefined || integrations.length === 0) return []
-  const selected = [...new Set(integrations)]
-  for (const integration of selected) {
-    if (!supportedAgentIntegrations.has(integration)) {
-      throw new ConfigurationError("Unsupported Agent Integration: " + integration + ".")
+function normalizeSkillTargets(skillTargets: SkillTarget[] | undefined): SkillTarget[] {
+  if (skillTargets === undefined || skillTargets.length === 0) return []
+  const selected = [...new Set(skillTargets)]
+  for (const target of selected) {
+    if (!isValidSkillTarget(target)) {
+      throw new ConfigurationError("Invalid Skill target: " + target + ".")
     }
   }
   return selected
 }
 
-async function ensureWorkflowAssets(workspace: Workspace, fileSystem: FileSystem): Promise<boolean> {
-  let changed = false
-  for (const template of workspace.workflow.templates) {
-    const templatePath = join(workspace.rootPath, template.path)
-    if (!(await fileSystem.exists(templatePath))) {
-      await fileSystem.writeText(templatePath, defaultTemplateContent(template.id))
-      changed = true
-    }
-  }
-  return (await ensureAgentsGuidance(workspace, fileSystem)) || changed
+async function ensureWorkflowAssets(workspace: Workspace, fileSystem: FileSystem): Promise<void> {
+  await createWorkflowManifestRepository(fileSystem).ensure(workspace)
+  const skills = await createSkillGenerator(createWorkflowManifestRepository(fileSystem), fileSystem)
+  await skills.generate(workspace, workspace.workflow.skillTargets)
+  await ensureAgentsGuidance(workspace, fileSystem)
 }
 
 async function ensureAgentsGuidance(workspace: Workspace, fileSystem: FileSystem): Promise<boolean> {
   const agentsPath = join(workspace.rootPath, "AGENTS.md")
-  const managedSection = createAgentsSection(workspace.workflow.integrations)
+  const managedSection = createAgentsSection(workspace.workflow.skillTargets)
   if (!(await fileSystem.exists(agentsPath))) {
     await fileSystem.writeText(agentsPath, "# Agent Guidance\n\n" + managedSection + "\n")
     return true
@@ -190,36 +181,20 @@ async function ensureAgentsGuidance(workspace: Workspace, fileSystem: FileSystem
   return true
 }
 
-function createAgentsSection(integrations: AgentIntegration[]): string {
+function createAgentsSection(skillTargets: SkillTarget[]): string {
   return [
     "<!-- specta:workflows:start -->",
     "## Specta Workflows",
     "",
-    "Use Specta workflow commands to plan, design, scaffold, implement, review, validate and compile context.",
-    "Selected Agent Integrations: " + (integrations.length === 0 ? "none" : integrations.join(", ")) + ".",
-    "Workspace workflow templates are stored in .specta/workflows/.",
+    "Use the available Specta workflow commands; each command is defined in the Workflow Manifest.",
+    "Selected native Skill targets: " + (skillTargets.length === 0 ? "none" : skillTargets.join(", ")) + ".",
+    "Workflow Definitions are stored in .specta/workflows/manifest.json.",
     "<!-- specta:workflows:end -->",
   ].join("\n")
 }
 
 function countOccurrences(value: string, target: string): number {
   return value.split(target).length - 1
-}
-
-function hasWorkspaceChanged(previous: Workspace, next: Workspace): boolean {
-  return previous.rootPath !== next.rootPath ||
-    previous.workflow.integrations.join("\u0000") !== next.workflow.integrations.join("\u0000")
-}
-
-function defaultTemplateContent(id: WorkflowConfiguration["templates"][number]["id"]): string {
-  return [
-    "# Specta " + id + " workflow",
-    "",
-    "Follow the Workspace Graph as the source of truth.",
-    "Use only the context supplied for this workflow.",
-    "Report the workflow outcome and any validation results.",
-    "",
-  ].join("\n")
 }
 
 async function detectPackageManager(

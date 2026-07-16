@@ -4,6 +4,11 @@
 - createPlanner(provider?) creates structured plans and validates them.
 - createPlanningArtifactRepository(fileSystem?) persists and loads template-rendered planning artifacts.
 - createPlanningGraphUpdater(fileSystem?) persists validated planning relationships for the Workspace Graph.
+- createProgressivePlanner(provider?) generates one dependency-aware planning stage at a time.
+- createPlanningStateRepository(fileSystem?) reads incremental planning state
+  from the Workspace Graph and persists stage documents.
+- createPlanningStateGraphUpdater(fileSystem?) updates the Workspace Graph after
+  each completed planning stage.
 
-The package is agent-agnostic. A future Agent Integration may implement
-PlanningProvider without changing planner behavior.
+The package is agent-agnostic. Planning stages are Foundation, Architecture,
+Roadmap and Epics; Epic Markdown documents contain their Stories and Tasks.

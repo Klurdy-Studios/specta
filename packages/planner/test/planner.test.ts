@@ -7,6 +7,7 @@ import {
   createPlanner,
   createPlanningArtifactRepository,
   createPlanningGraphUpdater,
+  createProgressivePlanner,
 } from "../src/index.js"
 
 const temporaryDirectories: string[] = []
@@ -27,9 +28,8 @@ async function workspace(): Promise<Workspace> {
     projects: [],
     artifacts: {},
     workflow: {
-      integrations: [],
-      templateSetVersion: 1,
-      templates: [],
+      skillTargets: [],
+      manifestPath: ".specta/workflows/manifest.json",
     },
   }
 }
@@ -76,5 +76,21 @@ describe("planner", () => {
     await repository.save(target, authenticationPlan)
     await writeFile(join(target.rootPath, ".specta", "planning", "plan.json"), "{}", "utf8")
     await expect(repository.load(target)).rejects.toThrow("Unable to read the persisted project plan")
+  })
+
+  it("passes the prior graph-backed planning state and prompt to later stages", async () => {
+    const target = await workspace()
+    const requests: Array<{ context?: unknown | undefined, prompt?: string | undefined }> = []
+    const planner = createProgressivePlanner({
+      async generate(request) {
+        requests.push({ context: request.context, prompt: request.prompt })
+        return { title: "Planning", problem: request.brief, audience: "Developers", outcome: "A planned outcome." }
+      },
+    })
+    const foundation = await planner.generate({ workspace: target, stage: "foundation", brief: "Plan the workspace.", state: null, prompt: "foundation prompt" })
+    await planner.generate({ workspace: target, stage: "architecture", state: foundation, prompt: "architecture prompt" })
+
+    expect(requests[1]?.context).toMatchObject({ vision: foundation.vision, constitution: foundation.constitution })
+    expect(requests[1]?.prompt).toBe("architecture prompt")
   })
 })

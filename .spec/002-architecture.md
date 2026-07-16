@@ -136,8 +136,22 @@ Initial definitions include:
 - context
 
 Each definition declares its name, description, supported parameters, execution
-steps, prompt-template reference and validation requirements. Every user-facing
+steps, prerequisites, outputs, prompt-template reference, artifact-template
+reference, completion criteria and validation requirements. Every user-facing
 command or Skill is generated from a Workflow Definition.
+
+## Progressive Planning
+
+Planning is a sequence of small, graph-backed workflows rather than one large
+generation request:
+
+```text
+Brief → Foundation (Vision + Constitution) → Architecture → Roadmap → Epics (Stories + Tasks)
+```
+
+Each stage compiles the validated artifacts from earlier stages as its input,
+then persists only its own output and incrementally updates the Workspace Graph.
+Upstream artifacts remain stable while later stages run.
 
 ---
 
@@ -192,8 +206,9 @@ an agent interaction, validation and graph updates through the Workflow Engine.
 
 The CLI should contain almost no business logic.
 
-The standalone CLI is one workflow execution surface. Generated Skills are
-another execution surface when a developer works inside a supported coding agent.
+Generated Skills and native commands are the primary user-facing workflow
+surface. The CLI is an execution helper that a Skill may invoke to run the
+Workflow Engine; it is also useful for automation and diagnostics.
 
 ---
 
@@ -242,6 +257,10 @@ integration surface.
 Prompt Templates are reusable, platform-independent conversational templates
 used by Workflow Definitions. They do not contain business logic.
 
+Prompt and artifact templates are Markdown files. The Workflow Manifest remains
+the canonical structured definition; `prompts/*.md` describes the conversation,
+and `artifacts/*.md` controls the layout of generated documentation.
+
 Initial template families include:
 
 - plan
@@ -268,6 +287,16 @@ Specta CLI commands execute Workflow Definitions rather than low-level tools:
 - `specta-review`
 - `specta-validate`
 - `specta-context`
+
+Planning also exposes stage commands:
+
+- `specta-plan-foundation`
+- `specta-plan-architecture`
+- `specta-plan-roadmap`
+- `specta-plan-epics`
+
+`specta-plan` selects the next eligible stage. Native Skills and commands expose
+the same definitions using the conventions available on their host agent.
 
 The same definition can generate a Codex Skill, Claude Skill, Cursor Command or
 VS Code Command. Each native surface presents it according to its capabilities.
