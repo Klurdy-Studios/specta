@@ -7,7 +7,7 @@ Generate structured software specifications before implementation begins.
 ## Description
 
 Planning is a workflow that converts an idea into structured documentation that
-guides implementation. It is available through the native integration of any
+guides implementation. It is available through the native Skill surface of any
 supported coding agent.
 
 ## User Stories
@@ -31,4 +31,4 @@ supported coding agent.
 - Documents follow Specta templates.
 - Relationships are created in the Workspace Graph.
 - Planning artifacts automatically update the Workspace Graph.
-- Planning is available through supported Agent Integrations.
+- Planning is available through supported native Skills.

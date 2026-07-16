@@ -78,7 +78,10 @@ As implementation progresses, code is attached to existing graph nodes instead o
                      Developer
                          │
                          ▼
-                 Agent Integration
+               Native Agent Surface
+       ┌───────────┬───────────┬───────────┬───────────┐
+       ▼           ▼           ▼           ▼           ▼
+  Codex Skill  Claude Skill  Cursor Cmd  VS Code Cmd  Future Surfaces
                          │
                          ▼
                   Workflow Engine
@@ -97,30 +100,65 @@ As implementation progresses, code is attached to existing graph nodes instead o
                     Repository
 ```
 
-Agent Integrations translate native coding-agent commands into Specta workflows.
-They provide the user experience; the Workflow Engine owns orchestration and the
-Workspace Graph remains the source of truth.
+Native Agent Surfaces translate each agent's native interaction model into
+Workflow Definitions. Their available behavior depends on the capabilities of
+the host agent. The Workflow Engine owns execution and the Workspace Graph
+remains the source of truth.
 
 ---
 
 # Core Components
 
-## Agent Integrations
+## Native Agent Surfaces
 
-Agent Integrations are lightweight adapters that expose Specta workflows through
-the native interaction model of a coding agent. They provide a dedicated,
-familiar experience for Codex, Claude Code, Cursor, GitHub Copilot, VS Code,
-JetBrains and future agents.
+Native Agent Surfaces make Specta feel familiar inside Codex, Claude Code,
+Cursor, GitHub Copilot, VS Code, JetBrains and future agents. They present
+generated Skills or commands in the form each agent supports.
 
-An integration is responsible only for user experience:
+They provide user experience only. They must not compile graphs, construct
+context, validate results or duplicate workflow policy.
 
-- registering native workflow commands
-- presenting workflow progress and results
-- translating native command input into a workflow request
-- adapting rendered prompts and execution events to the host agent
+---
 
-Integrations contain minimal business logic. They must not compile graphs,
-construct context, validate results or duplicate workflow policy.
+## Workflow Definitions
+
+Workflow Definitions are platform-independent descriptions of development
+workflows. They are the canonical representation of user-facing workflows.
+
+Initial definitions include:
+
+- plan
+- design
+- scaffold
+- implement
+- review
+- validate
+- context
+
+Each definition declares its name, description, supported parameters, execution
+steps, prompt-template reference and validation requirements. Every user-facing
+command or Skill is generated from a Workflow Definition.
+
+---
+
+## Workflow Manifest
+
+Workflow Definitions are stored in a single manifest format. The manifest is the
+source of truth for generating consistent Skills across supported agent surfaces.
+It describes what a workflow does without embedding agent-specific business
+logic.
+
+---
+
+## Skills
+
+Skills are packaging formats for coding agents, generated deterministically from
+Workflow Definitions. Examples include Codex Skills, Claude Skills, Cursor
+Commands and future agent packages.
+
+Skills contain only workflow metadata, workflow descriptions, prompt-template
+references, helper scripts and references. They contain no business logic;
+business logic remains inside Specta Core.
 
 ---
 
@@ -154,17 +192,16 @@ an agent interaction, validation and graph updates through the Workflow Engine.
 
 The CLI should contain almost no business logic.
 
-The standalone CLI remains a portable workflow entry point. Agent Integrations
-are the primary user-facing experience when a developer is working inside a
-supported coding agent.
+The standalone CLI is one workflow execution surface. Generated Skills are
+another execution surface when a developer works inside a supported coding agent.
 
 ---
 
 ## MCP Server
 
-MCP exposes reusable Specta capabilities to coding agents and integrations. It is
-not the primary workflow interface and does not determine when capabilities run.
-The Workflow Engine makes that decision when it executes a workflow.
+MCP is a platform API that exposes reusable Specta capabilities. It is not the
+primary workflow interface and does not determine when capabilities run. The
+Workflow Engine makes that decision when it executes a workflow.
 
 Examples:
 
@@ -181,19 +218,19 @@ directly; workflow commands orchestrate them automatically.
 
 ## Workflow Engine
 
-The Workflow Engine orchestrates development workflows for any compatible coding
+The Workflow Engine orchestrates Workflow Definitions for any compatible coding
 agent. Specta is not itself a coding agent: the engine coordinates deterministic
-project knowledge, prompts and validation around an external agent.
+project knowledge, prompts and validation around native agent surfaces.
 
 Responsibilities:
 
-- select the appropriate workflow for a requested operation
-- load and render prompt templates
+- load Workflow Definitions
 - compile and update the Workspace Graph
-- invoke the Planner, Context Engine, Validator and Scaffold Engine
-- communicate with coding agents through Agent Adapters
-- manage task lifecycle, execution metadata and completion status
-- validate outcomes and attach resulting implementation metadata to the graph
+- generate optimized context
+- invoke Specta services
+- coordinate validation
+- expose execution state
+- communicate with coding agents through native Skills
 
 The Workflow Engine must not depend on a specific coding agent, model provider or
 integration surface.
@@ -202,9 +239,8 @@ integration surface.
 
 ## Prompt Templates
 
-Prompt templates define the conversational workflow, not one-off prompts. A
-template specifies workflow stages, required graph context, agent inputs,
-expected outputs and validation gates.
+Prompt Templates are reusable, platform-independent conversational templates
+used by Workflow Definitions. They do not contain business logic.
 
 Initial template families include:
 
@@ -215,16 +251,15 @@ Initial template families include:
 - validate
 - scaffold
 
-Templates are agent-agnostic. Before an Agent Adapter invokes a coding agent, the
-Workflow Engine injects project context, relevant specifications, optimized
-workspace context and workflow instructions. Agent Adapters translate the
-rendered request into each agent's native protocol.
+Before a Skill invokes a coding agent, the Workflow Engine injects project
+context, relevant specifications, optimized workspace context and workflow
+instructions. Skills reference Prompt Templates without changing them.
 
 ---
 
 ## Workflow Commands
 
-Specta exposes workflow commands rather than low-level tools:
+Specta CLI commands execute Workflow Definitions rather than low-level tools:
 
 - `specta-plan`
 - `specta-design`
@@ -234,39 +269,20 @@ Specta exposes workflow commands rather than low-level tools:
 - `specta-validate`
 - `specta-context`
 
-The workflow remains identical across agents while the command feels native:
-Codex may expose custom commands, Claude Code may expose slash commands, and VS
-Code may expose Command Palette actions. Future agents can present the same
-workflow through their own native interaction model.
+The same definition can generate a Codex Skill, Claude Skill, Cursor Command or
+VS Code Command. Each native surface presents it according to its capabilities.
 
 ---
 
-## Agent Adapters
+## Skill Generation
 
-Agent Adapters isolate the Workflow Engine from coding-agent-specific protocols.
-Each Agent Integration implements an Agent Adapter without changing workflow
-orchestration.
+Skill Generation produces platform-specific Skills from Workflow Definitions.
+Generation is deterministic: the same definition produces the same Skill package
+for a given native agent surface.
 
-An adapter is responsible for:
-
-- executing prompts or workflow requests
-- streaming responses and execution events
-- applying or reporting edits according to the integration's capabilities
-- collecting execution metadata
-- reporting completion, failure and cancellation
-
-Conceptually:
-
-```ts
-interface AgentAdapter {
-  execute(request: AgentExecutionRequest): AsyncIterable<AgentEvent>
-  applyEdits?(edits: ProposedEdit[]): Promise<EditApplicationResult>
-  collectMetadata(executionId: string): Promise<AgentExecutionMetadata>
-}
-```
-
-The Workflow Engine depends only on this contract. Adapters are integration
-plugins, not part of the deterministic core.
+The generated output may be a Codex Skill, Claude Skill, Cursor Command or a
+future agent package. The output packages behavior for an agent; it never moves
+business logic out of Specta Core.
 
 ---
 
@@ -281,7 +297,7 @@ specta implement authentication
 ```
 
 The Workflow Engine compiles the workspace, updates the graph, resolves the task,
-compiles optimized context, invokes the coding agent, validates the implementation
+compiles optimized context, invokes the native Skill, validates the implementation
 and updates the graph with the outcome.
 
 ### Review a pull request
@@ -293,9 +309,8 @@ specta review pull-request
 ```
 
 The Workflow Engine compiles the workspace, loads affected stories, gathers
-related architecture, invokes the coding agent and validates review findings.
-These are workflow stages, not implementation instructions embedded in an
-integration.
+related architecture, invokes the native Skill and validates review findings.
+These are workflow stages, not implementation instructions embedded in a Skill.
 
 ---
 
@@ -592,7 +607,7 @@ If code exists, implementation details are merged into the compiled context.
 The Context Engine always returns the smallest sufficient context.
 
 The Workflow Engine invokes the Context Engine as a workflow stage and supplies
-the compiled context to an Agent Adapter when an external coding agent is needed.
+the compiled context to a native Skill when an external coding agent is needed.
 
 ---
 
@@ -682,12 +697,7 @@ packages/
     context/
     workspace/
     workflow/
-    integrations/
-        codex/
-        claude/
-        cursor/
-        vscode/
-        shared/
+    skills/
     validator/
     cli/
     mcp/
@@ -769,22 +779,21 @@ Reads source code and produces graph nodes.
 ### workflow
 
 - Workflow orchestration and execution
+- Workflow Definition loading
 - Prompt-template loading and rendering
 - Task lifecycle management
-- Agent Adapter contracts and adapter registration
 - Coordination of graph compilation, context generation and validation
 
 ---
 
-### integrations
+### skills
 
-- Isolated Agent Integrations for native agent user experiences
-- Agent Adapter implementations
-- Agent-specific command registration and response presentation
-- Shared portable prompt templates and workflow utilities
+- Deterministic Skill generation from Workflow Definitions
+- Codex Skills, Claude Skills, Cursor Commands and future agent packages
+- Portable Skill metadata, prompt-template references and helper scripts
 
-Integrations must delegate workflow execution to `workflow` and must not contain
-domain or orchestration logic.
+Skills must delegate workflow execution to `workflow` and must not contain domain
+or orchestration logic.
 
 ---
 
@@ -804,7 +813,7 @@ Thin interface around Workflow Engine entry points.
 
 ### mcp
 
-Exposes reusable Specta capabilities to coding agents and integrations.
+Exposes reusable platform capabilities.
 
 ---
 
@@ -846,8 +855,8 @@ Examples:
 - Importers
 - Scaffold Templates
 - Prompt Templates
-- Agent Adapters
-- Agent Integrations
+- Workflow Definitions
+- Skills
 
 The core architecture should remain unchanged as new capabilities are added.
 
@@ -874,7 +883,7 @@ Focus entirely on developer workflows.
 - Higher implementation accuracy
 - Deterministic project understanding
 - Support for both greenfield and existing repositories
-- Compatibility with any coding agent through Agent Adapters and reusable MCP capabilities
+- Compatibility with any coding agent through generated Skills and reusable MCP capabilities
 - Support single repositories and monorepos using the same architecture.
 
 # Design Principles
@@ -885,10 +894,14 @@ Focus entirely on developer workflows.
 - Planning artifacts and implementation artifacts coexist in the same graph.
 - Context compilation is performed at the Project level while respecting Workspace-level architecture, dependencies, and coding standards.
 - The Workspace Graph is the single source of truth for all planning, implementation, validation, and context generation.
-- The Workflow Engine coordinates workflows; coding agents perform agent-specific execution through adapters.
+- The Workflow Engine executes Workflow Definitions.
 - Specta Core is completely agent-agnostic.
-- Every coding agent is supported through an Agent Integration.
-- Agent Integrations provide the native user experience.
+- Every coding agent is supported through a native Skill or command surface.
+- Native Agent Surfaces provide the user experience.
 - Workflow orchestration belongs exclusively to the Workflow Engine.
-- Business logic must never be duplicated inside integrations.
-- Prompt Templates are portable across integrations.
+- Workflow Definitions are the canonical workflow representation.
+- Skills are generated artifacts and contain no business logic.
+- Business logic belongs exclusively to Specta Core.
+- Prompt Templates are portable across native agent surfaces.
+- Workflow execution must be deterministic whenever possible.
+- Specta should feel native inside every supported coding agent.

@@ -22,7 +22,7 @@ Initialization also prepares the workspace for agent-agnostic Specta workflows.
 - As a developer, I want Specta to detect existing repositories.
 - As a developer, I want Specta to detect monorepos automatically.
 - As a developer, I want workspace configuration stored in a standard location.
-- As a developer, I want to select supported coding agents for my workspace.
+- As a developer, I want to select supported native Skill targets for my workspace.
 - As a developer, I want a new workspace to be ready for workflow commands.
 
 ## Deliverables

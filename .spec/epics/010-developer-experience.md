@@ -7,7 +7,7 @@ Deliver a fast, intuitive and reliable developer experience.
 ## Description
 
 Optimize Specta for fast, consistent and reliable workflow-driven development
-across supported coding agents.
+across supported native agent surfaces.
 
 ## User Stories
 
@@ -16,10 +16,10 @@ across supported coding agents.
 - Rich CLI output.
 - Progress indicators.
 - Helpful errors.
-- Consistent workflow experience across coding agents.
+- Consistent workflow experience across native Skills.
 - Discoverable workflow commands.
 - Helpful workflow progress reporting.
-- Integration diagnostics.
+- Skill diagnostics.
 - Workflow performance metrics.
 
 ## Deliverables
@@ -27,7 +27,7 @@ across supported coding agents.
 - Optimized CLI
 - Graph cache
 - Performance metrics
-- Integration diagnostics
+- Skill diagnostics
 - Workflow command discovery
 
 ## Acceptance Criteria
@@ -35,6 +35,6 @@ across supported coding agents.
 - Commands are responsive.
 - Cache used correctly.
 - Errors are actionable.
-- Workflow commands are discoverable and consistent across supported integrations.
-- Workflow progress and integration failures are actionable.
+- Workflow commands are discoverable and consistent across supported Skills.
+- Workflow progress and Skill failures are actionable.
 - Workflow performance metrics are available.

@@ -82,3 +82,7 @@ Specta becomes the planning and context backend for AI development.
 
 It coordinates workflows around the Workspace Graph while external coding agents
 perform agent-specific execution.
+
+Workflow Definitions describe those workflows once. Specta generates native
+Skills and commands from them so the experience feels natural in every supported
+coding agent.

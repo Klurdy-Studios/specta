@@ -28,4 +28,4 @@ Business logic is intentionally excluded.
 - Placeholder modules generated.
 - Existing files are preserved.
 - Generated structures update the Workspace Graph.
-- Scaffolding is executable through supported Agent Integrations.
+- Scaffolding is executable through supported native Skills.

@@ -25,8 +25,8 @@ Adapters implement language support.
 
 Interfaces (CLI, MCP, SDK and editor integrations) remain thin.
 
-Workflow orchestration is agent-agnostic. Agent-specific communication belongs in
-adapters, never in Core or the Workflow Engine.
+Workflow orchestration is agent-agnostic. Native agent behavior belongs in
+generated Skills, never in Core or the Workflow Engine.
 
 ---
 
@@ -118,7 +118,8 @@ Validators exist as plugins.
 
 Models remain interchangeable.
 
-Prompt templates describe reusable workflows rather than agent-specific prompts.
+Workflow Definitions describe reusable workflows. Skills are generated artifacts;
+Prompt Templates remain platform-independent.
 
 ---
 

@@ -63,18 +63,18 @@ Demonstrate that structured project knowledge produces higher-quality AI coding 
 ### Workflow Orchestration
 
 - Select and execute development workflows
-- Load agent-agnostic prompt templates
+- Introduce the Workflow Definition system and Workflow Manifest
+- Load agent-agnostic Prompt Templates
 - Coordinate graph compilation, context generation and validation
-- Define the Agent Adapter contract
 
 Initial workflows include plan, scaffold and validate. They coordinate services;
 they do not make Specta a coding agent.
 
-### Agent Integrations
+### Native Agent Surfaces
 
-- Define native workflow commands for supported coding agents
+- Generate native workflow commands from Workflow Definitions
 - Keep the Workflow Engine and Core agent-agnostic
-- Provide shared portable prompt templates and workflow utilities
+- Provide portable Skills and Prompt Templates
 
 ### Scaffolding
 
@@ -154,8 +154,8 @@ The MVP is successful if Specta can:
 - Compile optimized context
 - Reduce prompt size
 - Improve implementation quality
-- Work with compatible coding agents through Agent Integrations
-- Expose reusable MCP capabilities for integrations and platform consumers
+- Work with compatible coding agents through generated Skills
+- Expose reusable MCP capabilities for Skills and platform consumers
 
 ---
 
@@ -216,15 +216,16 @@ Allow developers to extend Specta.
 - Planning providers
 - LLM providers
 - Prompt template library
-- Agent adapters
+- Workflow Definition system
+- Skill Generator
 
 ### Workflow SDK
 
 - Embed and extend Workflow Engine execution
-- Register prompt templates and Agent Adapters
-- Build community integrations without changing the Workflow Engine
+- Register Workflow Definitions and Prompt Templates
+- Build community-contributed Skills without changing the Workflow Engine
 
-### Integrations
+### Platform Connections
 
 - GitHub
 - Jira
@@ -239,15 +240,15 @@ Allow developers to extend Specta.
 
 Make Specta part of the everyday development workflow.
 
-### Integrations
+### Native Agent Surfaces
 
-- Codex Integration
-- Claude Code Integration
-- Cursor Integration
+- Codex Skills
+- Claude Skills
+- Cursor Commands
 - VS Code Extension
 - JetBrains Plugin
-- GitHub Copilot Integration
-- Community Integrations
+- GitHub Copilot Skills
+- Community-contributed Skills
 - GitHub Actions
 
 ### Improvements
