@@ -934,3 +934,10 @@ Focus entirely on developer workflows.
 - Prompt Templates are portable across native agent surfaces.
 - Workflow execution must be deterministic whenever possible.
 - Specta should feel native inside every supported coding agent.
+
+
+# Core Tech Use
+- Parser: tree-sitter (lightning-fast AST extraction; discards function bodies to strip out garbage tokens)
+- Graph Database: TypeGraph + SQLite (on-device, type-safe entity relations with Zod validation)
+- File Watcher: chokidar (<10ms reactive file syncing and graph diff calculation)
+- Visualizer: 3d-force-graph (Three.js WebGL engine; maps structural connections and ghost nodes in 3D)

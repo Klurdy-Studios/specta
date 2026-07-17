@@ -6,6 +6,13 @@
 - createWorkflowManifestRepository(fileSystem?) loads and initializes canonical
   Workflow Definitions.
 - defaultWorkflowManifest() returns the built-in Workflow Manifest.
+- createTechnicalDesignWorkflow(...) creates a reviewable technical design for
+  one Epic.
+- createTechnicalDesignApprovalWorkflow(...) approves a dependency-valid design.
+- createScaffoldWorkflow(...) writes declaration-only files from an approved
+  technical design without overwriting existing files.
+- createTechnicalDesignRepository(...) persists technical-design revisions and
+  scaffolded paths in the Workspace Graph.
 
 The workflow coordinates dependency checks, Markdown template rendering,
 incremental artifact persistence and Workspace Graph updates. Generated Skills

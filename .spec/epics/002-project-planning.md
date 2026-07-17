@@ -7,9 +7,9 @@ Generate structured software specifications before implementation begins.
 ## Description
 
 Planning is a workflow that converts an idea into structured documentation that
-guides implementation. It is available through the native Skill surface of any
-supported coding agent. Planning progresses through graph-backed stages so each
-artifact is reviewed and reused before the next one is generated.
+guides implementation. Developers invoke it through native agent Skills, not
+terminal commands. The coding agent reasons from Specta context and templates;
+Specta validates and persists the submitted artifact.
 
 ## User Stories
 
@@ -23,11 +23,9 @@ artifact is reviewed and reused before the next one is generated.
 
 ## Deliverables
 
-- `specta plan` (next eligible stage)
-- `specta plan foundation <brief>`
-- `specta plan architecture`
-- `specta plan roadmap`
-- `specta plan epics`
+- Native `plan-foundation`, `plan-architecture`, `plan-roadmap`, and
+  `plan-epics` Skills.
+- CLI helpers are internal Skill implementation details.
 
 ## Acceptance Criteria
 
@@ -35,9 +33,12 @@ artifact is reviewed and reused before the next one is generated.
 - Architecture requires Vision and Constitution; Roadmap requires Foundation and
   Architecture; Epics require all earlier planning artifacts.
 - Each stage generates only its own documents using Markdown artifact templates.
+- The coding agent authors each stage draft from Specta-provided context and
+  templates; Specta validates and persists it.
 - Each completed stage incrementally updates the Workspace Graph and workflow
   state.
 - Existing approved upstream artifacts are preserved by later stages.
 - Epic Markdown documents own their nested Stories, acceptance criteria and
   Tasks; they are not stored as separate planning files.
 - Planning stages are available through generated native Skills and commands.
+- Developers do not need to run planning CLI commands directly.

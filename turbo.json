@@ -6,8 +6,8 @@
       "outputs": []
     },
     "test": {
-      "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "dependsOn": ["check"],
+      "outputs": []
     }
   }
 }

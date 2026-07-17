@@ -21,6 +21,7 @@ across supported native agent surfaces.
 - Helpful workflow progress reporting.
 - Skill diagnostics.
 - Workflow performance metrics.
+- Local integration testing without publishing the CLI.
 
 ## Deliverables
 
@@ -29,6 +30,7 @@ across supported native agent surfaces.
 - Performance metrics
 - Skill diagnostics
 - Workflow command discovery
+- Local agent-integration diagnostics
 
 ## Acceptance Criteria
 

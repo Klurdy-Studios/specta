@@ -17,6 +17,19 @@ import type {
   PlanningStateRepository,
   PlanningStateGraphUpdater,
 } from "@specta/planner"
+
+export {
+  createScaffoldWorkflow,
+  createTechnicalDesignApprovalWorkflow,
+  createTechnicalDesignRepository,
+  createTechnicalDesignWorkflow,
+  type ScaffoldWorkflow,
+  type ScaffoldWorkflowRequest,
+  type TechnicalDesignApprovalWorkflow,
+  type TechnicalDesignRepository,
+  type TechnicalDesignRequest,
+  type TechnicalDesignWorkflow,
+} from "./technical-design.ts"
 import {
   createPlanner,
   createProgressivePlanner,
@@ -28,6 +41,7 @@ export interface PlanWorkflowRequest {
   workspace: Workspace
   brief?: string
   stage?: PlanningStage | "next"
+  draft?: PlanningState
 }
 
 export interface PlanWorkflowResult {
@@ -69,10 +83,10 @@ export function createWorkflowManifestRepository(
     },
     async ensure(workspace) {
       const manifestPath = join(workspace.rootPath, workspace.workflow.manifestPath)
-      const manifest = (await fileSystem.exists(manifestPath))
-        ? await this.load(workspace)
-        : defaultWorkflowManifest()
-      if (!(await fileSystem.exists(manifestPath))) {
+      const exists = await fileSystem.exists(manifestPath)
+      const existing = exists ? await this.load(workspace) : undefined
+      const manifest = existing === undefined ? defaultWorkflowManifest() : mergeDefaultWorkflows(existing)
+      if (!exists || existing?.workflows.length !== manifest.workflows.length) {
         await fileSystem.writeText(manifestPath, JSON.stringify(manifest, null, 2) + "\n")
       }
       await Promise.all(manifest.workflows.map(async (definition) => {
@@ -106,6 +120,12 @@ export function createWorkflowManifestRepository(
   }
 }
 
+function mergeDefaultWorkflows(manifest: WorkflowManifest): WorkflowManifest {
+  const existing = new Set(manifest.workflows.map((workflow) => workflow.name))
+  const additions = defaultWorkflowManifest().workflows.filter((workflow) => !existing.has(workflow.name))
+  return additions.length === 0 ? manifest : { ...manifest, workflows: [...manifest.workflows, ...additions] }
+}
+
 export function createPlanWorkflow(
   planner: Planner = createPlanner(),
   workspaceRepository: WorkspaceRepository = createWorkspaceRepository(nodeFileSystem),
@@ -132,13 +152,12 @@ export function createPlanWorkflow(
       for (const step of definition.executionSteps) {
         if (step === "compile-workspace") continue
         if (step === "generate-foundation" || step === "generate-architecture" || step === "generate-roadmap" || step === "generate-epics") {
-          state = await progressivePlanner.generate({
-            workspace: request.workspace,
-            stage,
-            ...(request.brief === undefined ? {} : { brief: request.brief }),
-            state: currentState,
-            prompt,
-          })
+          if (request.draft === undefined) throw new Error("The " + definition.name + " workflow requires an agent-authored draft.")
+          state = request.draft
+          progressivePlanner.validate(state)
+          ensureUpstreamArtifactsPreserved(currentState, state, stage)
+          ensureStageOwnsOnlyItsArtifact(currentState, state, stage)
+          if (state.completedStages.at(-1) !== stage) throw new Error("The submitted draft does not complete the requested planning stage.")
           continue
         }
         if (step === "persist-planning-stage" && state !== undefined) {
@@ -179,6 +198,9 @@ export function defaultWorkflowManifest(): WorkflowManifest {
       planningWorkflow("plan-architecture", "Generate Architecture from Vision and Constitution.", ["vision", "constitution"], ["architecture"], ["compile-workspace", "generate-architecture", "persist-planning-stage", "update-workspace-graph", "persist-workspace"], ["architecture"], ["planning-stage"]),
       planningWorkflow("plan-roadmap", "Generate Roadmap from approved planning artifacts.", ["vision", "constitution", "architecture"], ["roadmap"], ["compile-workspace", "generate-roadmap", "persist-planning-stage", "update-workspace-graph", "persist-workspace"], ["roadmap"], ["planning-stage"]),
       planningWorkflow("plan-epics", "Generate Epics with nested Stories, acceptance criteria and Tasks.", ["vision", "constitution", "architecture", "roadmap"], ["epics"], ["compile-workspace", "generate-epics", "persist-planning-stage", "update-workspace-graph", "persist-workspace"], ["epic"], ["planning-stage"]),
+      workflow("design", "Create a reviewable technical design for one Epic.", ["architecture", "epics"], ["technical-design"], ["resolve-epic", "generate-technical-design", "persist-technical-design"], [{ name: "target-id", description: "The Epic to design.", required: true }]),
+      workflow("approve-design", "Approve a reviewed technical design.", ["technical-design"], ["approved-technical-design"], ["resolve-technical-design", "validate-dependencies", "approve-technical-design"], [{ name: "design-id", description: "The Technical Design to approve.", required: true }]),
+      workflow("scaffold", "Create folders and declaration-only code skeletons from an approved technical design.", ["approved-technical-design"], ["scaffolded-structure"], ["resolve-technical-design", "validate-dependencies", "apply-scaffold", "update-workspace-graph"], [{ name: "design-id", description: "The approved Technical Design to scaffold.", required: true }]),
     ],
   }
 }
@@ -203,6 +225,28 @@ function planningWorkflow(
     artifactTemplates: artifactTemplates.map((name) => ".specta/workflows/artifacts/" + name + ".md"),
     completionCriteria: produces.map((artifact) => artifact + " is generated and linked to the Workspace Graph."),
     validationRequirements,
+  }
+}
+
+function workflow(
+  name: string,
+  description: string,
+  requires: string[],
+  produces: string[],
+  executionSteps: string[],
+  parameters: WorkflowDefinition["parameters"],
+): WorkflowDefinition {
+  return {
+    name,
+    description,
+    parameters,
+    requires,
+    produces,
+    executionSteps,
+    promptTemplate: ".specta/workflows/prompts/" + name + ".md",
+    artifactTemplates: [],
+    completionCriteria: produces.map((artifact) => artifact + " is generated and linked to the Workspace Graph."),
+    validationRequirements: ["workflow-state"],
   }
 }
 
@@ -317,6 +361,33 @@ function ensureProduced(definition: WorkflowDefinition, state: PlanningState): v
   if (state.epics) available.add("epics")
   const missing = definition.produces.filter((artifact) => !available.has(artifact))
   if (missing.length > 0) throw new Error(definition.name + " did not produce: " + missing.join(", ") + ".")
+}
+
+function ensureUpstreamArtifactsPreserved(
+  current: PlanningState | null,
+  submitted: PlanningState,
+  stage: PlanningStage,
+): void {
+  if (current === null || stage === "foundation") return
+  const fields: Array<keyof PlanningState> = stage === "architecture"
+    ? ["vision", "constitution"]
+    : stage === "roadmap"
+      ? ["vision", "constitution", "architecture"]
+      : ["vision", "constitution", "architecture", "roadmap"]
+  if (fields.some((field) => JSON.stringify(current[field]) !== JSON.stringify(submitted[field]))) {
+    throw new Error("A planning draft cannot replace approved upstream artifacts.")
+  }
+}
+
+function ensureStageOwnsOnlyItsArtifact(
+  current: PlanningState | null,
+  submitted: PlanningState,
+  stage: PlanningStage,
+): void {
+  const expected = stage === "foundation" ? ["foundation"] : [...(current?.completedStages ?? []), stage]
+  if (JSON.stringify(submitted.completedStages) !== JSON.stringify(expected)) {
+    throw new Error("A planning draft may submit only the requested stage.")
+  }
 }
 
 function projectPlanFromState(state: PlanningState): ProjectPlan | undefined {

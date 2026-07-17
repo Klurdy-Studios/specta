@@ -5,7 +5,14 @@ import { afterEach, describe, expect, it } from "vitest"
 import { createWorkspaceRepository, defaultWorkflowConfiguration } from "@specta/config"
 import type { Workspace } from "@specta/core"
 import { nodeFileSystem } from "@specta/filesystem"
-import { createPlanWorkflow, createWorkflowManifestRepository } from "../src/index.js"
+import { createProgressivePlanner } from "@specta/planner"
+import {
+  createPlanWorkflow,
+  createScaffoldWorkflow,
+  createTechnicalDesignApprovalWorkflow,
+  createTechnicalDesignWorkflow,
+  createWorkflowManifestRepository,
+} from "../src/index.js"
 
 const temporaryDirectories: string[] = []
 
@@ -29,10 +36,10 @@ it("progressively updates workspace planning artifacts and graph state", async (
 
   await createWorkflowManifestRepository().ensure(workspace)
   const workflow = createPlanWorkflow()
-  const foundation = await workflow.execute({ workspace, stage: "foundation", brief: "Create a reliable planning workflow." })
-  const architecture = await workflow.execute({ workspace: foundation.workspace, stage: "architecture" })
-  const roadmap = await workflow.execute({ workspace: architecture.workspace, stage: "roadmap" })
-  const result = await workflow.execute({ workspace: roadmap.workspace, stage: "epics" })
+  const foundation = await submitStage(workflow, workspace, "foundation", null, "Create a reliable planning workflow.")
+  const architecture = await submitStage(workflow, foundation.workspace, "architecture", foundation.state)
+  const roadmap = await submitStage(workflow, architecture.workspace, "roadmap", architecture.state)
+  const result = await submitStage(workflow, roadmap.workspace, "epics", roadmap.state)
   const persisted = await createWorkspaceRepository(nodeFileSystem).load(rootPath)
 
   expect(foundation.artifacts.documents).toHaveLength(2)
@@ -63,6 +70,70 @@ it("does not allow downstream stages before their required planning artifacts", 
   await expect(createPlanWorkflow().execute({ workspace, stage: "roadmap" }))
     .rejects.toThrow("requires: vision, constitution, architecture")
 })
+
+it("requires an approved Epic technical design before creating declaration-only scaffolding", async () => {
+  const rootPath = await mkdtemp(join(tmpdir(), "specta-scaffold-workflow-"))
+  temporaryDirectories.push(rootPath)
+  const workspace: Workspace = {
+    schemaVersion: 1,
+    id: "ws_scaffold" as Workspace["id"],
+    rootPath,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    packageManager: "unknown",
+    projects: [],
+    artifacts: {},
+    workflow: defaultWorkflowConfiguration(),
+  }
+  await createWorkflowManifestRepository().ensure(workspace)
+  const plan = createPlanWorkflow()
+  const foundation = await submitStage(plan, workspace, "foundation", null, "Create session management.")
+  const architecture = await submitStage(plan, foundation.workspace, "architecture", foundation.state)
+  const roadmap = await submitStage(plan, architecture.workspace, "roadmap", architecture.state)
+  const planning = await submitStage(plan, roadmap.workspace, "epics", roadmap.state)
+  const design = await createTechnicalDesignWorkflow().execute({
+    workspace: planning.workspace,
+    targetId: planning.state.epics![0]!.id,
+    draft: draft(),
+  })
+  const revised = await createTechnicalDesignWorkflow().execute({
+    workspace: planning.workspace,
+    targetId: planning.state.epics![0]!.id,
+    draft: draft(),
+    feedback: "Split service responsibilities before scaffolding.",
+  })
+
+  expect(revised.revision).toBe(design.revision + 1)
+  expect(revised.feedback).toContain("Split service")
+  await expect(createScaffoldWorkflow().execute({ workspace: planning.workspace, designId: revised.id }))
+    .rejects.toThrow("must be approved")
+  await createTechnicalDesignApprovalWorkflow().approve(planning.workspace, revised.id)
+  await Promise.all(revised.modules.flatMap((module) => module.files).map((file) =>
+    nodeFileSystem.writeText(join(rootPath, file.path), "// agent-authored scaffold\n"),
+  ))
+  const result = await createScaffoldWorkflow().execute({ workspace: planning.workspace, designId: revised.id })
+
+  expect(result.createdPaths).toHaveLength(3)
+  await expect(readFile(join(rootPath, result.createdPaths[1]!), "utf8"))
+    .resolves.not.toContain("Not implemented")
+  await expect(readFile(join(rootPath, ".specta", "graph", "technical-designs.json"), "utf8"))
+    .resolves.toContain("scaffoldedPaths")
+})
+
+function draft() {
+  return {
+    summary: "Agent-authored technical design.",
+    modules: [{ name: "Session", path: "src/session", purpose: "Session boundary.", dependencies: [], files: [
+      { path: "src/session/session.types.ts", kind: "source" as const, exports: [{ name: "SessionInput", kind: "interface" as const, purpose: "Input." }] },
+      { path: "src/session/session.service.ts", kind: "source" as const, exports: [{ name: "SessionService", kind: "class" as const, purpose: "Service.", signature: "abstract execute(input: SessionInput): SessionInput" }] },
+      { path: "src/session/index.ts", kind: "source" as const, exports: [] },
+    ] }], dependencies: [], impactRequests: [],
+  }
+}
+
+async function submitStage(workflow: ReturnType<typeof createPlanWorkflow>, workspace: Workspace, stage: "foundation" | "architecture" | "roadmap" | "epics", state: import("@specta/core").PlanningState | null, brief?: string) {
+  const draft = await createProgressivePlanner().generate({ workspace, stage, state, ...(brief === undefined ? {} : { brief }) })
+  return workflow.execute({ workspace, stage, draft, ...(brief === undefined ? {} : { brief }) })
+}
 
 it("rejects artifact templates outside the managed workflow directory", async () => {
   const rootPath = await mkdtemp(join(tmpdir(), "specta-template-path-"))

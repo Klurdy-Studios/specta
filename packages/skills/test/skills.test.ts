@@ -32,11 +32,15 @@ it("generates native stage commands from the workflow manifest", async () => {
   await createSkillGenerator().generate(workspace, workspace.workflow.skillTargets)
 
   await expect(readFile(join(rootPath, ".specta", "skills", "codex", "plan-foundation", "SKILL.md"), "utf8"))
-    .resolves.toContain("CLI helper: specta plan foundation <brief>")
+    .resolves.toContain("name: \"plan-foundation\"")
+  await expect(readFile(join(rootPath, ".specta", "skills", "codex", "plan-foundation", "SKILL.md"), "utf8"))
+    .resolves.toContain("CLI helper arguments: plan foundation <brief> --draft <foundation-draft.json>")
   await expect(readFile(join(rootPath, ".specta", "skills", "cursor", "commands", "plan-architecture.md"), "utf8"))
     .resolves.toContain("Workflow: plan-architecture")
   await expect(readFile(join(rootPath, ".specta", "skills", "vscode", "commands", "plan-roadmap.json"), "utf8"))
     .resolves.toContain("specta.plan-roadmap")
+  await expect(readFile(join(rootPath, ".specta", "skills", "codex", "design", "SKILL.md"), "utf8"))
+    .resolves.toContain("CLI helper arguments: design <epic-id> --draft <draft.json> [--feedback <changes>]")
 })
 
 it("accepts safe community skill targets only", () => {

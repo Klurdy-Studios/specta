@@ -147,8 +147,24 @@ function normalizeSkillTargets(skillTargets: SkillTarget[] | undefined): SkillTa
 async function ensureWorkflowAssets(workspace: Workspace, fileSystem: FileSystem): Promise<void> {
   await createWorkflowManifestRepository(fileSystem).ensure(workspace)
   const skills = await createSkillGenerator(createWorkflowManifestRepository(fileSystem), fileSystem)
-  await skills.generate(workspace, workspace.workflow.skillTargets)
+  const generated = await skills.generate(workspace, workspace.workflow.skillTargets)
+  await installCodexSkills(workspace, generated, fileSystem)
+  await writeRuntimeConfiguration(workspace, fileSystem)
   await ensureAgentsGuidance(workspace, fileSystem)
+}
+
+async function installCodexSkills(workspace: Workspace, generated: string[], fileSystem: FileSystem): Promise<void> {
+  if (!workspace.workflow.skillTargets.includes("codex")) return
+  const prefix = ".specta/skills/codex/"
+  await Promise.all(generated.filter((path) => path.startsWith(prefix)).map(async (path) => {
+    const destination = ".codex/skills/" + path.slice(prefix.length)
+    await fileSystem.writeText(join(workspace.rootPath, destination), await fileSystem.readText(join(workspace.rootPath, path)))
+  }))
+}
+
+async function writeRuntimeConfiguration(workspace: Workspace, fileSystem: FileSystem): Promise<void> {
+  const runner = process.env.SPECTA_CLI_RUNNER ?? "node " + resolve(process.cwd(), "apps/cli/bin/specta.mjs")
+  await fileSystem.writeText(join(workspace.rootPath, ".specta", "runtime.json"), JSON.stringify({ cliCommand: runner }, null, 2) + "\n")
 }
 
 async function ensureAgentsGuidance(workspace: Workspace, fileSystem: FileSystem): Promise<boolean> {

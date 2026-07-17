@@ -26,6 +26,8 @@ export function createSkillGenerator(
         path: skillPath(target, workflow),
         content: renderSkill(target, workflow),
       })))
+      const legacyArtifacts = targets.flatMap((target) => manifest.workflows.map((workflow) => legacySkillPath(target, workflow)))
+      await Promise.all(legacyArtifacts.map((path) => fileSystem.removePath(join(workspace.rootPath, path))))
       await Promise.all(artifacts.map(async ({ path, content }) => {
         const absolutePath = join(workspace.rootPath, path)
         if (!(await fileSystem.exists(absolutePath)) || await fileSystem.readText(absolutePath) !== content) {
@@ -37,8 +39,21 @@ export function createSkillGenerator(
   }
 }
 
+function skillName(workflow: WorkflowDefinition): string {
+  return "specta-" + workflow.name
+}
+
 function skillPath(target: SkillTarget, workflow: WorkflowDefinition): string {
-  if (target === "codex") return ".specta/skills/codex/" + workflow.name + "/SKILL.md"
+  const name = skillName(workflow)
+  if (target === "codex") return ".specta/skills/codex/" + name + "/SKILL.md"
+  if (target === "claude-code") return ".specta/skills/claude-code/commands/" + name + ".md"
+  if (target === "cursor") return ".specta/skills/cursor/commands/" + name + ".md"
+  if (target === "vscode") return ".specta/skills/vscode/commands/" + name + ".json"
+  return ".specta/skills/" + target + "/" + name + ".skill.md"
+}
+
+function legacySkillPath(target: SkillTarget, workflow: WorkflowDefinition): string {
+  if (target === "codex") return ".specta/skills/codex/" + workflow.name
   if (target === "claude-code") return ".specta/skills/claude-code/commands/" + workflow.name + ".md"
   if (target === "cursor") return ".specta/skills/cursor/commands/" + workflow.name + ".md"
   if (target === "vscode") return ".specta/skills/vscode/commands/" + workflow.name + ".json"
@@ -46,6 +61,7 @@ function skillPath(target: SkillTarget, workflow: WorkflowDefinition): string {
 }
 
 function renderSkill(target: SkillTarget, workflow: WorkflowDefinition): string {
+  const name = skillName(workflow)
   if (target === "vscode") {
     return JSON.stringify({
       command: "specta." + workflow.name,
@@ -55,7 +71,12 @@ function renderSkill(target: SkillTarget, workflow: WorkflowDefinition): string 
     }, null, 2) + "\n"
   }
   return [
-    "# " + workflow.name + " — Specta Skill",
+    "---",
+    "name: " + JSON.stringify(name),
+    "description: " + JSON.stringify(workflow.description),
+    "---",
+    "",
+    "# " + name + " — Specta Skill",
     "",
     "Target: " + target,
     "Workflow: " + workflow.name,
@@ -64,16 +85,20 @@ function renderSkill(target: SkillTarget, workflow: WorkflowDefinition): string 
     "Validation: " + (workflow.validationRequirements.length === 0 ? "none" : workflow.validationRequirements.join("; ")),
     "",
     "This Skill is the native command surface. Read the referenced prompt template, then invoke the Specta Workflow Engine.",
-    "CLI helper: " + cliInvocation(workflow.name),
+    "CLI helper arguments: " + cliInvocation(workflow.name),
+    "Read .specta/runtime.json and append these arguments to its cliCommand.",
     "",
   ].join("\n")
 }
 
 function cliInvocation(workflowName: string): string {
-  if (workflowName === "plan") return "specta plan"
-  if (workflowName === "plan-foundation") return "specta plan foundation <brief>"
-  if (workflowName === "plan-architecture") return "specta plan architecture"
-  if (workflowName === "plan-roadmap") return "specta plan roadmap"
-  if (workflowName === "plan-epics") return "specta plan epics"
-  return "specta " + workflowName
+  if (workflowName === "plan") return "plan --draft <planning-draft.json>"
+  if (workflowName === "plan-foundation") return "plan foundation <brief> --draft <foundation-draft.json>"
+  if (workflowName === "plan-architecture") return "plan architecture --draft <architecture-draft.json>"
+  if (workflowName === "plan-roadmap") return "plan roadmap --draft <roadmap-draft.json>"
+  if (workflowName === "plan-epics") return "plan epics --draft <epics-draft.json>"
+  if (workflowName === "design") return "design <epic-id> --draft <draft.json> [--feedback <changes>]"
+  if (workflowName === "approve-design") return "approve-design <design-id>"
+  if (workflowName === "scaffold") return "scaffold <design-id>"
+  return workflowName
 }

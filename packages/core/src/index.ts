@@ -148,6 +148,63 @@ export interface PlanningArtifactSet {
   documents: PlanningArtifact[]
 }
 
+export type TechnicalDesignStatus = "draft" | "needs-changes" | "approved"
+export type TechnicalFileKind = "source" | "test" | "configuration"
+export type TechnicalSymbolKind = "class" | "interface" | "function" | "type" | "constant"
+export type TechnicalDependencyStatus = "available" | "planned" | "blocked"
+
+export interface TechnicalSymbol {
+  name: string
+  kind: TechnicalSymbolKind
+  signature?: string
+  purpose: string
+}
+
+export interface TechnicalFile {
+  path: string
+  kind: TechnicalFileKind
+  exports: TechnicalSymbol[]
+}
+
+export interface TechnicalModule {
+  name: string
+  path: string
+  purpose: string
+  files: TechnicalFile[]
+  dependencies: PlanningId[]
+}
+
+export interface TechnicalDependency {
+  targetId: PlanningId
+  kind: "file" | "symbol" | "technical-design"
+  status: TechnicalDependencyStatus
+}
+
+export interface ImpactRequest {
+  targetId: PlanningId
+  description: string
+}
+
+export interface TechnicalDesign {
+  id: PlanningId
+  targetId: PlanningId
+  status: TechnicalDesignStatus
+  revision: number
+  summary: string
+  modules: TechnicalModule[]
+  dependencies: TechnicalDependency[]
+  impactRequests: ImpactRequest[]
+  feedback?: string
+  scaffoldedPaths?: string[]
+}
+
+export interface ScaffoldResult {
+  designId: PlanningId
+  createdPaths: string[]
+  preservedPaths: string[]
+  workspace: Workspace
+}
+
 export interface Workspace {
   schemaVersion: 1
   id: WorkspaceId
