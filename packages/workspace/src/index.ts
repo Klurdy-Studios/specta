@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto"
-import { join, relative, resolve } from "node:path"
+import { dirname, join, relative, resolve } from "node:path"
 import {
   createWorkspaceRepository,
   defaultWorkflowConfiguration,
@@ -148,18 +148,38 @@ async function ensureWorkflowAssets(workspace: Workspace, fileSystem: FileSystem
   await createWorkflowManifestRepository(fileSystem).ensure(workspace)
   const skills = await createSkillGenerator(createWorkflowManifestRepository(fileSystem), fileSystem)
   const generated = await skills.generate(workspace, workspace.workflow.skillTargets)
-  await installCodexSkills(workspace, generated, fileSystem)
+  await installSkills(workspace, generated, fileSystem)
   await writeRuntimeConfiguration(workspace, fileSystem)
   await ensureAgentsGuidance(workspace, fileSystem)
 }
 
-async function installCodexSkills(workspace: Workspace, generated: string[], fileSystem: FileSystem): Promise<void> {
-  if (!workspace.workflow.skillTargets.includes("codex")) return
-  const prefix = ".specta/skills/codex/"
-  await Promise.all(generated.filter((path) => path.startsWith(prefix)).map(async (path) => {
-    const destination = ".codex/skills/" + path.slice(prefix.length)
-    await fileSystem.writeText(join(workspace.rootPath, destination), await fileSystem.readText(join(workspace.rootPath, path)))
+async function installSkills(workspace: Workspace, generated: string[], fileSystem: FileSystem): Promise<void> {
+  await Promise.all(workspace.workflow.skillTargets.flatMap((target) => {
+    const installRoot = skillInstallRoot(target)
+    if (installRoot === undefined) return []
+    const prefix = ".specta/skills/" + target + "/"
+    return generated.filter((path) => path.startsWith(prefix)).map(async (path) => {
+      const suffix = path.slice(prefix.length)
+      const destination = installRoot + "/" + suffix
+      const legacyDestination = installRoot + "/" + suffix.replace(/^specta-/, "")
+      const legacyPath = join(workspace.rootPath, legacyDestination)
+      if (legacyDestination !== destination && await fileSystem.exists(legacyPath)) {
+        const content = await fileSystem.readText(legacyPath)
+        if (content.includes("— Specta Skill")) {
+          await fileSystem.removePath(dirname(legacyPath))
+        }
+      }
+      await fileSystem.writeText(join(workspace.rootPath, destination), await fileSystem.readText(join(workspace.rootPath, path)))
+    })
   }))
+}
+
+function skillInstallRoot(target: SkillTarget): string | undefined {
+  if (target === "codex") return ".codex/skills"
+  if (target === "claude-code") return ".claude/skills"
+  if (target === "cursor") return ".cursor/skills"
+  if (target === "vscode") return ".github/skills"
+  return undefined
 }
 
 async function writeRuntimeConfiguration(workspace: Workspace, fileSystem: FileSystem): Promise<void> {

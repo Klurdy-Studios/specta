@@ -5,6 +5,8 @@
 - createPlanningArtifactRepository(fileSystem?) persists and loads template-rendered planning artifacts.
 - createPlanningGraphUpdater(fileSystem?) persists validated planning relationships for the Workspace Graph.
 - createProgressivePlanner(provider?) generates one dependency-aware planning stage at a time.
+- createFoundationPlanningState(brief, draft) validates agent-authored Vision
+  and Constitution content and assigns deterministic graph IDs.
 - createPlanningStateRepository(fileSystem?) reads incremental planning state
   from the Workspace Graph and persists stage documents.
 - createPlanningStateGraphUpdater(fileSystem?) updates the Workspace Graph after

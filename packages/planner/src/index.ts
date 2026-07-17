@@ -4,6 +4,7 @@ import type {
   Architecture,
   Constitution,
   Epic,
+  FoundationDraft,
   PlanningArtifact,
   PlanningStage,
   PlanningState,
@@ -17,9 +18,16 @@ import type {
   Vision,
   Workspace,
 } from "@specta/core"
-import { SpectaError } from "@specta/core"
+import {
+  foundationDraftSchema,
+  planningBriefSchema,
+  planningStateSchema,
+  projectPlanSchema,
+  SpectaError,
+} from "@specta/core"
 import type { FileSystem } from "@specta/filesystem"
 import { nodeFileSystem } from "@specta/filesystem"
+import { planningGraphSnapshotSchema } from "@specta/graph"
 import {
   renderArchitecture,
   renderConstitution,
@@ -139,15 +147,16 @@ export function createProgressivePlanner(
       if (stage === "foundation") {
         const draft = await provider.generate({ workspace, brief: brief ?? "", ...(prompt === undefined ? {} : { prompt }) })
         const plan = materializePlan(draft)
-        const next: PlanningState = {
-          brief: draft.problem,
-          completedStages: ["foundation"],
-          vision: plan.vision,
-          constitution: plan.constitution,
-          relationships: [],
+        const foundation: FoundationDraft = {
+          vision: {
+            title: plan.vision.title,
+            problem: plan.vision.problem,
+            audience: plan.vision.audience,
+            outcome: plan.vision.outcome,
+          },
+          constitution: { principles: plan.constitution.principles },
         }
-        validatePlanningState(next)
-        return next
+        return createFoundationPlanningState(draft.problem, foundation)
       }
 
       if (state === null) throw new PlanningError("Foundation planning must be completed before " + stage + ".")
@@ -169,63 +178,38 @@ export function createProgressivePlanner(
   }
 }
 
+/** Validates agent-authored Foundation JSON and assigns deterministic graph IDs. */
+export function createFoundationPlanningState(brief: string, value: unknown): PlanningState {
+  const normalizedBrief = parsePlanningValue(planningBriefSchema.safeParse(brief), "Invalid planning brief")
+  const draft = parsePlanningValue(foundationDraftSchema.safeParse(value), "Invalid Foundation draft")
+  const { title, problem, audience, outcome } = draft.vision
+  const { principles } = draft.constitution
+  const vision: Vision = {
+    id: planningId("vision", normalizedBrief + ":" + title),
+    title,
+    problem,
+    audience,
+    outcome,
+  }
+  const constitution: Constitution = {
+    id: planningId("constitution", normalizedBrief + ":" + title),
+    principles,
+  }
+  const state: PlanningState = {
+    brief: normalizedBrief,
+    completedStages: ["foundation"],
+    vision,
+    constitution,
+    relationships: [],
+  }
+  validatePlanningState(state)
+  return state
+}
+
 export function createPlanningValidator(): PlanningValidator {
   return {
     validate(plan) {
-      const entities = [
-        plan.vision,
-        plan.constitution,
-        plan.architecture,
-        plan.roadmap,
-        ...plan.epics,
-        ...plan.epics.flatMap((epic) => epic.stories),
-        ...plan.epics.flatMap((epic) => epic.stories.flatMap((story) => story.tasks)),
-      ]
-      if (entities.some((entity) => !entity.id)) {
-        throw new PlanningError("Every planning entity requires an ID.")
-      }
-      const textValues = [
-        plan.vision.title,
-        plan.vision.problem,
-        plan.vision.audience,
-        plan.vision.outcome,
-        plan.architecture.overview,
-        ...plan.constitution.principles,
-        ...plan.architecture.components,
-        ...plan.roadmap.milestones,
-        ...plan.epics.flatMap((epic) => [epic.title, epic.goal]),
-        ...plan.epics.flatMap((epic) => epic.stories.flatMap((story) => [
-          story.title,
-          story.description,
-          ...story.acceptanceCriteria,
-          ...story.tasks.flatMap((task) => [task.title, task.description]),
-        ])),
-      ]
-      if (textValues.some((value) => value.trim().length === 0)) {
-        throw new PlanningError("Planning content must not be empty.")
-      }
-      if (plan.epics.length === 0 || plan.epics.some((epic) => epic.stories.length === 0)) {
-        throw new PlanningError("Every plan requires epics with stories.")
-      }
-      if (plan.epics.some((epic) => epic.stories.some((story) =>
-        story.acceptanceCriteria.length === 0 || story.tasks.length === 0,
-      ))) {
-        throw new PlanningError("Every story requires acceptance criteria and tasks.")
-      }
-      const ids = new Set(entities.map((entity) => entity.id))
-      if (ids.size !== entities.length) throw new PlanningError("Planning entity IDs must be unique.")
-      if (plan.relationships.some((relationship) =>
-        !ids.has(relationship.sourceId) || !ids.has(relationship.targetId) ||
-        relationship.sourceId === relationship.targetId,
-      )) {
-        throw new PlanningError("Planning relationships must reference plan entities.")
-      }
-      const relationshipKeys = new Set(plan.relationships.map((relationship) =>
-        relationship.type + ":" + relationship.sourceId + ":" + relationship.targetId,
-      ))
-      if (relationshipKeys.size !== plan.relationships.length) {
-        throw new PlanningError("Planning relationships must be unique.")
-      }
+      parsePlanningValue(projectPlanSchema.safeParse(plan), "Invalid project plan")
     },
   }
 }
@@ -238,9 +222,7 @@ export function createPlanningArtifactRepository(
       const planPath = join(workspace.rootPath, ".specta", "planning", "plan.json")
       if (!(await fileSystem.exists(planPath))) return null
       try {
-        const plan = JSON.parse(await fileSystem.readText(planPath)) as ProjectPlan
-        createPlanningValidator().validate(plan)
-        return plan
+        return projectPlanSchema.parse(JSON.parse(await fileSystem.readText(planPath)))
       } catch (error) {
         throw new PlanningError("Unable to read the persisted project plan.", error)
       }
@@ -276,11 +258,7 @@ export function createPlanningStateRepository(
       const graphPath = join(workspace.rootPath, ".specta", "graph", "planning-relationships.json")
       if (!(await fileSystem.exists(graphPath))) return null
       try {
-        const graph = JSON.parse(await fileSystem.readText(graphPath)) as { planning?: PlanningState }
-        if (graph.planning === undefined) return null
-        const state = graph.planning
-        validatePlanningState(state)
-        return state
+        return planningGraphSnapshotSchema.parse(JSON.parse(await fileSystem.readText(graphPath))).planning
       } catch (error) {
         throw new PlanningError("Unable to read planning state from the Workspace Graph.", error)
       }
@@ -308,10 +286,16 @@ export function createPlanningStateGraphUpdater(
     async apply(workspace, state) {
       validatePlanningState(state)
       const nodes = stateNodes(state).map((node) => ({ id: node.id, type: nodeType(node) }))
+      const snapshot = planningGraphSnapshotSchema.parse({
+        planning: state,
+        completedStages: state.completedStages,
+        nodes,
+        relationships: state.relationships,
+      })
       await writeIfChanged(
         fileSystem,
         join(workspace.rootPath, ".specta", "graph", "planning-relationships.json"),
-        JSON.stringify({ planning: state, completedStages: state.completedStages, nodes, relationships: state.relationships }, null, 2) + "\n",
+        JSON.stringify(snapshot, null, 2) + "\n",
       )
     },
   }
@@ -476,32 +460,7 @@ function uniqueRelationships(relationships: PlanningRelationship[]): PlanningRel
 }
 
 function validatePlanningState(state: PlanningState): void {
-  if (state.brief.trim().length === 0) throw new PlanningError("A planning brief is required.")
-  const expectedOrder: PlanningStage[] = ["foundation", "architecture", "roadmap", "epics"]
-  if (state.completedStages.some((stage, index) => stage !== expectedOrder[index])) {
-    throw new PlanningError("Planning stages must be completed in order.")
-  }
-  if (state.completedStages.includes("foundation") && (!state.vision || !state.constitution)) {
-    throw new PlanningError("Foundation planning requires a Vision and Constitution.")
-  }
-  if (state.completedStages.includes("architecture") && !state.architecture) {
-    throw new PlanningError("Architecture planning requires an Architecture artifact.")
-  }
-  if (state.completedStages.includes("roadmap") && !state.roadmap) {
-    throw new PlanningError("Roadmap planning requires a Roadmap artifact.")
-  }
-  if (state.completedStages.includes("epics") && (!state.epics || state.epics.length === 0)) {
-    throw new PlanningError("Epic planning requires at least one Epic.")
-  }
-  if (!state.completedStages.includes("architecture") && state.architecture) throw new PlanningError("Architecture cannot exist before its stage is complete.")
-  if (!state.completedStages.includes("roadmap") && state.roadmap) throw new PlanningError("Roadmap cannot exist before its stage is complete.")
-  if (!state.completedStages.includes("epics") && state.epics) throw new PlanningError("Epics cannot exist before their stage is complete.")
-  const nodes = stateNodes(state)
-  const ids = new Set(nodes.map((node) => node.id))
-  if (ids.size !== nodes.length) throw new PlanningError("Planning entity IDs must be unique.")
-  if (state.relationships.some((relationship) => !ids.has(relationship.sourceId) || !ids.has(relationship.targetId))) {
-    throw new PlanningError("Planning relationships must reference available planning artifacts.")
-  }
+  parsePlanningValue(planningStateSchema.safeParse(state), "Invalid planning state")
 }
 
 function stateNodes(state: PlanningState): Array<Vision | Constitution | Architecture | Roadmap | Epic | Story | Task> {
@@ -574,8 +533,7 @@ async function graphNodes(
       .map((id) => ({ id, type: "UNKNOWN" }))
   }
   try {
-    const plan = JSON.parse(await fileSystem.readText(planPath)) as ProjectPlan
-    createPlanningValidator().validate(plan)
+    const plan = projectPlanSchema.parse(JSON.parse(await fileSystem.readText(planPath)))
     if (JSON.stringify(relationships) !== JSON.stringify(plan.relationships)) {
       throw new PlanningError("Planning graph relationships do not match the persisted plan.")
     }
@@ -591,6 +549,18 @@ async function graphNodes(
   } catch (error) {
     throw new PlanningError("Unable to compile planning data into the Workspace Graph.", error)
   }
+}
+
+function parsePlanningValue<T>(
+  result: { success: true, data: T } | { success: false, error: { issues: Array<{ path: PropertyKey[], message: string }> } },
+  label: string,
+): T {
+  if (result.success) return result.data
+  const details = result.error.issues.map((issue) => {
+    const path = issue.path.length === 0 ? "" : " at " + issue.path.join(".")
+    return issue.message + path
+  }).join("; ")
+  throw new PlanningError(label + ": " + details)
 }
 
 function slug(value: string): string {

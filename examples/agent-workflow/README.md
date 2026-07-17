@@ -24,15 +24,16 @@ so it can discover the installed Skills.
 
 ## Planning stages
 
-Run the corresponding native agent commands in order. Each submitted JSON draft
-must contain the complete current planning state, with only the requested stage
-newly added.
+Run the corresponding native agent commands in order. Foundation submits only
+agent-authored Vision and Constitution content; Specta validates it and assigns
+deterministic IDs. Later-stage drafts contain the complete current planning
+state, with only the requested stage newly added.
 
 ```bash
-$plan-foundation Build a task tracker
-$plan-architecture
-$plan-roadmap
-$plan-epics
+$specta-plan-foundation Build a task tracker
+$specta-plan-architecture
+$specta-plan-roadmap
+$specta-plan-epics
 ```
 
 Inspect `.specta/planning/` and `.specta/graph/planning-relationships.json`
@@ -46,9 +47,9 @@ Choose an Epic ID from the planning graph. Ask the agent to create a technical
 design draft from that Epic, Architecture, existing files, and dependencies.
 
 ```text
-$design <epic-id>
-$approve-design <design-id>
-$scaffold <design-id>
+$specta-design <epic-id>
+$specta-approve-design <design-id>
+$specta-scaffold <design-id>
 ```
 
 For `design`, the agent authors a JSON technical-design draft containing its
@@ -66,7 +67,7 @@ For diagnostics only, inspect `.specta/runtime.json`. A Skill reads its
 as the normal developer workflow:
 
 ```bash
-node /home/brian-wachanga/Projects/specta/apps/cli/bin/specta.mjs plan foundation "Build a task tracker" --draft foundation-draft.json
+node /home/brian-wachanga/Projects/specta/apps/cli/bin/specta.mjs plan foundation "Build a task tracker" --draft .specta/drafts/plan-foundation.json
 ```
 
 Inspect `.specta/designs/` and `.specta/graph/technical-designs.json`. Confirm

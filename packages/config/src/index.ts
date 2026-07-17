@@ -1,6 +1,8 @@
 import {
   ConfigurationError,
   isRecord,
+  workspaceSchema,
+  workflowConfigurationSchema,
   type Workspace,
   type WorkflowConfiguration,
 } from "@specta/core"
@@ -19,10 +21,10 @@ export const workspaceManifestPath = (rootPath: string): string =>
   join(rootPath, SPECTA_DIRECTORY, WORKSPACE_MANIFEST)
 
 export function defaultWorkflowConfiguration(skillTargets: string[] = []): WorkflowConfiguration {
-  return {
+  return workflowConfigurationSchema.parse({
     skillTargets,
     manifestPath: ".specta/workflows/manifest.json",
-  }
+  })
 }
 
 export function createWorkspaceRepository(fileSystem: FileSystem): WorkspaceRepository {
@@ -40,46 +42,28 @@ export function createWorkspaceRepository(fileSystem: FileSystem): WorkspaceRepo
       return parseWorkspace(parsed, manifestPath)
     },
     async save(workspace) {
+      const validated = workspaceSchema.parse(workspace)
       await fileSystem.writeText(
         workspaceManifestPath(workspace.rootPath),
-        `${JSON.stringify(workspace, null, 2)}\n`,
+        `${JSON.stringify(validated, null, 2)}\n`,
       )
     },
   }
 }
 
 function parseWorkspace(value: unknown, manifestPath: string): Workspace {
-  if (!isRecord(value) || value.schemaVersion !== 1 || typeof value.id !== "string" ||
-      typeof value.rootPath !== "string" || typeof value.createdAt !== "string" ||
-      !Array.isArray(value.projects) || !isRecord(value.artifacts) ||
-      !["npm", "pnpm", "yarn", "unknown"].includes(String(value.packageManager))) {
-    throw new ConfigurationError(`Specta configuration at ${manifestPath} is invalid.`)
-  }
-  if (!value.projects.every(isProject)) {
-    throw new ConfigurationError(`Specta configuration at ${manifestPath} contains an invalid project.`)
-  }
-  if (value.workflow !== undefined && !isWorkflowConfiguration(value.workflow) && !isLegacyWorkflowConfiguration(value.workflow)) {
-    throw new ConfigurationError("Specta configuration at " + manifestPath + " contains invalid workflow configuration.")
-  }
+  if (!isRecord(value)) throw new ConfigurationError(`Specta configuration at ${manifestPath} is invalid.`)
   const workflow = value.workflow === undefined
     ? defaultWorkflowConfiguration()
     : isLegacyWorkflowConfiguration(value.workflow)
       ? defaultWorkflowConfiguration(value.workflow.integrations)
       : value.workflow
-  return { ...value, workflow } as unknown as Workspace
-}
-
-function isProject(value: unknown): boolean {
-  return isRecord(value) && typeof value.id === "string" && typeof value.name === "string" &&
-    typeof value.rootPath === "string" && typeof value.manifestPath === "string" &&
-    ["application", "library", "package", "service", "unknown"].includes(String(value.kind))
-}
-
-function isWorkflowConfiguration(value: unknown): value is WorkflowConfiguration {
-  return isRecord(value) && Array.isArray(value.skillTargets) &&
-    value.skillTargets.every((target) => typeof target === "string" && target.length > 0) &&
-    new Set(value.skillTargets).size === value.skillTargets.length &&
-    typeof value.manifestPath === "string" && value.manifestPath === ".specta/workflows/manifest.json"
+  const result = workspaceSchema.safeParse({ ...value, workflow })
+  if (result.success) return result.data
+  if (result.error.issues.some((issue) => issue.path[0] === "workflow")) {
+    throw new ConfigurationError("Specta configuration at " + manifestPath + " contains invalid workflow configuration.", result.error)
+  }
+  throw new ConfigurationError(`Specta configuration at ${manifestPath} is invalid.`, result.error)
 }
 
 function isLegacyWorkflowConfiguration(value: unknown): value is { integrations: string[] } {

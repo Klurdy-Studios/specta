@@ -10,6 +10,7 @@ import type {
   TechnicalModule,
   Workspace,
 } from "@specta/core"
+import { technicalDesignCollectionSchema, technicalDesignSchema } from "@specta/core"
 import type { FileSystem } from "@specta/filesystem"
 import { nodeFileSystem } from "@specta/filesystem"
 import { createPlanningStateRepository, type PlanningStateRepository } from "@specta/planner"
@@ -60,20 +61,20 @@ export function createTechnicalDesignRepository(
       const path = graphPath(workspace)
       if (!(await fileSystem.exists(path))) return []
       try {
-        const value = JSON.parse(await fileSystem.readText(path)) as { designs?: TechnicalDesign[] }
-        if (!Array.isArray(value.designs)) throw new Error("Technical designs are missing.")
-        value.designs.forEach(validateDesign)
-        return value.designs
+        return technicalDesignCollectionSchema.parse(JSON.parse(await fileSystem.readText(path))).designs
       } catch (error) {
         throw new Error("Unable to read technical designs from the Workspace Graph.", { cause: error })
       }
     },
     async save(workspace, design) {
-      validateDesign(design)
+      const validatedDesign = technicalDesignSchema.parse(design)
       const designs = await this.list(workspace)
-      const updated = [...designs.filter((item) => item.id !== design.id), design]
+      const updated = [...designs.filter((item) => item.id !== validatedDesign.id), validatedDesign]
       await fileSystem.writeText(graphPath(workspace), JSON.stringify({ designs: updated }, null, 2) + "\n")
-      await fileSystem.writeText(join(workspace.rootPath, ".specta", "designs", String(design.id) + ".md"), renderDesign(design))
+      await fileSystem.writeText(
+        join(workspace.rootPath, ".specta", "designs", String(validatedDesign.id) + ".md"),
+        renderDesign(validatedDesign),
+      )
     },
     async get(workspace, designId) {
       return (await this.list(workspace)).find((design) => design.id === designId) ?? null
@@ -168,12 +169,6 @@ function renderDesign(design: TechnicalDesign): string {
     ...module.files.map((file) => "- " + file.path + ": " + file.exports.map((symbol) => symbol.name).join(", ")),
   ])
   return ["# " + design.id, "", "Status: " + design.status, "Revision: " + design.revision, "", "## Summary", design.summary, "", "## Modules", ...modules, ""].join("\n")
-}
-
-function validateDesign(design: TechnicalDesign): void {
-  if (!design.id || !design.targetId || !["draft", "needs-changes", "approved"].includes(design.status) || design.modules.length === 0) throw new Error("Invalid Technical Design.")
-  const paths = design.modules.flatMap((module) => module.files.map((file) => file.path))
-  if (paths.some((path) => !/^src\/[a-z0-9-]+\/[a-z0-9-]+(?:\.(?:types|service))?\.ts$/.test(path) && !/^src\/[a-z0-9-]+\/index\.ts$/.test(path)) || new Set(paths).size !== paths.length) throw new Error("Technical Design contains invalid file paths.")
 }
 
 function graphPath(workspace: Workspace): string {

@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest"
 import type { Workspace } from "@specta/core"
 import {
   createPlanner,
+  createFoundationPlanningState,
   createPlanningArtifactRepository,
   createPlanningGraphUpdater,
   createProgressivePlanner,
@@ -35,6 +36,39 @@ async function workspace(): Promise<Workspace> {
 }
 
 describe("planner", () => {
+  it("validates Foundation content and assigns deterministic IDs", () => {
+    const draft = {
+      vision: {
+        title: "Task Atlas",
+        problem: "Teams lose track of project work.",
+        audience: "Small product teams.",
+        outcome: "Teams can plan and complete traceable work.",
+      },
+      constitution: {
+        principles: ["Keep work traceable.", "Prefer simple project workflows."],
+      },
+    }
+
+    const first = createFoundationPlanningState("Build a task tracker.", draft)
+    const second = createFoundationPlanningState("Build a task tracker.", draft)
+
+    expect(first).toEqual(second)
+    expect(first.completedStages).toEqual(["foundation"])
+    expect(first.vision?.id).toMatch(/^plan_/)
+    expect(() => createFoundationPlanningState("Build a task tracker.", {
+      ...draft,
+      constitution: { principles: ["Keep work traceable.", "keep work traceable."] },
+    })).toThrow("principles must be unique")
+    expect(() => createFoundationPlanningState("Build a task tracker.", {
+      ...draft,
+      vision: { ...draft.vision, outcome: "" },
+    })).toThrow("at vision.outcome")
+    expect(() => createFoundationPlanningState("Build a task tracker.", {
+      ...draft,
+      completedStages: ["foundation"],
+    })).toThrow("completedStages")
+  })
+
   it("renders template-based planning artifacts with stories and tasks inside the epic", async () => {
     const target = await workspace()
     const plan = await createPlanner().createPlan({

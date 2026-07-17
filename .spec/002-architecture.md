@@ -937,7 +937,13 @@ Focus entirely on developer workflows.
 
 
 # Core Tech Use
+
 - Parser: tree-sitter (lightning-fast AST extraction; discards function bodies to strip out garbage tokens)
 - Graph Database: TypeGraph + SQLite (on-device, type-safe entity relations with Zod validation)
 - File Watcher: chokidar (<10ms reactive file syncing and graph diff calculation)
 - Visualizer: 3d-force-graph (Three.js WebGL engine; maps structural connections and ghost nodes in 3D)
+
+TypeGraph owns the graph ontology and uses the canonical Zod entity schemas.
+The ontology and validation layer may be introduced before a database adapter.
+SQLite-backed persistence is delivered with the Workspace Graph in Epic 005;
+Epic 010 adds caching and performance optimizations on top of that persisted graph.

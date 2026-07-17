@@ -6,6 +6,9 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
   "scripts": {
     "check": "node ../../node_modules/typescript/bin/tsc --noEmit",
     "test": "node ../../node_modules/vitest/vitest.mjs run --passWithNoTests"

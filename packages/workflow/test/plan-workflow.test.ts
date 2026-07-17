@@ -53,6 +53,46 @@ it("progressively updates workspace planning artifacts and graph state", async (
     .resolves.toContain("# Roadmap")
 })
 
+it("accepts agent-authored Foundation content and renders Vision and Constitution", async () => {
+  const rootPath = await mkdtemp(join(tmpdir(), "specta-foundation-workflow-"))
+  temporaryDirectories.push(rootPath)
+  const workspace: Workspace = {
+    schemaVersion: 1,
+    id: "ws_foundation" as Workspace["id"],
+    rootPath,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    packageManager: "unknown",
+    projects: [],
+    artifacts: {},
+    workflow: defaultWorkflowConfiguration(),
+  }
+  await createWorkflowManifestRepository().ensure(workspace)
+
+  const result = await createPlanWorkflow().execute({
+    workspace,
+    stage: "foundation",
+    brief: "Build a task tracker for small product teams.",
+    draft: {
+      vision: {
+        title: "Task Atlas",
+        problem: "Small teams lose track of project work and ownership.",
+        audience: "Small product teams.",
+        outcome: "Teams can plan and complete traceable work.",
+      },
+      constitution: {
+        principles: ["Keep work traceable from intent to completion.", "Prefer simple team workflows."],
+      },
+    },
+  })
+
+  expect(result.state.completedStages).toEqual(["foundation"])
+  expect(result.state.vision?.id).toMatch(/^plan_/)
+  await expect(readFile(join(rootPath, ".specta", "planning", "vision.md"), "utf8"))
+    .resolves.toContain("## Task Atlas")
+  await expect(readFile(join(rootPath, ".specta", "planning", "constitution.md"), "utf8"))
+    .resolves.toContain("Keep work traceable from intent to completion.")
+})
+
 it("does not allow downstream stages before their required planning artifacts", async () => {
   const rootPath = await mkdtemp(join(tmpdir(), "specta-plan-prerequisite-"))
   temporaryDirectories.push(rootPath)
@@ -131,7 +171,18 @@ function draft() {
 }
 
 async function submitStage(workflow: ReturnType<typeof createPlanWorkflow>, workspace: Workspace, stage: "foundation" | "architecture" | "roadmap" | "epics", state: import("@specta/core").PlanningState | null, brief?: string) {
-  const draft = await createProgressivePlanner().generate({ workspace, stage, state, ...(brief === undefined ? {} : { brief }) })
+  const generated = await createProgressivePlanner().generate({ workspace, stage, state, ...(brief === undefined ? {} : { brief }) })
+  const draft = stage === "foundation"
+    ? {
+        vision: {
+          title: generated.vision!.title,
+          problem: generated.vision!.problem,
+          audience: generated.vision!.audience,
+          outcome: generated.vision!.outcome,
+        },
+        constitution: { principles: generated.constitution!.principles },
+      }
+    : generated
   return workflow.execute({ workspace, stage, draft, ...(brief === undefined ? {} : { brief }) })
 }
 

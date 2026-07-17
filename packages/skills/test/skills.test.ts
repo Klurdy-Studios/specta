@@ -1,6 +1,7 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 import { afterEach, expect, it } from "vitest"
 import type { Workspace } from "@specta/core"
 import { createWorkflowManifestRepository } from "@specta/workflow"
@@ -31,15 +32,21 @@ it("generates native stage commands from the workflow manifest", async () => {
   await createWorkflowManifestRepository().ensure(workspace)
   await createSkillGenerator().generate(workspace, workspace.workflow.skillTargets)
 
-  await expect(readFile(join(rootPath, ".specta", "skills", "codex", "plan-foundation", "SKILL.md"), "utf8"))
-    .resolves.toContain("name: \"plan-foundation\"")
-  await expect(readFile(join(rootPath, ".specta", "skills", "codex", "plan-foundation", "SKILL.md"), "utf8"))
-    .resolves.toContain("CLI helper arguments: plan foundation <brief> --draft <foundation-draft.json>")
-  await expect(readFile(join(rootPath, ".specta", "skills", "cursor", "commands", "plan-architecture.md"), "utf8"))
+  await expect(readFile(join(rootPath, ".specta", "skills", "codex", "specta-plan-foundation", "SKILL.md"), "utf8"))
+    .resolves.toBe(await readFile(join(dirname(fileURLToPath(import.meta.url)), "../templates/specta-plan-foundation.md"), "utf8"))
+  await expect(readFile(join(rootPath, ".specta", "skills", "codex", "specta-plan-foundation", "SKILL.md"), "utf8"))
+    .resolves.toContain("name: \"specta-plan-foundation\"")
+  await expect(readFile(join(rootPath, ".specta", "skills", "codex", "specta-plan-foundation", "SKILL.md"), "utf8"))
+    .resolves.toContain("plan foundation <brief> --draft .specta/drafts/plan-foundation.json")
+  await expect(readFile(join(rootPath, ".specta", "skills", "codex", "specta-plan-foundation", "SKILL.md"), "utf8"))
+    .resolves.toContain("If no non-empty brief was supplied")
+  await expect(readFile(join(rootPath, ".specta", "skills", "codex", "specta-plan-foundation", "SKILL.md"), "utf8"))
+    .resolves.toContain("Do not add IDs")
+  await expect(readFile(join(rootPath, ".specta", "skills", "cursor", "specta-plan-architecture", "SKILL.md"), "utf8"))
     .resolves.toContain("Workflow: plan-architecture")
-  await expect(readFile(join(rootPath, ".specta", "skills", "vscode", "commands", "plan-roadmap.json"), "utf8"))
-    .resolves.toContain("specta.plan-roadmap")
-  await expect(readFile(join(rootPath, ".specta", "skills", "codex", "design", "SKILL.md"), "utf8"))
+  await expect(readFile(join(rootPath, ".specta", "skills", "vscode", "specta-plan-roadmap", "SKILL.md"), "utf8"))
+    .resolves.toContain("name: \"specta-plan-roadmap\"")
+  await expect(readFile(join(rootPath, ".specta", "skills", "codex", "specta-design", "SKILL.md"), "utf8"))
     .resolves.toContain("CLI helper arguments: design <epic-id> --draft <draft.json> [--feedback <changes>]")
 })
 

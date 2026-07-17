@@ -1,5 +1,6 @@
 import { join } from "node:path"
-import type { SkillTarget, WorkflowDefinition, Workspace } from "@specta/core"
+import { fileURLToPath } from "node:url"
+import { skillTargetSchema, type SkillTarget, type WorkflowDefinition, type Workspace } from "@specta/core"
 import type { FileSystem } from "@specta/filesystem"
 import { nodeFileSystem } from "@specta/filesystem"
 import { createWorkflowManifestRepository, type WorkflowManifestRepository } from "@specta/workflow"
@@ -9,7 +10,7 @@ export interface SkillGenerator {
 }
 
 export function isValidSkillTarget(target: SkillTarget): boolean {
-  return /^[a-z][a-z0-9-]*$/.test(target)
+  return skillTargetSchema.safeParse(target).success
 }
 
 export function createSkillGenerator(
@@ -22,11 +23,11 @@ export function createSkillGenerator(
       if (targets.some((target) => !isValidSkillTarget(target))) {
         throw new Error("Skill targets must contain lowercase letters, numbers and hyphens only.")
       }
-      const artifacts = targets.flatMap((target) => manifest.workflows.map((workflow) => ({
+      const artifacts = await Promise.all(targets.flatMap((target) => manifest.workflows.map(async (workflow) => ({
         path: skillPath(target, workflow),
-        content: renderSkill(target, workflow),
-      })))
-      const legacyArtifacts = targets.flatMap((target) => manifest.workflows.map((workflow) => legacySkillPath(target, workflow)))
+        content: await renderSkill(workflow, fileSystem),
+      }))))
+      const legacyArtifacts = targets.flatMap((target) => manifest.workflows.flatMap((workflow) => legacySkillPaths(target, workflow)))
       await Promise.all(legacyArtifacts.map((path) => fileSystem.removePath(join(workspace.rootPath, path))))
       await Promise.all(artifacts.map(async ({ path, content }) => {
         const absolutePath = join(workspace.rootPath, path)
@@ -45,31 +46,29 @@ function skillName(workflow: WorkflowDefinition): string {
 
 function skillPath(target: SkillTarget, workflow: WorkflowDefinition): string {
   const name = skillName(workflow)
-  if (target === "codex") return ".specta/skills/codex/" + name + "/SKILL.md"
-  if (target === "claude-code") return ".specta/skills/claude-code/commands/" + name + ".md"
-  if (target === "cursor") return ".specta/skills/cursor/commands/" + name + ".md"
-  if (target === "vscode") return ".specta/skills/vscode/commands/" + name + ".json"
-  return ".specta/skills/" + target + "/" + name + ".skill.md"
+  return ".specta/skills/" + target + "/" + name + "/SKILL.md"
 }
 
-function legacySkillPath(target: SkillTarget, workflow: WorkflowDefinition): string {
-  if (target === "codex") return ".specta/skills/codex/" + workflow.name
-  if (target === "claude-code") return ".specta/skills/claude-code/commands/" + workflow.name + ".md"
-  if (target === "cursor") return ".specta/skills/cursor/commands/" + workflow.name + ".md"
-  if (target === "vscode") return ".specta/skills/vscode/commands/" + workflow.name + ".json"
-  return ".specta/skills/" + target + "/" + workflow.name + ".skill.md"
-}
-
-function renderSkill(target: SkillTarget, workflow: WorkflowDefinition): string {
+function legacySkillPaths(target: SkillTarget, workflow: WorkflowDefinition): string[] {
+  const root = ".specta/skills/" + target + "/"
   const name = skillName(workflow)
-  if (target === "vscode") {
-    return JSON.stringify({
-      command: "specta." + workflow.name,
-      title: "Specta: " + workflow.name,
-      workflow: workflow.name,
-      promptTemplate: workflow.promptTemplate,
-    }, null, 2) + "\n"
+  if (target === "codex") return [root + workflow.name]
+  if (target === "claude-code" || target === "cursor") {
+    return [root + "commands/" + workflow.name + ".md", root + "commands/" + name + ".md"]
   }
+  if (target === "vscode") {
+    return [root + "commands/" + workflow.name + ".json", root + "commands/" + name + ".json"]
+  }
+  return [root + workflow.name + ".skill.md", root + name + ".skill.md"]
+}
+
+async function renderSkill(
+  workflow: WorkflowDefinition,
+  fileSystem: FileSystem,
+): Promise<string> {
+  const name = skillName(workflow)
+  const templatePath = join(fileURLToPath(new URL("../templates", import.meta.url)), name + ".md")
+  if (await fileSystem.exists(templatePath)) return fileSystem.readText(templatePath)
   return [
     "---",
     "name: " + JSON.stringify(name),
@@ -78,7 +77,6 @@ function renderSkill(target: SkillTarget, workflow: WorkflowDefinition): string 
     "",
     "# " + name + " — Specta Skill",
     "",
-    "Target: " + target,
     "Workflow: " + workflow.name,
     "Description: " + workflow.description,
     "Prompt template: " + workflow.promptTemplate,

@@ -2,7 +2,9 @@
 
 - createPlanWorkflow(...) executes the next eligible or explicitly requested
   planning stage. It accepts an optional `stage` (`foundation`, `architecture`,
-  `roadmap`, `epics`, or `next`) and a Foundation brief.
+  `roadmap`, `epics`, or `next`), a Foundation brief, and an agent-authored
+  draft. Foundation drafts contain Vision and Constitution content without IDs;
+  Specta validates them and constructs graph-owned planning state.
 - createWorkflowManifestRepository(fileSystem?) loads and initializes canonical
   Workflow Definitions.
 - defaultWorkflowManifest() returns the built-in Workflow Manifest.

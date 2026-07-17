@@ -3,7 +3,7 @@ import { resolve } from "node:path"
 import { readFile } from "node:fs/promises"
 import { createWorkspaceRepository } from "@specta/config"
 import { nodeFileSystem } from "@specta/filesystem"
-import { createPlanWorkflow, createScaffoldWorkflow, createTechnicalDesignApprovalWorkflow, createTechnicalDesignWorkflow } from "@specta/workflow"
+import { createPlanWorkflow, createScaffoldWorkflow, createTechnicalDesignApprovalWorkflow, createTechnicalDesignWorkflow, type PlanWorkflowRequest } from "@specta/workflow"
 import { createWorkspaceInitializer, type InitializeWorkspaceRequest } from "@specta/workspace"
 
 const [command, ...arguments_] = process.argv.slice(2)
@@ -73,7 +73,11 @@ async function parseDesignRequest(arguments_: string[]): Promise<{ targetId: nev
   return { targetId: targetId as never, draft: draft as never, ...(feedback ? { feedback } : {}) }
 }
 
-async function parsePlanRequest(arguments_: string[]): Promise<{ stage?: "foundation" | "architecture" | "roadmap" | "epics" | "next", brief?: string, draft?: never }> {
+async function parsePlanRequest(arguments_: string[]): Promise<{
+  stage?: "foundation" | "architecture" | "roadmap" | "epics" | "next"
+  brief?: string
+  draft?: NonNullable<PlanWorkflowRequest["draft"]>
+}> {
   const draftIndex = arguments_.indexOf("--draft")
   const draftPath = draftIndex >= 0 ? arguments_[draftIndex + 1] : undefined
   if (draftIndex >= 0 && draftPath === undefined) throw new Error("--draft requires a JSON draft path.")
@@ -84,14 +88,16 @@ async function parsePlanRequest(arguments_: string[]): Promise<{ stage?: "founda
   if (first === "foundation") {
     const brief = rest.join(" ").trim()
     if (brief.length === 0) throw new Error("Usage: specta plan foundation <brief>")
-    return { stage: "foundation", brief, ...(draft ? { draft: draft as never } : {}) }
+    return { stage: "foundation", brief, ...(draft === undefined ? {} : { draft: draft as NonNullable<PlanWorkflowRequest["draft"]> }) }
   }
   if (first === "architecture" || first === "roadmap" || first === "epics") {
     if (rest.length > 0) throw new Error("The " + first + " planning stage does not accept a brief.")
-    return { stage: first, ...(draft ? { draft: draft as never } : {}) }
+    return { stage: first, ...(draft === undefined ? {} : { draft: draft as NonNullable<PlanWorkflowRequest["draft"]> }) }
   }
   const brief = values.join(" ").trim()
-  return brief.length > 0 ? { stage: "next", brief, ...(draft ? { draft: draft as never } : {}) } : { stage: "next", ...(draft ? { draft: draft as never } : {}) }
+  return brief.length > 0
+    ? { stage: "next", brief, ...(draft === undefined ? {} : { draft: draft as NonNullable<PlanWorkflowRequest["draft"]> }) }
+    : { stage: "next", ...(draft === undefined ? {} : { draft: draft as NonNullable<PlanWorkflowRequest["draft"]> }) }
 }
 
 function parseInitializeRequest(arguments_: string[]): InitializeWorkspaceRequest {

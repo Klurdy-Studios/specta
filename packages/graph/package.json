@@ -1,5 +1,5 @@
 {
-  "name": "@specta/planner",
+  "name": "@specta/graph",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -7,9 +7,10 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@nicia-ai/typegraph": "^0.37.0",
     "@specta/core": "workspace:*",
-    "@specta/filesystem": "workspace:*",
-    "@specta/graph": "workspace:*"
+    "drizzle-orm": "^0.45.2",
+    "zod": "^4.4.3"
   },
   "scripts": {
     "check": "node ../../node_modules/typescript/bin/tsc --noEmit",

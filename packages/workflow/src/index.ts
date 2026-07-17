@@ -1,13 +1,16 @@
 import { createWorkspaceRepository, type WorkspaceRepository } from "@specta/config"
 import { join } from "node:path"
+import { fileURLToPath } from "node:url"
 import {
   type PlanningArtifactSet,
+  type FoundationDraft,
   type PlanningStage,
   type PlanningState,
   type ProjectPlan,
   type WorkflowDefinition,
   type WorkflowManifest,
   type Workspace,
+  workflowManifestSchema,
 } from "@specta/core"
 import type { FileSystem } from "@specta/filesystem"
 import { nodeFileSystem } from "@specta/filesystem"
@@ -31,6 +34,7 @@ export {
   type TechnicalDesignWorkflow,
 } from "./technical-design.ts"
 import {
+  createFoundationPlanningState,
   createPlanner,
   createProgressivePlanner,
   createPlanningStateRepository,
@@ -41,7 +45,7 @@ export interface PlanWorkflowRequest {
   workspace: Workspace
   brief?: string
   stage?: PlanningStage | "next"
-  draft?: PlanningState
+  draft?: PlanningState | FoundationDraft
 }
 
 export interface PlanWorkflowResult {
@@ -74,9 +78,7 @@ export function createWorkflowManifestRepository(
         throw new Error("Workflow Manifest is missing. Run specta init to restore workspace workflows.")
       }
       try {
-        const manifest = JSON.parse(await fileSystem.readText(manifestPath)) as WorkflowManifest
-        validateWorkflowManifest(manifest)
-        return manifest
+        return workflowManifestSchema.parse(JSON.parse(await fileSystem.readText(manifestPath)))
       } catch (error) {
         throw new Error("Workflow Manifest is invalid.", { cause: error })
       }
@@ -91,8 +93,14 @@ export function createWorkflowManifestRepository(
       }
       await Promise.all(manifest.workflows.map(async (definition) => {
         const promptPath = join(workspace.rootPath, definition.promptTemplate)
+        const bundledPrompt = await bundledPromptTemplate(definition, fileSystem)
         if (!(await fileSystem.exists(promptPath))) {
-          await fileSystem.writeText(promptPath, defaultPromptTemplate(definition))
+          await fileSystem.writeText(promptPath, bundledPrompt)
+        } else {
+          const existingPrompt = await fileSystem.readText(promptPath)
+          if (existingPrompt === defaultPromptTemplate(definition) && existingPrompt !== bundledPrompt) {
+            await fileSystem.writeText(promptPath, bundledPrompt)
+          }
         }
         await Promise.all(definition.artifactTemplates.map(async (templatePath) => {
           const absolutePath = join(workspace.rootPath, templatePath)
@@ -153,8 +161,12 @@ export function createPlanWorkflow(
         if (step === "compile-workspace") continue
         if (step === "generate-foundation" || step === "generate-architecture" || step === "generate-roadmap" || step === "generate-epics") {
           if (request.draft === undefined) throw new Error("The " + definition.name + " workflow requires an agent-authored draft.")
-          state = request.draft
-          progressivePlanner.validate(state)
+          if (stage === "foundation") {
+            state = createFoundationPlanningState(request.brief ?? "", request.draft)
+          } else {
+            state = request.draft as PlanningState
+            progressivePlanner.validate(state)
+          }
           ensureUpstreamArtifactsPreserved(currentState, state, stage)
           ensureStageOwnsOnlyItsArtifact(currentState, state, stage)
           if (state.completedStages.at(-1) !== stage) throw new Error("The submitted draft does not complete the requested planning stage.")
@@ -250,35 +262,6 @@ function workflow(
   }
 }
 
-function validateWorkflowManifest(manifest: WorkflowManifest): void {
-  if (manifest.version !== 1 || !Array.isArray(manifest.workflows) || manifest.workflows.length === 0) {
-    throw new Error("Unsupported workflow manifest.")
-  }
-  const names = new Set(manifest.workflows.map((workflow) => workflow.name))
-  if (names.size !== manifest.workflows.length || manifest.workflows.some((workflow) =>
-    !isValidWorkflowDefinition(workflow),
-  )) {
-    throw new Error("Workflow manifest definitions are incomplete.")
-  }
-}
-
-function isValidWorkflowDefinition(definition: WorkflowDefinition): boolean {
-  return /^[a-z][a-z0-9-]*$/.test(definition.name) &&
-    definition.description.trim().length > 0 &&
-    Array.isArray(definition.parameters) &&
-    definition.parameters.every((parameter) => /^[a-z][a-z0-9-]*$/.test(parameter.name) &&
-      parameter.description.trim().length > 0) &&
-    Array.isArray(definition.executionSteps) && definition.executionSteps.length > 0 &&
-    definition.executionSteps.every((step) => /^[a-z][a-z0-9-]*$/.test(step)) &&
-    Array.isArray(definition.requires) && definition.requires.every((artifact) => /^[a-z][a-z0-9-]*$/.test(artifact)) &&
-    Array.isArray(definition.produces) && definition.produces.every((artifact) => /^[a-z][a-z0-9-]*$/.test(artifact)) &&
-    Array.isArray(definition.artifactTemplates) &&
-    definition.artifactTemplates.every((path) => artifactKindForTemplate(path) !== undefined) &&
-    Array.isArray(definition.completionCriteria) &&
-    Array.isArray(definition.validationRequirements) &&
-    definition.promptTemplate === ".specta/workflows/prompts/" + definition.name + ".md"
-}
-
 function workspaceWithPlanningArtifacts(workspace: Workspace, artifactSet: PlanningArtifactSet): Workspace {
   const artifactPath = (kind: PlanningArtifactSet["documents"][number]["kind"]): string | undefined =>
     artifactSet.documents.find((document) => document.kind === kind)?.path
@@ -313,6 +296,14 @@ function defaultPromptTemplate(definition: WorkflowDefinition): string {
     "Report the workflow outcome and validation results.",
     "",
   ].join("\n")
+}
+
+async function bundledPromptTemplate(
+  definition: WorkflowDefinition,
+  fileSystem: FileSystem,
+): Promise<string> {
+  const path = join(fileURLToPath(new URL("../templates/prompts", import.meta.url)), definition.name + ".md")
+  return await fileSystem.exists(path) ? fileSystem.readText(path) : defaultPromptTemplate(definition)
 }
 
 function defaultArtifactTemplate(path: string): string {
