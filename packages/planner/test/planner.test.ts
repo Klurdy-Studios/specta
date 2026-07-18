@@ -1,41 +1,12 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
-import { afterEach, describe, expect, it } from "vitest"
-import type { Workspace } from "@specta/core"
+import { describe, expect, it } from "vitest"
 import {
-  createPlanner,
   createArchitecturePlanningState,
   createFoundationPlanningState,
+  createEpicsPlanningState,
   createRoadmapPlanningState,
-  createPlanningArtifactRepository,
-  createProgressivePlanner,
+  validatePlanningState,
 } from "../src/index.js"
-import { renderRoadmap } from "../src/templates.js"
-
-const temporaryDirectories: string[] = []
-
-afterEach(async () => {
-  await Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })))
-})
-
-async function workspace(): Promise<Workspace> {
-  const rootPath = await mkdtemp(join(tmpdir(), "specta-plan-"))
-  temporaryDirectories.push(rootPath)
-  return {
-    schemaVersion: 1,
-    id: "ws_test" as Workspace["id"],
-    rootPath,
-    createdAt: "2026-01-01T00:00:00.000Z",
-    packageManager: "unknown",
-    projects: [],
-    artifacts: {},
-    workflow: {
-      skillTargets: [],
-      manifestPath: ".specta/workflows/manifest.json",
-    },
-  }
-}
+import { renderEpic, renderRoadmap } from "../src/templates.js"
 
 describe("planner", () => {
   it("validates Foundation content and assigns deterministic IDs", () => {
@@ -160,8 +131,7 @@ describe("planner", () => {
       .toThrow("requires completed Foundation and Architecture")
   })
 
-  it("does not invoke a planning provider for Roadmap authoring", async () => {
-    const target = await workspace()
+  it("validates Epics content, covers the Roadmap and assigns nested graph metadata", () => {
     const foundation = createFoundationPlanningState("Build a task tracker.", {
       vision: { title: "Tasks", problem: "Work is lost.", audience: "Teams.", outcome: "Work is traceable." },
       constitution: { principles: ["Keep work traceable."] },
@@ -170,17 +140,83 @@ describe("planner", () => {
       overview: "A bounded planning system.",
       components: ["Planning boundary — manages plans"],
     })
-    let calls = 0
-    const planner = createProgressivePlanner({
-      async generate() {
-        calls += 1
-        return { title: "Unused", problem: "Unused", audience: "Unused", outcome: "Unused" }
-      },
+    const roadmap = createRoadmapPlanningState(architecture, {
+      milestones: [
+        { title: "Planning MVP", objective: "Enable planning.", outcomes: ["Plans can be created."] },
+        { title: "Delivery MVP", objective: "Enable delivery.", outcomes: ["Plans can be delivered."] },
+      ],
+    })
+    const draft = {
+      epics: roadmap.roadmap!.milestones.map((milestone) => ({
+        title: milestone.title + " Epic",
+        goal: milestone.objective,
+        roadmapMilestone: milestone.title,
+        stories: [{
+          title: milestone.title + " Story",
+          description: milestone.objective,
+          acceptanceCriteria: [...milestone.outcomes, milestone.title + " remains traceable."],
+          tasks: [
+            { title: milestone.title + " Task", description: "Deliver the planned capability." },
+            { title: "Validate " + milestone.title, description: "Validate the delivered capability." },
+          ],
+        }],
+      })),
+    }
+    draft.epics.push({
+      title: "Planning operations Epic",
+      goal: "Operate planning reliably.",
+      roadmapMilestone: "planning mvp",
+      stories: [{
+        title: "Operate planning",
+        description: "Teams operate planning reliably.",
+        acceptanceCriteria: ["Planning failures are observable."],
+        tasks: [{ title: "Define planning operations", description: "Define operational planning behavior." }],
+      }],
     })
 
-    await expect(planner.generate({ workspace: target, stage: "roadmap", state: architecture }))
-      .rejects.toThrow("agent-authored draft")
-    expect(calls).toBe(0)
+    const first = createEpicsPlanningState(roadmap, draft)
+    const second = createEpicsPlanningState(roadmap, draft)
+    const caseVariant = createEpicsPlanningState(roadmap, {
+      epics: draft.epics.map((epic, index) => index === 0 ? { ...epic, roadmapMilestone: "planning mvp" } : epic),
+    })
+
+    expect(first).toEqual(second)
+    expect(caseVariant).toEqual(first)
+    expect(first.completedStages).toEqual(["foundation", "architecture", "roadmap", "epics"])
+    expect(first.epics).toHaveLength(3)
+    expect(first.epics?.[0]?.stories[0]?.acceptanceCriteria[0]?.id).toMatch(/^plan_/)
+    expect(first.relationships).toContainEqual({
+      type: "CONTAINS",
+      sourceId: first.epics?.[0]?.stories[0]?.id,
+      targetId: first.epics?.[0]?.stories[0]?.acceptanceCriteria[0]?.id,
+    })
+    expect(first.relationships).toContainEqual({
+      type: "DEPENDS_ON",
+      sourceId: first.epics?.[0]?.id,
+      targetId: roadmap.roadmap?.id,
+    })
+    expect(first.relationships).toContainEqual({
+      type: "IMPLEMENTS",
+      sourceId: first.epics?.[0]?.id,
+      targetId: architecture.architecture?.id,
+    })
+    expect(first.relationships).toContainEqual({
+      type: "CONTAINS",
+      sourceId: first.epics?.[0]?.stories[0]?.id,
+      targetId: first.epics?.[0]?.stories[0]?.tasks[0]?.id,
+    })
+    const criterionId = first.epics![0]!.stories[0]!.acceptanceCriteria[0]!.id
+    expect(() => validatePlanningState({
+      ...first,
+      relationships: first.relationships.filter((relationship) => relationship.targetId !== criterionId),
+    })).toThrow("missing required Epic relationships")
+    expect(() => createEpicsPlanningState(roadmap, {
+      epics: [draft.epics[0]],
+    })).toThrow("missing: Delivery MVP")
+    expect(() => createEpicsPlanningState(roadmap, {
+      epics: [{ ...draft.epics[0], roadmapMilestone: "Unknown" }, draft.epics[1]],
+    })).toThrow("unknown Roadmap milestone")
+    expect(() => createEpicsPlanningState(first, draft)).toThrow("already complete")
   })
 
   it("renders the complete ordered Roadmap structure", () => {
@@ -212,50 +248,25 @@ describe("planner", () => {
     ].join("\n"))
   })
 
-  it("renders template-based planning artifacts with stories and tasks inside the epic", async () => {
-    const target = await workspace()
-    const plan = await createPlanner().createPlan({
-      workspace: target,
-      brief: "Build a secure authentication workflow for product developers.",
+  it("renders nested Stories, acceptance criteria and Tasks in an Epic document", () => {
+    const markdown = renderEpic({
+      id: "epic" as never,
+      title: "Planning",
+      goal: "Deliver traceable planning.",
+      roadmapMilestone: "MVP",
+      stories: [{
+        id: "story" as never,
+        title: "Create plans",
+        description: "Teams create traceable plans.",
+        acceptanceCriteria: [{ id: "criterion" as never, description: "A plan is persisted." }],
+        tasks: [{ id: "task" as never, title: "Persist plans", description: "Store validated plans." }],
+      }],
     })
-    const artifacts = await createPlanningArtifactRepository().save(target, plan)
 
-    expect(artifacts.documents.map((document) => document.path)).toContain(".specta/planning/vision.md")
-    expect(artifacts.documents.map((document) => document.path)).toContain(".specta/planning/epics/001-build-a-secure-authentication-workflow-for-product-developers.md")
-    const epic = await readFile(join(target.rootPath, ".specta", "planning", "epics", "001-build-a-secure-authentication-workflow-for-product-developers.md"), "utf8")
-    expect(epic).toContain("## Story — Establish a secure authentication workflow for product developers")
-    expect(epic).toContain("### Tasks")
+    expect(markdown).toContain("# Epic — Planning")
+    expect(markdown).toContain("## Story — Create plans")
+    expect(markdown).toContain("- A plan is persisted.")
+    expect(markdown).toContain("- [ ] Persist plans — Store validated plans.")
   })
 
-  it("derives plan content from the planning brief and rejects invalid persisted plans", async () => {
-    const target = await workspace()
-    const planner = createPlanner()
-    const authenticationPlan = await planner.createPlan({ workspace: target, brief: "Build an authentication API." })
-    const portalPlan = await planner.createPlan({ workspace: target, brief: "Create a developer portal." })
-
-    expect(authenticationPlan.architecture.components).toContain("Authentication boundary")
-    expect(authenticationPlan.architecture.components).toContain("API boundary")
-    expect(portalPlan.architecture.components).not.toContain("Authentication boundary")
-
-    const repository = createPlanningArtifactRepository()
-    await repository.save(target, authenticationPlan)
-    await writeFile(join(target.rootPath, ".specta", "planning", "plan.json"), "{}", "utf8")
-    await expect(repository.load(target)).rejects.toThrow("Unable to read the persisted project plan")
-  })
-
-  it("passes the prior graph-backed planning state and prompt to later stages", async () => {
-    const target = await workspace()
-    const requests: Array<{ context?: unknown | undefined, prompt?: string | undefined }> = []
-    const planner = createProgressivePlanner({
-      async generate(request) {
-        requests.push({ context: request.context, prompt: request.prompt })
-        return { title: "Planning", problem: request.brief, audience: "Developers", outcome: "A planned outcome." }
-      },
-    })
-    const foundation = await planner.generate({ workspace: target, stage: "foundation", brief: "Plan the workspace.", state: null, prompt: "foundation prompt" })
-    await planner.generate({ workspace: target, stage: "architecture", state: foundation, prompt: "architecture prompt" })
-
-    expect(requests[1]?.context).toMatchObject({ vision: foundation.vision, constitution: foundation.constitution })
-    expect(requests[1]?.prompt).toBe("architecture prompt")
-  })
 })

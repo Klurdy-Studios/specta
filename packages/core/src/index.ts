@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import { z } from "zod"
 
 export type WorkspaceId = string & { readonly __brand: "WorkspaceId" }
@@ -7,6 +8,11 @@ export type PlanningId = string & { readonly __brand: "PlanningId" }
 export const planningIdSchema = z.string().min(1).transform((value) => value as PlanningId)
 export const workspaceIdSchema = z.string().min(1).transform((value) => value as WorkspaceId)
 export const projectIdSchema = z.string().min(1).transform((value) => value as ProjectId)
+
+/** Creates a stable planning-entity ID from its kind and canonical semantic input. */
+export function createPlanningId(kind: string, value: string): PlanningId {
+  return ("plan_" + createHash("sha256").update(kind + ":" + value).digest("hex").slice(0, 16)) as PlanningId
+}
 const nonEmptyTextSchema = z.string().trim().min(1)
 export const planningBriefSchema = nonEmptyTextSchema
 
@@ -140,16 +146,8 @@ export const roadmapMilestoneSchema = z.object({
 }).strict()
 /** Agent-authored Roadmap content before Specta assigns graph metadata. */
 export const roadmapDraftSchema = z.object({
-  milestones: z.array(roadmapMilestoneSchema).min(1).superRefine((milestones, context) => {
-    const seen = new Set<string>()
-    for (const [index, milestone] of milestones.entries()) {
-      const key = milestone.title.toLowerCase()
-      if (seen.has(key)) {
-        context.addIssue({ code: "custom", message: "Roadmap milestone titles must be unique.", path: [index, "title"] })
-      }
-      seen.add(key)
-    }
-  }),
+  milestones: z.array(roadmapMilestoneSchema).min(1)
+    .superRefine(uniqueNamedItems("Roadmap milestone titles", (milestone) => milestone.title)),
 }).strict()
 export type RoadmapDraft = z.infer<typeof roadmapDraftSchema>
 
@@ -158,26 +156,60 @@ export const roadmapSchema = roadmapDraftSchema.extend({
 }).strict()
 export type Roadmap = z.infer<typeof roadmapSchema>
 
-export const taskSchema = z.object({
-  id: planningIdSchema,
+/** Agent-authored Task content before Specta assigns graph metadata. */
+export const taskDraftSchema = z.object({
   title: nonEmptyTextSchema,
   description: nonEmptyTextSchema,
 }).strict()
+export type TaskDraft = z.infer<typeof taskDraftSchema>
+
+export const taskSchema = taskDraftSchema.extend({ id: planningIdSchema }).strict()
 export type Task = z.infer<typeof taskSchema>
 
-export const storySchema = z.object({
-  id: planningIdSchema,
+/** Agent-authored Story content with nested criteria and Tasks. */
+export const storyDraftSchema = z.object({
   title: nonEmptyTextSchema,
   description: nonEmptyTextSchema,
-  acceptanceCriteria: z.array(nonEmptyTextSchema).min(1),
+  acceptanceCriteria: z.array(nonEmptyTextSchema).min(1)
+    .superRefine(uniqueStrings("Story acceptance criteria")),
+  tasks: z.array(taskDraftSchema).min(1)
+    .superRefine(uniqueNamedItems("Story task titles", (task) => task.title)),
+}).strict()
+export type StoryDraft = z.infer<typeof storyDraftSchema>
+
+/** Canonical graph-backed acceptance criterion assigned to a Story. */
+export const acceptanceCriterionSchema = z.object({
+  id: planningIdSchema,
+  description: nonEmptyTextSchema,
+}).strict()
+export type AcceptanceCriterion = z.infer<typeof acceptanceCriterionSchema>
+
+export const storySchema = storyDraftSchema.omit({ acceptanceCriteria: true, tasks: true }).extend({
+  id: planningIdSchema,
+  acceptanceCriteria: z.array(acceptanceCriterionSchema).min(1),
   tasks: z.array(taskSchema).min(1),
 }).strict()
 export type Story = z.infer<typeof storySchema>
 
-export const epicSchema = z.object({
-  id: planningIdSchema,
+/** Agent-authored Epic content associated with an approved Roadmap milestone. */
+export const epicDraftSchema = z.object({
   title: nonEmptyTextSchema,
   goal: nonEmptyTextSchema,
+  roadmapMilestone: nonEmptyTextSchema,
+  stories: z.array(storyDraftSchema).min(1)
+    .superRefine(uniqueNamedItems("Epic story titles", (story) => story.title)),
+}).strict()
+export type EpicDraft = z.infer<typeof epicDraftSchema>
+
+/** Content-only Epics stage submission validated before deterministic materialization. */
+export const epicsDraftSchema = z.object({
+  epics: z.array(epicDraftSchema).min(1)
+    .superRefine(uniqueNamedItems("Epic titles", (epic) => epic.title)),
+}).strict()
+export type EpicsDraft = z.infer<typeof epicsDraftSchema>
+
+export const epicSchema = epicDraftSchema.omit({ stories: true }).extend({
+  id: planningIdSchema,
   stories: z.array(storySchema).min(1),
 }).strict()
 export type Epic = z.infer<typeof epicSchema>
@@ -203,6 +235,7 @@ export const projectPlanSchema = z.object({
   relationships: z.array(planningRelationshipSchema),
 }).strict().superRefine((plan, context) => {
   validatePlanningGraphReferences(planningNodeIds(plan), plan.relationships, context)
+  validatePlanningGraphSemantics(plan, context)
 })
 export type ProjectPlan = z.infer<typeof projectPlanSchema>
 
@@ -240,6 +273,7 @@ export const planningStateSchema = planningStateDataSchema.superRefine((state, c
     context.addIssue({ code: "custom", message: "Epics must exist exactly when their stage is complete.", path: ["epics"] })
   }
   validatePlanningGraphReferences(planningNodeIds(state), state.relationships, context)
+  validatePlanningGraphSemantics(state, context)
 })
 export type PlanningState = z.infer<typeof planningStateSchema>
 
@@ -381,6 +415,19 @@ function uniqueStrings(label: string) {
   }
 }
 
+function uniqueNamedItems<T>(label: string, name: (value: T) => string) {
+  return (values: T[], context: z.RefinementCtx): void => {
+    const seen = new Set<string>()
+    for (const [index, value] of values.entries()) {
+      const key = name(value).toLowerCase()
+      if (seen.has(key)) {
+        context.addIssue({ code: "custom", message: label + " must be unique.", path: [index, "title"] })
+      }
+      seen.add(key)
+    }
+  }
+}
+
 function planningNodeIds(value: {
   vision?: Vision | undefined
   constitution?: Constitution | undefined
@@ -395,7 +442,11 @@ function planningNodeIds(value: {
     ...(value.roadmap ? [value.roadmap.id] : []),
     ...(value.epics ?? []).flatMap((epic) => [
       epic.id,
-      ...epic.stories.flatMap((story) => [story.id, ...story.tasks.map((task) => task.id)]),
+      ...epic.stories.flatMap((story) => [
+        story.id,
+        ...story.acceptanceCriteria.map((criterion) => criterion.id),
+        ...story.tasks.map((task) => task.id),
+      ]),
     ]),
   ]
 }
@@ -417,6 +468,43 @@ function validatePlanningGraphReferences(
   )
   if (new Set(keys).size !== keys.length) {
     context.addIssue({ code: "custom", message: "Planning relationships must be unique.", path: ["relationships"] })
+  }
+}
+
+function validatePlanningGraphSemantics(
+  value: {
+    architecture?: Architecture | undefined
+    roadmap?: Roadmap | undefined
+    epics?: Epic[] | undefined
+    relationships: PlanningRelationship[]
+  },
+  context: z.RefinementCtx,
+): void {
+  if (!value.architecture || !value.roadmap || !value.epics) return
+  const keys = new Set(value.relationships.map((relationship) =>
+    relationship.type + ":" + relationship.sourceId + ":" + relationship.targetId,
+  ))
+  const required = value.epics.flatMap((epic): PlanningRelationship[] => [
+    { type: "DEPENDS_ON", sourceId: epic.id, targetId: value.roadmap!.id },
+    { type: "IMPLEMENTS", sourceId: epic.id, targetId: value.architecture!.id },
+    ...epic.stories.flatMap((story): PlanningRelationship[] => [
+      { type: "CONTAINS", sourceId: epic.id, targetId: story.id },
+      ...story.acceptanceCriteria.map((criterion): PlanningRelationship => ({
+        type: "CONTAINS",
+        sourceId: story.id,
+        targetId: criterion.id,
+      })),
+      ...story.tasks.map((task): PlanningRelationship => ({
+        type: "CONTAINS",
+        sourceId: story.id,
+        targetId: task.id,
+      })),
+    ]),
+  ])
+  if (required.some((relationship) => !keys.has(
+    relationship.type + ":" + relationship.sourceId + ":" + relationship.targetId,
+  ))) {
+    context.addIssue({ code: "custom", message: "Planning graph is missing required Epic relationships.", path: ["relationships"] })
   }
 }
 

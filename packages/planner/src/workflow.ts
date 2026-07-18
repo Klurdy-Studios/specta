@@ -2,32 +2,30 @@ import { fileURLToPath } from "node:url"
 import { join } from "node:path"
 import { isDeepStrictEqual } from "node:util"
 import { createWorkspaceRepository, workspaceManifestPath, type WorkspaceRepository } from "@specta/core/config"
-import type { ArchitectureDraft, FoundationDraft, PlanningArtifactSet, PlanningStage, PlanningState, ProjectPlan, RoadmapDraft, WorkflowDefinition, Workspace } from "@specta/core"
+import type { ArchitectureDraft, EpicsDraft, FoundationDraft, PlanningArtifactSet, PlanningStage, PlanningState, ProjectPlan, RoadmapDraft, WorkflowDefinition, Workspace } from "@specta/core"
 import type { FileSystem } from "@specta/core/filesystem"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import { createWorkflowManifestRepository, type WorkflowManifestRepository, type WorkflowModule } from "@specta/core/workflow"
 import {
   createArchitecturePlanningState,
+  createEpicsPlanningState,
   createFoundationPlanningState,
   createRoadmapPlanningState,
-  createPlanner,
   createPlanningStateGraphUpdater,
   createPlanningStateRepository,
   planningStageArtifactPaths,
-  validatePlanningState,
-  type Planner,
   type PlanningStateGraphUpdater,
   type PlanningStateRepository,
 } from "./planning.ts"
 
-type PlanningStageDraft = PlanningState | FoundationDraft | ArchitectureDraft | RoadmapDraft
+type PlanningStageDraft = FoundationDraft | ArchitectureDraft | RoadmapDraft | EpicsDraft
 
 /** Stage-specific planning input; invalid stage and draft combinations are rejected by TypeScript. */
 export type PlanWorkflowInput =
   | { stage: "foundation", brief: string, guidance?: never, draft?: FoundationDraft }
   | { stage: "architecture", brief?: never, guidance?: string, draft?: ArchitectureDraft }
   | { stage: "roadmap", brief?: never, guidance?: never, draft?: RoadmapDraft }
-  | { stage: "epics", brief?: never, guidance?: never, draft?: PlanningState }
+  | { stage: "epics", brief?: never, guidance?: never, draft?: EpicsDraft }
   | { stage?: "next", brief?: string, guidance?: never, draft?: PlanningStageDraft }
 
 export type PlanWorkflowRequest = PlanWorkflowInput & { workspace: Workspace }
@@ -51,7 +49,6 @@ export const planningWorkflowModule: WorkflowModule = {
 }
 
 export function createPlanWorkflow(
-  planner: Planner = createPlanner(),
   workspaceRepository: WorkspaceRepository = createWorkspaceRepository(nodeFileSystem),
   definitions: WorkflowManifestRepository = createWorkflowManifestRepository([planningWorkflowModule]),
   stateRepository: PlanningStateRepository = createPlanningStateRepository(),
@@ -87,8 +84,8 @@ export function createPlanWorkflow(
             if (currentState === null) throw new Error("Roadmap planning requires completed Foundation and Architecture stages.")
             state = createRoadmapPlanningState(currentState, request.draft)
           } else {
-            state = request.draft as PlanningState
-            validatePlanningState(state)
+            if (currentState === null) throw new Error("Epics planning requires completed Foundation, Architecture and Roadmap stages.")
+            state = createEpicsPlanningState(currentState, request.draft)
           }
           ensureUpstreamArtifactsPreserved(currentState, state, stage)
           ensureStageOwnsOnlyItsArtifact(currentState, state, stage)
@@ -99,10 +96,6 @@ export function createPlanWorkflow(
         throw new Error("Unsupported planning workflow step: " + step + ".")
       }
       if (state === undefined) throw new Error("The plan workflow definition is incomplete.")
-      if (definition.validationRequirements.includes("planning-artifacts")) {
-        const completePlan = projectPlanFromState(state)
-        if (completePlan) planner.validate(completePlan)
-      }
       ensureProduced(definition, state)
       const committedState = state
       const commitPaths = [

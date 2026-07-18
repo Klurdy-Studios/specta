@@ -60,7 +60,7 @@ export function renderEpic(epic: Epic): string {
   const lines = ["# Epic — " + epic.title, "", "## Goal", "", epic.goal, ""]
   for (const story of epic.stories) {
     lines.push("## Story — " + story.title, "", story.description, "", "### Acceptance Criteria", "")
-    lines.push(...story.acceptanceCriteria.map((criterion) => "- " + criterion), "", "### Tasks", "")
+    lines.push(...story.acceptanceCriteria.map((criterion) => "- " + criterion.description), "", "### Tasks", "")
     lines.push(...story.tasks.map((task) => "- [ ] " + task.title + " — " + task.description), "")
   }
   return lines.join("\n")

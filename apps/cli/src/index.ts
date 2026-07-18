@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { resolve } from "node:path"
 import { readFile } from "node:fs/promises"
-import type { ArchitectureDraft, FoundationDraft, PlanningState, RoadmapDraft } from "@specta/core"
+import type { ArchitectureDraft, EpicsDraft, FoundationDraft, RoadmapDraft } from "@specta/core"
 import { createWorkspaceRepository } from "@specta/core/config"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import { createWorkspaceInitializer, type InitializeWorkspaceRequest } from "@specta/core/workspace"
@@ -107,7 +107,7 @@ async function parsePlanRequest(arguments_: string[]): Promise<PlanWorkflowInput
     if (rest.length > 0) throw new Error("The " + first + " planning stage does not accept a brief.")
     return first === "roadmap"
       ? { stage: "roadmap", ...(draft === undefined ? {} : { draft: draft as RoadmapDraft }) }
-      : { stage: "epics", ...(draft === undefined ? {} : { draft: draft as PlanningState }) }
+      : { stage: "epics", ...(draft === undefined ? {} : { draft: draft as EpicsDraft }) }
   }
   const brief = values.join(" ").trim()
   return brief.length > 0

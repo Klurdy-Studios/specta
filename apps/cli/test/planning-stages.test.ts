@@ -112,6 +112,50 @@ it("submits agent-authored planning stages through the CLI", async () => {
     sourceId: roadmapGraph.planning.roadmap.id,
     targetId: roadmapGraph.planning.architecture.id,
   })
+
+  await writeFile(join(rootPath, ".specta", "drafts", "plan-epics.json"), JSON.stringify({
+    epics: [
+      {
+        title: "Traceable planning experience",
+        goal: "Give teams a usable graph-backed planning workflow.",
+        roadmapMilestone: "Traceable planning",
+        stories: [{
+          title: "Create a traceable plan",
+          description: "As a product team, we can create a plan linked to its intent.",
+          acceptanceCriteria: ["A completed plan is represented in the Workspace Graph."],
+          tasks: [{ title: "Define planning behavior", description: "Describe the behavior required to create a traceable plan." }],
+        }],
+      },
+      {
+        title: "Validated delivery experience",
+        goal: "Keep delivery connected to approved planning intent.",
+        roadmapMilestone: "Reliable delivery",
+        stories: [{
+          title: "Deliver approved work",
+          description: "As a product team, we can deliver work from an approved plan.",
+          acceptanceCriteria: ["Delivery work references its approved planning artifacts."],
+          tasks: [{ title: "Define delivery traceability", description: "Describe how delivery remains connected to planning intent." }],
+        }],
+      },
+    ],
+  }, null, 2) + "\n")
+
+  await runCli([
+    "plan",
+    "epics",
+    "--draft",
+    ".specta/drafts/plan-epics.json",
+  ], rootPath)
+
+  await expect(readFile(join(rootPath, ".specta", "planning", "epics", "001-traceable-planning-experience.md"), "utf8"))
+    .resolves.toContain("A completed plan is represented in the Workspace Graph.")
+  await expect(readFile(join(rootPath, ".specta", "planning", "epics", "002-validated-delivery-experience.md"), "utf8"))
+    .resolves.toContain("Delivery work references its approved planning artifacts.")
+  const epicsGraph = JSON.parse(await readFile(join(rootPath, ".specta", "graph", "planning-relationships.json"), "utf8"))
+  expect(epicsGraph.completedStages).toEqual(["foundation", "architecture", "roadmap", "epics"])
+  expect(epicsGraph.nodes.filter((node: { type: string }) => node.type === "EPIC")).toHaveLength(2)
+  expect(epicsGraph.nodes.filter((node: { type: string }) => node.type === "ACCEPTANCE_CRITERION")).toHaveLength(2)
+  expect(epicsGraph.planning.epics[0].roadmapMilestone).toBe("Traceable planning")
 }, 20_000)
 
 function runCli(arguments_: string[], cwd: string): Promise<{ stdout: string, stderr: string }> {

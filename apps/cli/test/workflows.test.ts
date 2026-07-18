@@ -13,7 +13,6 @@ import {
 } from "@specta/implementation"
 import {
   createPlanWorkflow,
-  createProgressivePlanner,
 } from "@specta/planner"
 import {
   createWorkflowManifestRepository,
@@ -59,7 +58,17 @@ it("progressively updates workspace planning artifacts and graph state", async (
     stage: "roadmap",
     draft: { milestones: roadmap.state.roadmap!.milestones },
   })).rejects.toThrow("already complete")
+  await expect(workflow.execute({
+    workspace: roadmap.workspace,
+    stage: "epics",
+    draft: JSON.parse(JSON.stringify(roadmap.state)),
+  })).rejects.toThrow("Invalid Epics draft")
   const result = await submitStage(workflow, roadmap.workspace, "epics", roadmap.state)
+  await expect(workflow.execute({
+    workspace: result.workspace,
+    stage: "epics",
+    draft: { epics: [] },
+  })).rejects.toThrow("already complete")
   const persisted = await createWorkspaceRepository(nodeFileSystem).load(rootPath)
 
   expect(foundation.artifacts.documents).toHaveLength(2)
@@ -130,6 +139,8 @@ it("does not allow downstream stages before their required planning artifacts", 
   await workflowManifest().ensure(workspace)
   await expect(createPlanWorkflow().execute({ workspace, stage: "roadmap" }))
     .rejects.toThrow("requires: vision, constitution, architecture")
+  await expect(createPlanWorkflow().execute({ workspace, stage: "epics" }))
+    .rejects.toThrow("requires: vision, constitution, architecture, roadmap")
 })
 
 it("rolls back planning artifacts and graph state when a stage commit fails", async () => {
@@ -180,7 +191,6 @@ it("rolls back planning artifacts and graph state when a stage commit fails", as
     },
   }
   const workflow = createPlanWorkflow(
-    undefined,
     createWorkspaceRepository(failingFileSystem),
     definitions,
     undefined,
@@ -201,6 +211,70 @@ it("rolls back planning artifacts and graph state when a stage commit fails", as
   })).rejects.toThrow("Injected workspace write failure")
 
   await expect(readFile(join(rootPath, ".specta", "planning", "roadmap.md"), "utf8")).rejects.toThrow()
+  await expect(readFile(graphPath, "utf8")).resolves.toBe(graphBefore)
+  await expect(readFile(workspacePath, "utf8")).resolves.toBe(workspaceBefore)
+})
+
+it("rolls back every Epic document when the Epics stage commit fails", async () => {
+  const rootPath = await mkdtemp(join(tmpdir(), "specta-epics-rollback-"))
+  temporaryDirectories.push(rootPath)
+  const workspace: Workspace = {
+    schemaVersion: 1,
+    id: "ws_epics_rollback" as Workspace["id"],
+    rootPath,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    packageManager: "unknown",
+    projects: [],
+    artifacts: {},
+    workflow: defaultWorkflowConfiguration(),
+  }
+  const definitions = workflowManifest()
+  await definitions.ensure(workspace)
+  const plan = createPlanWorkflow()
+  const foundation = await submitStage(plan, workspace, "foundation", null, "Build atomic Epic planning.")
+  const architecture = await submitStage(plan, foundation.workspace, "architecture", foundation.state)
+  const roadmap = await submitStage(plan, architecture.workspace, "roadmap", architecture.state)
+  const graphPath = join(rootPath, ".specta", "graph", "planning-relationships.json")
+  const workspacePath = join(rootPath, ".specta", "workspace.json")
+  const graphBefore = await readFile(graphPath, "utf8")
+  const workspaceBefore = await readFile(workspacePath, "utf8")
+  let failWorkspaceWrite = true
+  const failingFileSystem: FileSystem = {
+    ...nodeFileSystem,
+    async writeText(path, content) {
+      if (failWorkspaceWrite && path.endsWith(".specta/workspace.json")) {
+        failWorkspaceWrite = false
+        throw new Error("Injected Epic workspace write failure.")
+      }
+      await nodeFileSystem.writeText(path, content)
+    },
+  }
+  const workflow = createPlanWorkflow(
+    createWorkspaceRepository(failingFileSystem),
+    definitions,
+    undefined,
+    undefined,
+    failingFileSystem,
+  )
+  const draft = {
+    epics: roadmap.state.roadmap!.milestones.map((milestone) => ({
+      title: milestone.title + " Epic",
+      goal: milestone.objective,
+      roadmapMilestone: milestone.title,
+      stories: [{
+        title: milestone.title + " Story",
+        description: milestone.objective,
+        acceptanceCriteria: milestone.outcomes,
+        tasks: [{ title: milestone.title + " Task", description: "Deliver this milestone." }],
+      }],
+    })),
+  }
+
+  await expect(workflow.execute({ workspace: roadmap.workspace, stage: "epics", draft }))
+    .rejects.toThrow("Injected Epic workspace write failure")
+
+  await expect(readFile(join(rootPath, ".specta", "planning", "epics", "001-deliver-workspace-graph-epic.md"), "utf8"))
+    .rejects.toThrow()
   await expect(readFile(graphPath, "utf8")).resolves.toBe(graphBefore)
   await expect(readFile(workspacePath, "utf8")).resolves.toBe(workspaceBefore)
 })
@@ -275,26 +349,45 @@ async function submitStage(workflow: ReturnType<typeof createPlanWorkflow>, work
     }
     return workflow.execute({ workspace, stage, draft })
   }
-  const generated = await createProgressivePlanner().generate({ workspace, stage, state, ...(brief === undefined ? {} : { brief }) })
-  const draft = stage === "foundation"
-    ? {
-        vision: {
-          title: generated.vision!.title,
-          problem: generated.vision!.problem,
-          audience: generated.vision!.audience,
-          outcome: generated.vision!.outcome,
-        },
-        constitution: { principles: generated.constitution!.principles },
-      }
-    : stage === "architecture"
-      ? {
-          overview: generated.architecture!.overview,
-          components: generated.architecture!.components,
-        }
-      : generated
-  if (stage === "foundation") return workflow.execute({ workspace, stage, draft, brief: brief! })
-  if (stage === "architecture") return workflow.execute({ workspace, stage, draft })
-  return workflow.execute({ workspace, stage, draft: generated })
+  if (stage === "epics") {
+    const draft = {
+      epics: state!.roadmap!.milestones.map((milestone) => ({
+        title: milestone.title,
+        goal: milestone.objective,
+        roadmapMilestone: milestone.title,
+        stories: [{
+          title: "Complete " + milestone.title,
+          description: milestone.objective,
+          acceptanceCriteria: milestone.outcomes,
+          tasks: [{ title: "Plan " + milestone.title, description: "Define the delivery work for this milestone." }],
+        }],
+      })),
+    }
+    return workflow.execute({ workspace, stage, draft })
+  }
+  if (stage === "foundation") {
+    const projectBrief = brief ?? "Plan a software project."
+    return workflow.execute({
+      workspace,
+      stage,
+      brief: projectBrief,
+      draft: {
+        vision: { title: projectBrief, problem: projectBrief, audience: "Software teams.", outcome: "The project is delivered traceably." },
+        constitution: { principles: ["Keep delivery traceable to approved intent."] },
+      },
+    })
+  }
+  if (stage === "architecture") {
+    return workflow.execute({
+      workspace,
+      stage,
+      draft: {
+        overview: "A graph-backed workflow coordinates planning and delivery.",
+        components: ["Workspace Graph", "Workflow Engine", "Planning artifacts"],
+      },
+    })
+  }
+  throw new Error("Unsupported test stage.")
 }
 
 it("rejects artifact templates outside the managed workflow directory", async () => {

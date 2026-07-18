@@ -93,7 +93,7 @@ function cliInvocation(workflowName: string): string {
   if (workflowName === "plan-foundation") return "plan foundation <brief> --draft <foundation-draft.json>"
   if (workflowName === "plan-architecture") return "plan architecture [guidance] --draft <architecture-draft.json>"
   if (workflowName === "plan-roadmap") return "plan roadmap --draft <roadmap-draft.json>"
-  if (workflowName === "plan-epics") return "plan epics --draft <epics-draft.json>"
+  if (workflowName === "plan-epics") return "plan epics --draft .specta/drafts/plan-epics.json"
   if (workflowName === "design") return "design <epic-id> --draft <draft.json> [--feedback <changes>]"
   if (workflowName === "approve-design") return "approve-design <design-id>"
   if (workflowName === "scaffold") return "scaffold <design-id>"

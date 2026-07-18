@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   foundationDraftSchema,
+  epicsDraftSchema,
   roadmapDraftSchema,
   technicalDesignSchema,
   workspaceSchema,
@@ -47,6 +48,48 @@ describe("canonical schemas", () => {
     })).toThrow()
     expect(() => roadmapDraftSchema.parse({
       milestones: [{ title: "MVP", objective: "Deliver it.", outcomes: ["Delivered."], status: "planned" }],
+    })).toThrow()
+  })
+
+  it("rejects duplicate or incomplete Epics content", () => {
+    const story = {
+      title: "Create work",
+      description: "A user can create work.",
+      acceptanceCriteria: ["Work is persisted."],
+      tasks: [{ title: "Define creation", description: "Define the creation behavior." }],
+    }
+    expect(() => epicsDraftSchema.parse({
+      epics: [
+        { title: "Planning", goal: "Plan work.", roadmapMilestone: "MVP", stories: [story] },
+        { title: "planning", goal: "Repeat work.", roadmapMilestone: "MVP", stories: [story] },
+      ],
+    })).toThrow("Epic titles must be unique")
+    expect(() => epicsDraftSchema.parse({
+      epics: [{
+        title: "Planning",
+        goal: "Plan work.",
+        roadmapMilestone: "MVP",
+        stories: [{ ...story, acceptanceCriteria: ["Done.", "done."] }],
+      }],
+    })).toThrow("Story acceptance criteria must be unique")
+    expect(() => epicsDraftSchema.parse({
+      epics: [{
+        title: "Planning",
+        goal: "Plan work.",
+        roadmapMilestone: "MVP",
+        stories: [story, { ...story, title: "create work" }],
+      }],
+    })).toThrow("Epic story titles must be unique")
+    expect(() => epicsDraftSchema.parse({
+      epics: [{
+        title: "Planning",
+        goal: "Plan work.",
+        roadmapMilestone: "MVP",
+        stories: [{ ...story, tasks: [story.tasks[0]!, { ...story.tasks[0]!, title: "define creation" }] }],
+      }],
+    })).toThrow("Story task titles must be unique")
+    expect(() => epicsDraftSchema.parse({
+      epics: [{ title: "Planning", goal: "Plan work.", roadmapMilestone: "MVP", stories: [] }],
     })).toThrow()
   })
 
