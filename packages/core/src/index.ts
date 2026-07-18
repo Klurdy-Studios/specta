@@ -121,11 +121,15 @@ export const architectureSchema = z.object({
   id: planningIdSchema,
   overview: nonEmptyTextSchema,
   components: z.array(nonEmptyTextSchema).min(1).superRefine(uniqueStrings("Architecture components")),
+  guidance: nonEmptyTextSchema.optional(),
 }).strict()
 export type Architecture = z.infer<typeof architectureSchema>
 
 /** Agent-authored Architecture content before Specta assigns its graph ID. */
-export const architectureDraftSchema = architectureSchema.omit({ id: true })
+export const architectureDraftSchema = z.object({
+  overview: architectureSchema.shape.overview,
+  components: architectureSchema.shape.components,
+}).strict()
 export type ArchitectureDraft = z.infer<typeof architectureDraftSchema>
 
 export const roadmapSchema = z.object({

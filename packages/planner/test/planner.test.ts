@@ -8,7 +8,6 @@ import {
   createArchitecturePlanningState,
   createFoundationPlanningState,
   createPlanningArtifactRepository,
-  createPlanningGraphUpdater,
   createProgressivePlanner,
 } from "../src/index.js"
 
@@ -85,14 +84,15 @@ describe("planner", () => {
       components: ["Workflow boundary — coordinates project work", "Graph boundary — preserves traceability"],
     }
 
-    const first = createArchitecturePlanningState(foundation, draft)
-    const second = createArchitecturePlanningState(foundation, draft)
+    const first = createArchitecturePlanningState(foundation, draft, "Use SQLite locally.")
+    const second = createArchitecturePlanningState(foundation, draft, "Use SQLite locally.")
 
     expect(first).toEqual(second)
     expect(first.completedStages).toEqual(["foundation", "architecture"])
     expect(first.vision).toEqual(foundation.vision)
     expect(first.constitution).toEqual(foundation.constitution)
     expect(first.architecture?.id).toMatch(/^plan_/)
+    expect(first.architecture?.guidance).toBe("Use SQLite locally.")
     expect(first.relationships).toHaveLength(2)
     expect(() => createArchitecturePlanningState(foundation, {
       ...draft,
@@ -102,6 +102,16 @@ describe("planner", () => {
       ...draft,
       id: "agent-supplied-id",
     })).toThrow("id")
+    expect(() => createArchitecturePlanningState(foundation, {
+      overview: draft.overview,
+      components: [],
+    })).toThrow("components")
+    expect(() => createArchitecturePlanningState(first, draft)).toThrow("already complete")
+    expect(() => createArchitecturePlanningState({
+      brief: "Missing Foundation",
+      completedStages: [],
+      relationships: [],
+    }, draft)).toThrow("requires a completed Foundation")
   })
 
   it("renders template-based planning artifacts with stories and tasks inside the epic", async () => {
@@ -117,18 +127,6 @@ describe("planner", () => {
     const epic = await readFile(join(target.rootPath, ".specta", "planning", "epics", "001-build-a-secure-authentication-workflow-for-product-developers.md"), "utf8")
     expect(epic).toContain("## Story — Establish a secure authentication workflow for product developers")
     expect(epic).toContain("### Tasks")
-  })
-
-  it("persists validated planning relationships for graph compilation", async () => {
-    const target = await workspace()
-    const plan = await createPlanner().createPlan({ workspace: target, brief: "Plan a developer portal." })
-
-    await createPlanningGraphUpdater().apply(target, plan.relationships)
-
-    const graph = JSON.parse(await readFile(join(target.rootPath, ".specta", "graph", "planning-relationships.json"), "utf8"))
-    expect(graph.relationships).toEqual(plan.relationships)
-    expect(graph.relationships).toHaveLength(6)
-    expect(graph.nodes).toHaveLength(7)
   })
 
   it("derives plan content from the planning brief and rejects invalid persisted plans", async () => {

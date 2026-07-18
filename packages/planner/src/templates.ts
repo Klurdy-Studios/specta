@@ -26,7 +26,17 @@ export function renderConstitution(constitution: Constitution): string {
 }
 
 export function renderArchitecture(architecture: Architecture): string {
-  return ["# Architecture", "", architecture.overview, "", "## Components", "", ...architecture.components.map((component) => "- " + component), ""].join("\n")
+  return [
+    "# Architecture",
+    "",
+    architecture.overview,
+    ...(architecture.guidance ? ["", "## User Guidance", "", architecture.guidance] : []),
+    "",
+    "## Components",
+    "",
+    ...architecture.components.map((component) => "- " + component),
+    "",
+  ].join("\n")
 }
 
 export function renderRoadmap(roadmap: Roadmap): string {

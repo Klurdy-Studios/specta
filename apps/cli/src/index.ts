@@ -84,6 +84,7 @@ async function parseDesignRequest(arguments_: string[]): Promise<{ targetId: nev
 async function parsePlanRequest(arguments_: string[]): Promise<{
   stage?: "foundation" | "architecture" | "roadmap" | "epics" | "next"
   brief?: string
+  guidance?: string
   draft?: NonNullable<PlanWorkflowRequest["draft"]>
 }> {
   const draftIndex = arguments_.indexOf("--draft")
@@ -98,7 +99,15 @@ async function parsePlanRequest(arguments_: string[]): Promise<{
     if (brief.length === 0) throw new Error("Usage: specta plan foundation <brief>")
     return { stage: "foundation", brief, ...(draft === undefined ? {} : { draft: draft as NonNullable<PlanWorkflowRequest["draft"]> }) }
   }
-  if (first === "architecture" || first === "roadmap" || first === "epics") {
+  if (first === "architecture") {
+    const guidance = rest.join(" ").trim()
+    return {
+      stage: "architecture",
+      ...(guidance.length === 0 ? {} : { guidance }),
+      ...(draft === undefined ? {} : { draft: draft as NonNullable<PlanWorkflowRequest["draft"]> }),
+    }
+  }
+  if (first === "roadmap" || first === "epics") {
     if (rest.length > 0) throw new Error("The " + first + " planning stage does not accept a brief.")
     return { stage: first, ...(draft === undefined ? {} : { draft: draft as NonNullable<PlanWorkflowRequest["draft"]> }) }
   }

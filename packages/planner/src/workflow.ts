@@ -1,6 +1,8 @@
 import { fileURLToPath } from "node:url"
-import { createWorkspaceRepository, type WorkspaceRepository } from "@specta/core/config"
+import { join } from "node:path"
+import { createWorkspaceRepository, workspaceManifestPath, type WorkspaceRepository } from "@specta/core/config"
 import type { ArchitectureDraft, FoundationDraft, PlanningArtifactSet, PlanningStage, PlanningState, ProjectPlan, WorkflowDefinition, Workspace } from "@specta/core"
+import type { FileSystem } from "@specta/core/filesystem"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import { createWorkflowManifestRepository, type WorkflowManifestRepository, type WorkflowModule } from "@specta/core/workflow"
 import {
@@ -9,16 +11,17 @@ import {
   createPlanner,
   createPlanningStateGraphUpdater,
   createPlanningStateRepository,
-  createProgressivePlanner,
+  planningStageArtifactPaths,
+  validatePlanningState,
   type Planner,
   type PlanningStateGraphUpdater,
   type PlanningStateRepository,
-  type ProgressivePlanner,
 } from "./planning.ts"
 
 export interface PlanWorkflowRequest {
   workspace: Workspace
   brief?: string
+  guidance?: string
   stage?: PlanningStage | "next"
   draft?: PlanningState | FoundationDraft | ArchitectureDraft
 }
@@ -45,9 +48,9 @@ export function createPlanWorkflow(
   planner: Planner = createPlanner(),
   workspaceRepository: WorkspaceRepository = createWorkspaceRepository(nodeFileSystem),
   definitions: WorkflowManifestRepository = createWorkflowManifestRepository([planningWorkflowModule]),
-  progressivePlanner: ProgressivePlanner = createProgressivePlanner(),
   stateRepository: PlanningStateRepository = createPlanningStateRepository(),
   stateGraphUpdater: PlanningStateGraphUpdater = createPlanningStateGraphUpdater(),
+  fileSystem: FileSystem = nodeFileSystem,
 ): PlanWorkflow {
   return {
     async execute(request) {
@@ -59,6 +62,7 @@ export function createPlanWorkflow(
       enforceRequirements(definition, currentState)
       if (stage === "foundation" && (request.brief?.trim().length ?? 0) === 0) throw new Error("The foundation planning workflow requires a brief.")
       if (stage !== "foundation" && request.brief !== undefined) throw new Error("Only the foundation planning stage accepts a brief.")
+      if (stage !== "architecture" && request.guidance !== undefined) throw new Error("Only the architecture planning stage accepts guidance.")
       const templates = await definitions.loadArtifactTemplates(request.workspace, definition)
       await definitions.loadPrompt(request.workspace, definition)
       let state: PlanningState | undefined
@@ -72,40 +76,71 @@ export function createPlanWorkflow(
             state = createFoundationPlanningState(request.brief ?? "", request.draft)
           } else if (stage === "architecture") {
             if (currentState === null) throw new Error("Architecture planning requires a completed Foundation.")
-            state = createArchitecturePlanningState(currentState, request.draft)
+            state = createArchitecturePlanningState(currentState, request.draft, request.guidance)
           } else {
             state = request.draft as PlanningState
-            progressivePlanner.validate(state)
+            validatePlanningState(state)
           }
           ensureUpstreamArtifactsPreserved(currentState, state, stage)
           ensureStageOwnsOnlyItsArtifact(currentState, state, stage)
           if (state.completedStages.at(-1) !== stage) throw new Error("The submitted draft does not complete the requested planning stage.")
           continue
         }
-        if (step === "persist-planning-stage" && state !== undefined) {
-          artifactSet = await stateRepository.save(request.workspace, state, stage, templates)
-          continue
-        }
-        if (step === "update-workspace-graph" && state !== undefined) {
-          await stateGraphUpdater.apply(request.workspace, state)
-          continue
-        }
-        if (step === "persist-workspace" && artifactSet !== undefined) {
-          workspace = workspaceWithPlanningArtifacts(request.workspace, artifactSet)
-          await workspaceRepository.save(workspace)
-          continue
-        }
+        if (["persist-planning-stage", "update-workspace-graph", "persist-workspace"].includes(step)) continue
         throw new Error("Unsupported planning workflow step: " + step + ".")
       }
-      if (state === undefined || artifactSet === undefined) throw new Error("The plan workflow definition is incomplete.")
-      if (definition.validationRequirements.includes("planning-stage")) progressivePlanner.validate(state)
+      if (state === undefined) throw new Error("The plan workflow definition is incomplete.")
       if (definition.validationRequirements.includes("planning-artifacts")) {
         const completePlan = projectPlanFromState(state)
         if (completePlan) planner.validate(completePlan)
       }
       ensureProduced(definition, state)
+      const committedState = state
+      const commitPaths = [
+        ...planningStageArtifactPaths(committedState, stage).map((path) => join(request.workspace.rootPath, path)),
+        join(request.workspace.rootPath, ".specta", "graph", "planning-relationships.json"),
+        workspaceManifestPath(request.workspace.rootPath),
+      ]
+      await runAtomically(fileSystem, commitPaths, async () => {
+        for (const step of definition.executionSteps) {
+          if (step === "persist-planning-stage") {
+            artifactSet = await stateRepository.save(request.workspace, committedState, stage, templates)
+            continue
+          }
+          if (step === "update-workspace-graph") {
+            await stateGraphUpdater.apply(request.workspace, committedState)
+            continue
+          }
+          if (step === "persist-workspace") {
+            if (artifactSet === undefined) throw new Error("Planning artifacts must be persisted before the workspace.")
+            workspace = workspaceWithPlanningArtifacts(request.workspace, artifactSet)
+            await workspaceRepository.save(workspace)
+          }
+        }
+      })
+      if (artifactSet === undefined) throw new Error("The plan workflow definition is incomplete.")
       return { plan: projectPlanFromState(state), state, stage, artifacts: artifactSet, workspace }
     },
+  }
+}
+
+async function runAtomically(
+  fileSystem: FileSystem,
+  paths: string[],
+  operation: () => Promise<void>,
+): Promise<void> {
+  const backups = await Promise.all([...new Set(paths)].map(async (path) => {
+    const existed = await fileSystem.exists(path)
+    return { path, existed, content: existed ? await fileSystem.readText(path) : undefined }
+  }))
+  try {
+    await operation()
+  } catch (error) {
+    await Promise.all(backups.map(async (backup) => {
+      if (backup.existed && backup.content !== undefined) await fileSystem.writeText(backup.path, backup.content)
+      else await fileSystem.removePath(backup.path)
+    }))
+    throw error
   }
 }
 

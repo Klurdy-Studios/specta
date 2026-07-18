@@ -58,12 +58,15 @@ it("submits agent-authored Foundation and Architecture JSON through the CLI", as
   await runCli([
     "plan",
     "architecture",
+    "Use a local-first TypeScript architecture with SQLite.",
     "--draft",
     ".specta/drafts/plan-architecture.json",
   ], rootPath)
 
   await expect(readFile(join(rootPath, ".specta", "planning", "architecture.md"), "utf8"))
     .resolves.toContain("Workflow boundary — coordinates task lifecycle")
+  await expect(readFile(join(rootPath, ".specta", "planning", "architecture.md"), "utf8"))
+    .resolves.toContain("Use a local-first TypeScript architecture with SQLite.")
   const architectureGraph = JSON.parse(await readFile(join(rootPath, ".specta", "graph", "planning-relationships.json"), "utf8"))
   expect(architectureGraph.completedStages).toEqual(["foundation", "architecture"])
   expect(architectureGraph.nodes.map((node: { type: string }) => node.type)).toEqual([
@@ -72,6 +75,8 @@ it("submits agent-authored Foundation and Architecture JSON through the CLI", as
     "ARCHITECTURE",
   ])
   expect(architectureGraph.relationships).toHaveLength(2)
+  expect(architectureGraph.planning.architecture.guidance)
+    .toBe("Use a local-first TypeScript architecture with SQLite.")
 }, 20_000)
 
 function runCli(arguments_: string[], cwd: string): Promise<{ stdout: string, stderr: string }> {

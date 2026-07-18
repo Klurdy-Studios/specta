@@ -14,27 +14,8 @@ Create only the Foundation stage. Let the coding agent reason about the project;
 1. Work from the initialized workspace root containing `.specta/workspace.json`.
 2. Treat all text supplied with the Skill invocation as the project brief.
 3. If no non-empty brief was supplied, ask: “What project are you working on? Describe the problem, intended users, and desired outcome.” Wait for the answer before continuing. Never invent a brief.
-4. Read `.specta/workflows/prompts/plan-foundation.md` and follow its reasoning guidance.
-5. Write the resulting JSON to `.specta/drafts/plan-foundation.json` using exactly this content shape:
-
-```json
-{
-  "vision": {
-    "title": "Concise project title",
-    "problem": "The problem and why it matters",
-    "audience": "The primary users or stakeholders",
-    "outcome": "The desired observable outcome"
-  },
-  "constitution": {
-    "principles": [
-      "A durable project-specific decision rule"
-    ]
-  }
-}
-```
-
-Do not add IDs, planning stages, relationships, Markdown, code fences, or commentary to the JSON file.
-
+4. Read `.specta/workflows/prompts/plan-foundation.md` and follow its reasoning and output contract.
+5. Write only the JSON object produced from that contract to `.specta/drafts/plan-foundation.json`. Do not wrap it in Markdown or add commentary.
 6. Read `.specta/runtime.json`. Execute its `cliCommand` from the workspace root with these arguments:
 
 ```text

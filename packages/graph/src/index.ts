@@ -102,6 +102,7 @@ export const planningGraphNodeSchema = z.object({
   id: planningIdSchema,
   type: z.enum(["VISION", "CONSTITUTION", "ARCHITECTURE", "ROADMAP", "EPIC", "STORY", "TASK"]),
 }).strict()
+export type PlanningGraphNode = z.infer<typeof planningGraphNodeSchema>
 
 /** Serializable graph snapshot used until the TypeGraph persistence backend is introduced. */
 export const planningGraphSnapshotSchema = z.object({
@@ -121,6 +122,7 @@ export type PlanningGraphSnapshot = z.infer<typeof planningGraphSnapshotSchema>
 
 export interface PlanningGraphRepository {
   loadPlanningState(workspace: Workspace): Promise<PlanningState | null>
+  savePlanningState(workspace: Workspace, state: PlanningState): Promise<void>
 }
 
 /** Reads validated planning state from the Workspace Graph. */
@@ -137,5 +139,34 @@ export function createPlanningGraphRepository(
         throw new Error("Unable to read planning state from the Workspace Graph.", { cause: error })
       }
     },
+    async savePlanningState(workspace, state) {
+      const snapshot = planningGraphSnapshotSchema.parse({
+        planning: state,
+        completedStages: state.completedStages,
+        nodes: planningNodes(state),
+        relationships: state.relationships,
+      })
+      const path = join(workspace.rootPath, ".specta", "graph", "planning-relationships.json")
+      const content = JSON.stringify(snapshot, null, 2) + "\n"
+      if (!(await fileSystem.exists(path)) || await fileSystem.readText(path) !== content) {
+        await fileSystem.writeText(path, content)
+      }
+    },
   }
+}
+
+function planningNodes(state: PlanningState): PlanningGraphNode[] {
+  return [
+    ...(state.vision ? [{ id: state.vision.id, type: "VISION" as const }] : []),
+    ...(state.constitution ? [{ id: state.constitution.id, type: "CONSTITUTION" as const }] : []),
+    ...(state.architecture ? [{ id: state.architecture.id, type: "ARCHITECTURE" as const }] : []),
+    ...(state.roadmap ? [{ id: state.roadmap.id, type: "ROADMAP" as const }] : []),
+    ...(state.epics ?? []).flatMap((epic) => [
+      { id: epic.id, type: "EPIC" as const },
+      ...epic.stories.flatMap((story) => [
+        { id: story.id, type: "STORY" as const },
+        ...story.tasks.map((task) => ({ id: task.id, type: "TASK" as const })),
+      ]),
+    ]),
+  ]
 }

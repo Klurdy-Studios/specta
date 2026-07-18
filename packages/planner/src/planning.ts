@@ -29,7 +29,7 @@ import {
 } from "@specta/core"
 import type { FileSystem } from "@specta/core/filesystem"
 import { nodeFileSystem } from "@specta/core/filesystem"
-import { planningGraphSnapshotSchema } from "@specta/graph"
+import { createPlanningGraphRepository, type PlanningGraphRepository } from "@specta/graph"
 import {
   renderArchitecture,
   renderConstitution,
@@ -65,16 +65,13 @@ export interface PlanningArtifactRepository {
   save(workspace: Workspace, plan: ProjectPlan): Promise<PlanningArtifactSet>
 }
 
-export interface PlanningGraphUpdater {
-  apply(workspace: Workspace, relationships: PlanningRelationship[]): Promise<void>
-}
-
 export interface ProgressivePlanningRequest {
   workspace: Workspace
   stage: PlanningStage
   brief?: string
   state: PlanningState | null
   prompt?: string
+  guidance?: string
 }
 
 export interface ProgressivePlanner {
@@ -145,7 +142,7 @@ export function createProgressivePlanner(
   provider: PlanningProvider = createDeterministicPlanningProvider(),
 ): ProgressivePlanner {
   return {
-    async generate({ workspace, stage, brief, state, prompt }) {
+    async generate({ workspace, stage, brief, state, prompt, guidance }) {
       if (stage === "foundation") {
         const draft = await provider.generate({ workspace, brief: brief ?? "", ...(prompt === undefined ? {} : { prompt }) })
         const plan = materializePlan(draft)
@@ -164,11 +161,17 @@ export function createProgressivePlanner(
       if (state === null) throw new PlanningError("Foundation planning must be completed before " + stage + ".")
       assertStagePrerequisites(state, stage)
       const draft = await provider.generate({ workspace, brief: state.brief, context: state, ...(prompt === undefined ? {} : { prompt }) })
+      if (stage === "architecture") {
+        const generated = materializePlan(draft).architecture
+        return createArchitecturePlanningState(state, {
+          overview: state.vision!.outcome + " Architecture follows the Constitution: " + state.constitution!.principles[0],
+          components: generated.components,
+        }, guidance)
+      }
       const generated = materializeStage(draft, state, stage)
       const next: PlanningState = {
         ...state,
         completedStages: [...state.completedStages, stage],
-        ...(generated.architecture ? { architecture: generated.architecture } : {}),
         ...(generated.roadmap ? { roadmap: generated.roadmap } : {}),
         ...(generated.epics ? { epics: generated.epics } : {}),
         relationships: uniqueRelationships([...state.relationships, ...generated.relationships]),
@@ -209,7 +212,11 @@ export function createFoundationPlanningState(brief: string, value: unknown): Pl
 }
 
 /** Validates agent-authored Architecture JSON and extends the graph-owned Foundation state. */
-export function createArchitecturePlanningState(current: PlanningState, value: unknown): PlanningState {
+export function createArchitecturePlanningState(
+  current: PlanningState,
+  value: unknown,
+  guidance?: string,
+): PlanningState {
   validatePlanningState(current)
   if (!current.completedStages.includes("foundation") || !current.vision || !current.constitution) {
     throw new PlanningError("Architecture planning requires a completed Foundation.")
@@ -224,10 +231,11 @@ export function createArchitecturePlanningState(current: PlanningState, value: u
   const architecture: Architecture = {
     id: planningId(
       "architecture",
-      current.vision.id + ":" + draft.overview + ":" + draft.components.join(":"),
+      JSON.stringify({ visionId: current.vision.id, draft, guidance: guidance?.trim() || undefined }),
     ),
     overview: draft.overview,
     components: draft.components,
+    ...(guidance?.trim() ? { guidance: guidance.trim() } : {}),
   }
   const state: PlanningState = {
     ...current,
@@ -289,17 +297,10 @@ export function createPlanningArtifactRepository(
 /** Persists incremental planning state and the Markdown artifacts produced by each stage. */
 export function createPlanningStateRepository(
   fileSystem: FileSystem = nodeFileSystem,
+  graph: PlanningGraphRepository = createPlanningGraphRepository(fileSystem),
 ): PlanningStateRepository {
   return {
-    async load(workspace) {
-      const graphPath = join(workspace.rootPath, ".specta", "graph", "planning-relationships.json")
-      if (!(await fileSystem.exists(graphPath))) return null
-      try {
-        return planningGraphSnapshotSchema.parse(JSON.parse(await fileSystem.readText(graphPath))).planning
-      } catch (error) {
-        throw new PlanningError("Unable to read planning state from the Workspace Graph.", error)
-      }
-    },
+    load: (workspace) => graph.loadPlanningState(workspace),
     async save(workspace, state, stage, templates = {}) {
       validatePlanningState(state)
       const documents = stageDocuments(state, stage)
@@ -317,34 +318,12 @@ export function createPlanningStateRepository(
 
 /** Compiles every completed planning stage into the Workspace Graph. */
 export function createPlanningStateGraphUpdater(
-  fileSystem: FileSystem = nodeFileSystem,
+  graph: PlanningGraphRepository = createPlanningGraphRepository(),
 ): PlanningStateGraphUpdater {
   return {
     async apply(workspace, state) {
       validatePlanningState(state)
-      const nodes = stateNodes(state).map((node) => ({ id: node.id, type: nodeType(node) }))
-      const snapshot = planningGraphSnapshotSchema.parse({
-        planning: state,
-        completedStages: state.completedStages,
-        nodes,
-        relationships: state.relationships,
-      })
-      await writeIfChanged(
-        fileSystem,
-        join(workspace.rootPath, ".specta", "graph", "planning-relationships.json"),
-        JSON.stringify(snapshot, null, 2) + "\n",
-      )
-    },
-  }
-}
-
-export function createPlanningGraphUpdater(fileSystem: FileSystem = nodeFileSystem): PlanningGraphUpdater {
-  return {
-    async apply(workspace, relationships) {
-      const graphPath = join(workspace.rootPath, ".specta", "graph", "planning-relationships.json")
-      const planPath = join(workspace.rootPath, ".specta", "planning", "plan.json")
-      const nodes = await graphNodes(fileSystem, planPath, relationships)
-      await writeIfChanged(fileSystem, graphPath, JSON.stringify({ nodes, relationships }, null, 2) + "\n")
+      await graph.savePlanningState(workspace, state)
     },
   }
 }
@@ -410,22 +389,9 @@ function materializePlan(draft: PlanningDraft): ProjectPlan {
 function materializeStage(
   draft: PlanningDraft,
   state: PlanningState,
-  stage: Exclude<PlanningStage, "foundation">,
-): { architecture?: Architecture, roadmap?: Roadmap, epics?: Epic[], relationships: PlanningRelationship[] } {
+  stage: "roadmap" | "epics",
+): { roadmap?: Roadmap, epics?: Epic[], relationships: PlanningRelationship[] } {
   const fullPlan = materializePlan(draft)
-  if (stage === "architecture") {
-    const architecture: Architecture = {
-      ...fullPlan.architecture,
-      overview: state.vision!.outcome + " Architecture follows the Constitution: " + state.constitution!.principles[0],
-    }
-    return {
-      architecture,
-      relationships: [
-        { type: "DEPENDS_ON", sourceId: architecture.id, targetId: state.vision!.id },
-        { type: "DEPENDS_ON", sourceId: architecture.id, targetId: state.constitution!.id },
-      ],
-    }
-  }
   if (stage === "roadmap") {
     const roadmap: Roadmap = {
       ...fullPlan.roadmap,
@@ -496,20 +462,8 @@ function uniqueRelationships(relationships: PlanningRelationship[]): PlanningRel
   })
 }
 
-function validatePlanningState(state: PlanningState): void {
+export function validatePlanningState(state: PlanningState): void {
   parsePlanningValue(planningStateSchema.safeParse(state), "Invalid planning state")
-}
-
-function stateNodes(state: PlanningState): Array<Vision | Constitution | Architecture | Roadmap | Epic | Story | Task> {
-  return [
-    ...(state.vision ? [state.vision] : []),
-    ...(state.constitution ? [state.constitution] : []),
-    ...(state.architecture ? [state.architecture] : []),
-    ...(state.roadmap ? [state.roadmap] : []),
-    ...(state.epics ?? []),
-    ...(state.epics ?? []).flatMap((epic) => epic.stories),
-    ...(state.epics ?? []).flatMap((epic) => epic.stories.flatMap((story) => story.tasks)),
-  ]
 }
 
 function stageDocuments(
@@ -538,6 +492,11 @@ function stageDocuments(
   throw new PlanningError("Planning stage " + stage + " did not produce its required artifacts.")
 }
 
+/** Returns every artifact path owned by one planning-stage commit. */
+export function planningStageArtifactPaths(state: PlanningState, stage: PlanningStage): string[] {
+  return stageDocuments(state, stage).map((document) => document.path)
+}
+
 function applyArtifactTemplate(template: string | undefined, content: string): string {
   if (template === undefined) return content
   if (!template.includes("{{content}}")) throw new PlanningError("Artifact templates must include {{content}}.")
@@ -548,44 +507,6 @@ async function writeIfChanged(fileSystem: FileSystem, path: string, content: str
   if (await fileSystem.exists(path) && (await fileSystem.readText(path)) === content) return false
   await fileSystem.writeText(path, content)
   return true
-}
-
-function nodeType(node: Vision | Constitution | Architecture | Roadmap | Epic | Story | Task): string {
-  if ("problem" in node) return "VISION"
-  if ("principles" in node) return "CONSTITUTION"
-  if ("components" in node) return "ARCHITECTURE"
-  if ("milestones" in node) return "ROADMAP"
-  if ("stories" in node) return "EPIC"
-  if ("acceptanceCriteria" in node) return "STORY"
-  return "TASK"
-}
-
-async function graphNodes(
-  fileSystem: FileSystem,
-  planPath: string,
-  relationships: PlanningRelationship[],
-): Promise<{ id: PlanningId, type: string }[]> {
-  if (!(await fileSystem.exists(planPath))) {
-    return [...new Set(relationships.flatMap((relationship) => [relationship.sourceId, relationship.targetId]))]
-      .map((id) => ({ id, type: "UNKNOWN" }))
-  }
-  try {
-    const plan = projectPlanSchema.parse(JSON.parse(await fileSystem.readText(planPath)))
-    if (JSON.stringify(relationships) !== JSON.stringify(plan.relationships)) {
-      throw new PlanningError("Planning graph relationships do not match the persisted plan.")
-    }
-    return [
-      plan.vision,
-      plan.constitution,
-      plan.architecture,
-      plan.roadmap,
-      ...plan.epics,
-      ...plan.epics.flatMap((epic) => epic.stories),
-      ...plan.epics.flatMap((epic) => epic.stories.flatMap((story) => story.tasks)),
-    ].map((node) => ({ id: node.id, type: nodeType(node) }))
-  } catch (error) {
-    throw new PlanningError("Unable to compile planning data into the Workspace Graph.", error)
-  }
 }
 
 function parsePlanningValue<T>(

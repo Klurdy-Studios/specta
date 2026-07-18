@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 import { createWorkspaceRepository, defaultWorkflowConfiguration } from "@specta/core/config"
 import type { Workspace } from "@specta/core"
+import type { FileSystem } from "@specta/core/filesystem"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import {
   createScaffoldWorkflow,
@@ -119,6 +120,68 @@ it("does not allow downstream stages before their required planning artifacts", 
   await workflowManifest().ensure(workspace)
   await expect(createPlanWorkflow().execute({ workspace, stage: "roadmap" }))
     .rejects.toThrow("requires: vision, constitution, architecture")
+})
+
+it("rolls back planning artifacts and graph state when a stage commit fails", async () => {
+  const rootPath = await mkdtemp(join(tmpdir(), "specta-plan-rollback-"))
+  temporaryDirectories.push(rootPath)
+  const workspace: Workspace = {
+    schemaVersion: 1,
+    id: "ws_rollback" as Workspace["id"],
+    rootPath,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    packageManager: "unknown",
+    projects: [],
+    artifacts: {},
+    workflow: defaultWorkflowConfiguration(),
+  }
+  const definitions = workflowManifest()
+  await definitions.ensure(workspace)
+  const foundation = await createPlanWorkflow().execute({
+    workspace,
+    stage: "foundation",
+    brief: "Build a rollback test.",
+    draft: {
+      vision: { title: "Rollback", problem: "Partial writes corrupt state.", audience: "Developers", outcome: "Stage commits are atomic." },
+      constitution: { principles: ["Never expose partial planning state."] },
+    },
+  })
+  const graphPath = join(rootPath, ".specta", "graph", "planning-relationships.json")
+  const workspacePath = join(rootPath, ".specta", "workspace.json")
+  const graphBefore = await readFile(graphPath, "utf8")
+  const workspaceBefore = await readFile(workspacePath, "utf8")
+  let failWorkspaceWrite = true
+  const failingFileSystem: FileSystem = {
+    ...nodeFileSystem,
+    async writeText(path, content) {
+      if (failWorkspaceWrite && path.endsWith(".specta/workspace.json")) {
+        failWorkspaceWrite = false
+        throw new Error("Injected workspace write failure.")
+      }
+      await nodeFileSystem.writeText(path, content)
+    },
+  }
+  const workflow = createPlanWorkflow(
+    undefined,
+    createWorkspaceRepository(failingFileSystem),
+    definitions,
+    undefined,
+    undefined,
+    failingFileSystem,
+  )
+
+  await expect(workflow.execute({
+    workspace: foundation.workspace,
+    stage: "architecture",
+    draft: {
+      overview: "A transactional workflow prevents partial planning state.",
+      components: ["Commit boundary — applies or rolls back a planning stage"],
+    },
+  })).rejects.toThrow("Injected workspace write failure")
+
+  await expect(readFile(join(rootPath, ".specta", "planning", "architecture.md"), "utf8")).rejects.toThrow()
+  await expect(readFile(graphPath, "utf8")).resolves.toBe(graphBefore)
+  await expect(readFile(workspacePath, "utf8")).resolves.toBe(workspaceBefore)
 })
 
 it("requires an approved Epic technical design before creating declaration-only scaffolding", async () => {
@@ -243,6 +306,8 @@ it("preserves an extended Workflow Manifest and executes the declared plan steps
   await definitions.ensure(workspace)
   const manifestPath = join(rootPath, ".specta", "workflows", "manifest.json")
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"))
+  manifest.workflows.find((workflow: { name: string }) => workflow.name === "plan-architecture").parameters = []
+  await writeFile(join(rootPath, ".specta", "workflows", "prompts", "plan-architecture.md"), "# Stale managed Architecture prompt\n", "utf8")
   manifest.workflows.push({
     name: "discover",
     description: "Discover project knowledge.",
@@ -263,6 +328,8 @@ it("preserves an extended Workflow Manifest and executes the declared plan steps
   expect(loaded.workflows.map((workflow) => workflow.name)).toContain("discover")
   expect(loaded.workflows.find((workflow) => workflow.name === "plan-architecture")?.parameters)
     .toEqual([{ name: "guidance", description: "Optional architectural constraints or preferences.", required: false }])
+  await expect(readFile(join(rootPath, ".specta", "workflows", "prompts", "plan-architecture.md"), "utf8"))
+    .resolves.toContain("never let it silently override the Constitution")
   await expect(readFile(join(rootPath, ".specta", "workflows", "prompts", "discover.md"), "utf8"))
     .resolves.toContain("Discover project knowledge.")
 })

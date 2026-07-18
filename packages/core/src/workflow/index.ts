@@ -50,18 +50,19 @@ export function createWorkflowManifestRepository(
       const exists = await fileSystem.exists(manifestPath)
       const existing = exists ? await this.load(workspace) : undefined
       const manifest = existing === undefined ? defaults : mergeWorkflows(existing, defaults)
-      if (!exists || existing?.workflows.length !== manifest.workflows.length) {
+      if (!exists || JSON.stringify(existing) !== JSON.stringify(manifest)) {
         await fileSystem.writeText(manifestPath, JSON.stringify(manifest, null, 2) + "\n")
       }
       await Promise.all(manifest.workflows.map(async (definition) => {
         const promptPath = join(workspace.rootPath, definition.promptTemplate)
-        const bundledPrompt = await loadBundledAsset(modules, definition, "promptDirectory", fileSystem)
-          ?? defaultPromptTemplate(definition)
+        const maintainedPrompt = await loadBundledAsset(modules, definition, "promptDirectory", fileSystem)
+        const bundledPrompt = maintainedPrompt ?? defaultPromptTemplate(definition)
         if (!(await fileSystem.exists(promptPath))) {
           await fileSystem.writeText(promptPath, bundledPrompt)
         } else {
           const existingPrompt = await fileSystem.readText(promptPath)
-          if (existingPrompt === defaultPromptTemplate(definition) && existingPrompt !== bundledPrompt) {
+          const managed = maintainedPrompt !== null || existingPrompt === defaultPromptTemplate(definition)
+          if (managed && existingPrompt !== bundledPrompt) {
             await fileSystem.writeText(promptPath, bundledPrompt)
           }
         }
@@ -102,9 +103,9 @@ export function workflowManifest(modules: WorkflowModule[]): WorkflowManifest {
 }
 
 function mergeWorkflows(current: WorkflowManifest, defaults: WorkflowManifest): WorkflowManifest {
-  const existing = new Set(current.workflows.map((workflow) => workflow.name))
-  const additions = defaults.workflows.filter((workflow) => !existing.has(workflow.name))
-  return additions.length === 0 ? current : { ...current, workflows: [...current.workflows, ...additions] }
+  const managedNames = new Set(defaults.workflows.map((workflow) => workflow.name))
+  const custom = current.workflows.filter((workflow) => !managedNames.has(workflow.name))
+  return { version: defaults.version, workflows: [...defaults.workflows, ...custom] }
 }
 
 async function loadBundledAsset(
