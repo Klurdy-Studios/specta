@@ -1,15 +1,14 @@
 {
-  "name": "@specta/cli",
+  "name": "@specta/implementation",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "bin": {
-    "specta": "./bin/specta.mjs"
+  "exports": {
+    ".": "./src/index.ts"
   },
   "dependencies": {
     "@specta/core": "workspace:*",
-    "@specta/implementation": "workspace:*",
-    "@specta/planner": "workspace:*"
+    "@specta/graph": "workspace:*"
   },
   "scripts": {
     "check": "node ../../node_modules/typescript/bin/tsc --noEmit",

@@ -1,0 +1,5 @@
+{
+  "name": "pnpm-monorepo",
+  "private": true,
+  "description": "pnpm workspace fixture"
+}

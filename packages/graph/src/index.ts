@@ -1,4 +1,5 @@
 import { defineEdge, defineGraph, defineNode } from "@nicia-ai/typegraph"
+import { join } from "node:path"
 import {
   architectureSchema,
   constitutionSchema,
@@ -15,7 +16,11 @@ import {
   technicalModuleSchema,
   technicalSymbolSchema,
   visionSchema,
+  type PlanningState,
+  type Workspace,
 } from "@specta/core"
+import type { FileSystem } from "@specta/core/filesystem"
+import { nodeFileSystem } from "@specta/core/filesystem"
 import { z } from "zod"
 
 export const VisionNode = defineNode("Vision", { schema: visionSchema.omit({ id: true }) })
@@ -113,3 +118,24 @@ export const planningGraphSnapshotSchema = z.object({
   }
 })
 export type PlanningGraphSnapshot = z.infer<typeof planningGraphSnapshotSchema>
+
+export interface PlanningGraphRepository {
+  loadPlanningState(workspace: Workspace): Promise<PlanningState | null>
+}
+
+/** Reads validated planning state from the Workspace Graph. */
+export function createPlanningGraphRepository(
+  fileSystem: FileSystem = nodeFileSystem,
+): PlanningGraphRepository {
+  return {
+    async loadPlanningState(workspace) {
+      const path = join(workspace.rootPath, ".specta", "graph", "planning-relationships.json")
+      if (!(await fileSystem.exists(path))) return null
+      try {
+        return planningGraphSnapshotSchema.parse(JSON.parse(await fileSystem.readText(path))).planning
+      } catch (error) {
+        throw new Error("Unable to read planning state from the Workspace Graph.", { cause: error })
+      }
+    },
+  }
+}

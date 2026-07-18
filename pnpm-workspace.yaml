@@ -1,6 +1,9 @@
 packages:
   - apps/*
-  - packages/*
+  - packages/core
+  - packages/graph
+  - packages/planner
+  - packages/implementation
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:

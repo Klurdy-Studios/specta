@@ -1,5 +1,8 @@
 # Planner public API
 
+- planningWorkflowModule supplies planning Workflow Definitions and maintained
+  prompt and Skill assets.
+- createPlanWorkflow(...) executes a requested progressive planning stage.
 - createDeterministicPlanningProvider() creates the built-in deterministic planning provider.
 - createPlanner(provider?) creates structured plans and validates them.
 - createPlanningArtifactRepository(fileSystem?) persists and loads template-rendered planning artifacts.

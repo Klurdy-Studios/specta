@@ -1,0 +1,5 @@
+{
+  "name": "advanced-pnpm-workspace",
+  "private": true,
+  "description": "Workspace discovery fixture"
+}

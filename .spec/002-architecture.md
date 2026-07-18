@@ -720,17 +720,7 @@ packages/
     core/
     graph/
     planner/
-    scaffold/
-    parser-markdown/
-    parser-typescript/
-    context/
-    workspace/
-    workflow/
-    skills/
-    validator/
-    cli/
-    mcp/
-    shared/
+    implementation/
 
 apps/
     cli/
@@ -743,7 +733,11 @@ examples/
 
 ---
 
-# Core Package Responsibilities
+# Package Responsibilities
+
+The approved package design is specified in `004-package-design.md`. Small
+runtime capabilities are exposed as `@specta/core/*` subpaths rather than
+independent pnpm packages.
 
 ### core
 
@@ -752,6 +746,8 @@ examples/
 - IDs
 - Errors
 - Events
+- Filesystem, configuration and workspace subpaths
+- Generic workflow and Skill infrastructure subpaths
 
 No OpenAI dependency.
 
@@ -775,37 +771,16 @@ No OpenAI dependency.
 
 ---
 
-### scaffold
+### implementation
 
-- Generate project structure
-- Create folders
-- Create placeholder modules
-- Generate implementation skeletons
-
----
-
-### parser-markdown
-
-Reads project specifications and produces graph nodes.
+- Epic-scoped technical design
+- Design approval and dependency resolution
+- Declaration-only scaffolding
+- Implementation workflow coordination
 
 ---
 
-### parser-typescript
-
-Reads source code and produces graph nodes.
-
----
-
-### context
-
-- Graph traversal
-- Context ranking
-- Token optimization
-- Prompt generation
-
----
-
-### workflow
+### core/workflow
 
 - Workflow orchestration and execution
 - Workflow Definition loading
@@ -815,7 +790,7 @@ Reads source code and produces graph nodes.
 
 ---
 
-### skills
+### core/skills
 
 - Deterministic Skill generation from Workflow Definitions
 - Codex Skills, Claude Skills, Cursor Commands and future agent packages
@@ -823,14 +798,6 @@ Reads source code and produces graph nodes.
 
 Skills must delegate workflow execution to `workflow` and must not contain domain
 or orchestration logic.
-
----
-
-### validator
-
-- Requirement validation
-- Architecture validation
-- Acceptance criteria validation
 
 ---
 
@@ -899,7 +866,7 @@ The core architecture should remain unchanged as new capabilities are added.
 - Cloud sync
 - Billing
 - Team collaboration
-- Web dashboard
+- Shared or web dashboards
 
 Focus entirely on developer workflows.
 

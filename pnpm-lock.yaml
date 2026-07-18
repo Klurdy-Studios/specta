@@ -23,35 +23,21 @@ importers:
 
   apps/cli:
     dependencies:
-      '@specta/config':
-        specifier: workspace:*
-        version: link:../../packages/config
-      '@specta/filesystem':
-        specifier: workspace:*
-        version: link:../../packages/filesystem
-      '@specta/workflow':
-        specifier: workspace:*
-        version: link:../../packages/workflow
-      '@specta/workspace':
-        specifier: workspace:*
-        version: link:../../packages/workspace
-
-  packages/config:
-    dependencies:
       '@specta/core':
         specifier: workspace:*
-        version: link:../core
-      '@specta/filesystem':
+        version: link:../../packages/core
+      '@specta/implementation':
         specifier: workspace:*
-        version: link:../filesystem
+        version: link:../../packages/implementation
+      '@specta/planner':
+        specifier: workspace:*
+        version: link:../../packages/planner
 
   packages/core:
     dependencies:
       zod:
         specifier: ^4.4.3
         version: 4.4.3
-
-  packages/filesystem: {}
 
   packages/graph:
     dependencies:
@@ -68,62 +54,23 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
 
+  packages/implementation:
+    dependencies:
+      '@specta/core':
+        specifier: workspace:*
+        version: link:../core
+      '@specta/graph':
+        specifier: workspace:*
+        version: link:../graph
+
   packages/planner:
     dependencies:
       '@specta/core':
         specifier: workspace:*
         version: link:../core
-      '@specta/filesystem':
-        specifier: workspace:*
-        version: link:../filesystem
       '@specta/graph':
         specifier: workspace:*
         version: link:../graph
-
-  packages/skills:
-    dependencies:
-      '@specta/core':
-        specifier: workspace:*
-        version: link:../core
-      '@specta/filesystem':
-        specifier: workspace:*
-        version: link:../filesystem
-      '@specta/workflow':
-        specifier: workspace:*
-        version: link:../workflow
-
-  packages/workflow:
-    dependencies:
-      '@specta/config':
-        specifier: workspace:*
-        version: link:../config
-      '@specta/core':
-        specifier: workspace:*
-        version: link:../core
-      '@specta/filesystem':
-        specifier: workspace:*
-        version: link:../filesystem
-      '@specta/planner':
-        specifier: workspace:*
-        version: link:../planner
-
-  packages/workspace:
-    dependencies:
-      '@specta/config':
-        specifier: workspace:*
-        version: link:../config
-      '@specta/core':
-        specifier: workspace:*
-        version: link:../core
-      '@specta/filesystem':
-        specifier: workspace:*
-        version: link:../filesystem
-      '@specta/skills':
-        specifier: workspace:*
-        version: link:../skills
-      '@specta/workflow':
-        specifier: workspace:*
-        version: link:../workflow
 
 packages:
 

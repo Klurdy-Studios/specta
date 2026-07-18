@@ -1,17 +1,25 @@
 #!/usr/bin/env node
 import { resolve } from "node:path"
 import { readFile } from "node:fs/promises"
-import { createWorkspaceRepository } from "@specta/config"
-import { nodeFileSystem } from "@specta/filesystem"
-import { createPlanWorkflow, createScaffoldWorkflow, createTechnicalDesignApprovalWorkflow, createTechnicalDesignWorkflow, type PlanWorkflowRequest } from "@specta/workflow"
-import { createWorkspaceInitializer, type InitializeWorkspaceRequest } from "@specta/workspace"
+import { createWorkspaceRepository } from "@specta/core/config"
+import { nodeFileSystem } from "@specta/core/filesystem"
+import { createWorkspaceInitializer, type InitializeWorkspaceRequest } from "@specta/core/workspace"
+import {
+  createScaffoldWorkflow,
+  createTechnicalDesignApprovalWorkflow,
+  createTechnicalDesignWorkflow,
+  implementationWorkflowModule,
+} from "@specta/implementation"
+import { createPlanWorkflow, planningWorkflowModule, type PlanWorkflowRequest } from "@specta/planner"
+
+const workflowModules = [planningWorkflowModule, implementationWorkflowModule]
 
 const [command, ...arguments_] = process.argv.slice(2)
 
 if (command === "init") {
   try {
     const request = parseInitializeRequest(arguments_)
-    const result = await createWorkspaceInitializer().initialize(request)
+    const result = await createWorkspaceInitializer({ workflowModules }).initialize(request)
     const verb = result.created ? "Initialized" : "Specta workspace already exists at"
     console.log(verb + " " + result.workspace.rootPath)
     console.log("Detected " + result.workspace.projects.length + " project(s) using " + result.workspace.packageManager + ".")

@@ -4,7 +4,12 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./filesystem": "./src/filesystem/index.ts",
+    "./config": "./src/config/index.ts",
+    "./workspace": "./src/workspace/index.ts",
+    "./workflow": "./src/workflow/index.ts",
+    "./skills": "./src/skills/index.ts"
   },
   "dependencies": {
     "zod": "^4.4.3"

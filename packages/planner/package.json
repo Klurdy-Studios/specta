@@ -8,7 +8,6 @@
   },
   "dependencies": {
     "@specta/core": "workspace:*",
-    "@specta/filesystem": "workspace:*",
     "@specta/graph": "workspace:*"
   },
   "scripts": {
