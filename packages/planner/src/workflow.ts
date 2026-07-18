@@ -1,9 +1,10 @@
 import { fileURLToPath } from "node:url"
 import { createWorkspaceRepository, type WorkspaceRepository } from "@specta/core/config"
-import type { FoundationDraft, PlanningArtifactSet, PlanningStage, PlanningState, ProjectPlan, WorkflowDefinition, Workspace } from "@specta/core"
+import type { ArchitectureDraft, FoundationDraft, PlanningArtifactSet, PlanningStage, PlanningState, ProjectPlan, WorkflowDefinition, Workspace } from "@specta/core"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import { createWorkflowManifestRepository, type WorkflowManifestRepository, type WorkflowModule } from "@specta/core/workflow"
 import {
+  createArchitecturePlanningState,
   createFoundationPlanningState,
   createPlanner,
   createPlanningStateGraphUpdater,
@@ -19,7 +20,7 @@ export interface PlanWorkflowRequest {
   workspace: Workspace
   brief?: string
   stage?: PlanningStage | "next"
-  draft?: PlanningState | FoundationDraft
+  draft?: PlanningState | FoundationDraft | ArchitectureDraft
 }
 
 export interface PlanWorkflowResult {
@@ -69,6 +70,9 @@ export function createPlanWorkflow(
           if (request.draft === undefined) throw new Error("The " + definition.name + " workflow requires an agent-authored draft.")
           if (stage === "foundation") {
             state = createFoundationPlanningState(request.brief ?? "", request.draft)
+          } else if (stage === "architecture") {
+            if (currentState === null) throw new Error("Architecture planning requires a completed Foundation.")
+            state = createArchitecturePlanningState(currentState, request.draft)
           } else {
             state = request.draft as PlanningState
             progressivePlanner.validate(state)
@@ -116,10 +120,15 @@ function planningWorkflowDefinitions(): WorkflowDefinition[] {
 }
 
 function planningWorkflow(name: string, description: string, requires: string[], produces: string[], executionSteps: string[], artifactTemplates: string[], validationRequirements: string[]): WorkflowDefinition {
+  const parameters: WorkflowDefinition["parameters"] = name === "plan-foundation"
+    ? [{ name: "brief", description: "The planning brief.", required: true }]
+    : name === "plan-architecture"
+      ? [{ name: "guidance", description: "Optional architectural constraints or preferences.", required: false }]
+      : []
   return {
     name,
     description,
-    parameters: name === "plan-foundation" ? [{ name: "brief", description: "The planning brief.", required: true }] : [],
+    parameters,
     requires,
     produces,
     executionSteps,

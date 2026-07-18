@@ -25,16 +25,19 @@ so it can discover the installed Skills.
 ## Planning stages
 
 Run the corresponding native agent commands in order. Foundation submits only
-agent-authored Vision and Constitution content; Specta validates it and assigns
-deterministic IDs. Later-stage drafts contain the complete current planning
-state, with only the requested stage newly added.
+agent-authored Vision and Constitution content. Architecture submits only its
+overview and components. Specta loads approved upstream state from the graph,
+validates new content and assigns deterministic IDs.
 
 ```bash
 $specta-plan-foundation Build a task tracker
-$specta-plan-architecture
+$specta-plan-architecture Use a local-first TypeScript architecture with SQLite
 $specta-plan-roadmap
 $specta-plan-epics
 ```
+
+Architecture guidance is optional. Invoke `$specta-plan-architecture` without
+additional text when the approved Foundation contains enough context.
 
 Inspect `.specta/planning/` and `.specta/graph/planning-relationships.json`
 after each command. The agent must preserve approved upstream artifacts in every

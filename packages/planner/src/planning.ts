@@ -2,6 +2,7 @@ import { createHash } from "node:crypto"
 import { join } from "node:path"
 import type {
   Architecture,
+  ArchitectureDraft,
   Constitution,
   Epic,
   FoundationDraft,
@@ -20,6 +21,7 @@ import type {
 } from "@specta/core"
 import {
   foundationDraftSchema,
+  architectureDraftSchema,
   planningBriefSchema,
   planningStateSchema,
   projectPlanSchema,
@@ -201,6 +203,41 @@ export function createFoundationPlanningState(brief: string, value: unknown): Pl
     vision,
     constitution,
     relationships: [],
+  }
+  validatePlanningState(state)
+  return state
+}
+
+/** Validates agent-authored Architecture JSON and extends the graph-owned Foundation state. */
+export function createArchitecturePlanningState(current: PlanningState, value: unknown): PlanningState {
+  validatePlanningState(current)
+  if (!current.completedStages.includes("foundation") || !current.vision || !current.constitution) {
+    throw new PlanningError("Architecture planning requires a completed Foundation.")
+  }
+  if (current.completedStages.includes("architecture")) {
+    throw new PlanningError("Architecture planning is already complete.")
+  }
+  const draft: ArchitectureDraft = parsePlanningValue(
+    architectureDraftSchema.safeParse(value),
+    "Invalid Architecture draft",
+  )
+  const architecture: Architecture = {
+    id: planningId(
+      "architecture",
+      current.vision.id + ":" + draft.overview + ":" + draft.components.join(":"),
+    ),
+    overview: draft.overview,
+    components: draft.components,
+  }
+  const state: PlanningState = {
+    ...current,
+    completedStages: [...current.completedStages, "architecture"],
+    architecture,
+    relationships: uniqueRelationships([
+      ...current.relationships,
+      { type: "DEPENDS_ON", sourceId: architecture.id, targetId: current.vision.id },
+      { type: "DEPENDS_ON", sourceId: architecture.id, targetId: current.constitution.id },
+    ]),
   }
   validatePlanningState(state)
   return state

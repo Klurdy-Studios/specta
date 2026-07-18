@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest"
 import type { Workspace } from "@specta/core"
 import {
   createPlanner,
+  createArchitecturePlanningState,
   createFoundationPlanningState,
   createPlanningArtifactRepository,
   createPlanningGraphUpdater,
@@ -67,6 +68,40 @@ describe("planner", () => {
       ...draft,
       completedStages: ["foundation"],
     })).toThrow("completedStages")
+  })
+
+  it("validates Architecture content and extends Foundation deterministically", () => {
+    const foundation = createFoundationPlanningState("Build a task tracker.", {
+      vision: {
+        title: "Task Atlas",
+        problem: "Teams lose track of project work.",
+        audience: "Small product teams.",
+        outcome: "Teams complete traceable work.",
+      },
+      constitution: { principles: ["Keep work traceable."] },
+    })
+    const draft = {
+      overview: "A workflow boundary records and coordinates traceable project work.",
+      components: ["Workflow boundary — coordinates project work", "Graph boundary — preserves traceability"],
+    }
+
+    const first = createArchitecturePlanningState(foundation, draft)
+    const second = createArchitecturePlanningState(foundation, draft)
+
+    expect(first).toEqual(second)
+    expect(first.completedStages).toEqual(["foundation", "architecture"])
+    expect(first.vision).toEqual(foundation.vision)
+    expect(first.constitution).toEqual(foundation.constitution)
+    expect(first.architecture?.id).toMatch(/^plan_/)
+    expect(first.relationships).toHaveLength(2)
+    expect(() => createArchitecturePlanningState(foundation, {
+      ...draft,
+      components: ["Graph boundary", "graph boundary"],
+    })).toThrow("components must be unique")
+    expect(() => createArchitecturePlanningState(foundation, {
+      ...draft,
+      id: "agent-supplied-id",
+    })).toThrow("id")
   })
 
   it("renders template-based planning artifacts with stories and tasks inside the epic", async () => {

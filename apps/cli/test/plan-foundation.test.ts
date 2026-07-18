@@ -12,7 +12,7 @@ afterEach(async () => {
   await Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })))
 })
 
-it("submits agent-authored Foundation JSON through the CLI", async () => {
+it("submits agent-authored Foundation and Architecture JSON through the CLI", async () => {
   const rootPath = await mkdtemp(join(tmpdir(), "specta-cli-foundation-"))
   temporaryDirectories.push(rootPath)
   await writeFile(join(rootPath, "package.json"), JSON.stringify({ name: "foundation-test", private: true }) + "\n")
@@ -45,7 +45,34 @@ it("submits agent-authored Foundation JSON through the CLI", async () => {
   const graph = JSON.parse(await readFile(join(rootPath, ".specta", "graph", "planning-relationships.json"), "utf8"))
   expect(graph.completedStages).toEqual(["foundation"])
   expect(graph.nodes.map((node: { type: string }) => node.type)).toEqual(["VISION", "CONSTITUTION"])
-}, 15_000)
+
+  await writeFile(join(rootPath, ".specta", "drafts", "plan-architecture.json"), JSON.stringify({
+    overview: "A workflow-centered system keeps task planning and delivery traceable.",
+    components: [
+      "Planning boundary — captures and validates project intent",
+      "Workflow boundary — coordinates task lifecycle",
+      "Graph boundary — preserves traceability between intent and delivery",
+    ],
+  }, null, 2) + "\n")
+
+  await runCli([
+    "plan",
+    "architecture",
+    "--draft",
+    ".specta/drafts/plan-architecture.json",
+  ], rootPath)
+
+  await expect(readFile(join(rootPath, ".specta", "planning", "architecture.md"), "utf8"))
+    .resolves.toContain("Workflow boundary — coordinates task lifecycle")
+  const architectureGraph = JSON.parse(await readFile(join(rootPath, ".specta", "graph", "planning-relationships.json"), "utf8"))
+  expect(architectureGraph.completedStages).toEqual(["foundation", "architecture"])
+  expect(architectureGraph.nodes.map((node: { type: string }) => node.type)).toEqual([
+    "VISION",
+    "CONSTITUTION",
+    "ARCHITECTURE",
+  ])
+  expect(architectureGraph.relationships).toHaveLength(2)
+}, 20_000)
 
 function runCli(arguments_: string[], cwd: string): Promise<{ stdout: string, stderr: string }> {
   return new Promise((resolve, reject) => {

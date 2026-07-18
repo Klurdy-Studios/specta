@@ -52,6 +52,7 @@ it("progressively updates workspace planning artifacts and graph state", async (
   const persisted = await createWorkspaceRepository(nodeFileSystem).load(rootPath)
 
   expect(foundation.artifacts.documents).toHaveLength(2)
+  expect(architecture.state.architecture?.components.length).toBeGreaterThan(0)
   expect(result.artifacts.documents).toHaveLength(1)
   expect(result.state.completedStages).toEqual(["foundation", "architecture", "roadmap", "epics"])
   expect(result.plan?.epics).toHaveLength(1)
@@ -191,7 +192,12 @@ async function submitStage(workflow: ReturnType<typeof createPlanWorkflow>, work
         },
         constitution: { principles: generated.constitution!.principles },
       }
-    : generated
+    : stage === "architecture"
+      ? {
+          overview: generated.architecture!.overview,
+          components: generated.architecture!.components,
+        }
+      : generated
   return workflow.execute({ workspace, stage, draft, ...(brief === undefined ? {} : { brief }) })
 }
 
@@ -255,6 +261,8 @@ it("preserves an extended Workflow Manifest and executes the declared plan steps
   const loaded = await definitions.load(workspace)
 
   expect(loaded.workflows.map((workflow) => workflow.name)).toContain("discover")
+  expect(loaded.workflows.find((workflow) => workflow.name === "plan-architecture")?.parameters)
+    .toEqual([{ name: "guidance", description: "Optional architectural constraints or preferences.", required: false }])
   await expect(readFile(join(rootPath, ".specta", "workflows", "prompts", "discover.md"), "utf8"))
     .resolves.toContain("Discover project knowledge.")
 })
