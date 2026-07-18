@@ -7,9 +7,11 @@ import {
   createPlanner,
   createArchitecturePlanningState,
   createFoundationPlanningState,
+  createRoadmapPlanningState,
   createPlanningArtifactRepository,
   createProgressivePlanner,
 } from "../src/index.js"
+import { renderRoadmap } from "../src/templates.js"
 
 const temporaryDirectories: string[] = []
 
@@ -112,6 +114,102 @@ describe("planner", () => {
       completedStages: [],
       relationships: [],
     }, draft)).toThrow("requires a completed Foundation")
+  })
+
+  it("validates Roadmap content and assigns graph metadata deterministically", () => {
+    const foundation = createFoundationPlanningState("Build a task tracker.", {
+      vision: {
+        title: "Task Atlas",
+        problem: "Teams lose track of project work.",
+        audience: "Small product teams.",
+        outcome: "Teams complete traceable work.",
+      },
+      constitution: { principles: ["Keep work traceable."] },
+    })
+    const architecture = createArchitecturePlanningState(foundation, {
+      overview: "A workflow-centered system keeps delivery traceable.",
+      components: ["Workflow boundary — coordinates project work"],
+    })
+    const draft = {
+      milestones: [{
+        title: "Traceable planning",
+        objective: "Enable teams to define and follow approved work.",
+        outcomes: ["Teams can create traceable project plans."],
+      }],
+    }
+
+    const first = createRoadmapPlanningState(architecture, draft)
+    const second = createRoadmapPlanningState(architecture, draft)
+
+    expect(first).toEqual(second)
+    expect(first.completedStages).toEqual(["foundation", "architecture", "roadmap"])
+    expect(first.vision).toEqual(architecture.vision)
+    expect(first.architecture).toEqual(architecture.architecture)
+    expect(first.roadmap?.id).toMatch(/^plan_/)
+    expect(first.relationships.at(-1)).toEqual({
+      type: "DEPENDS_ON",
+      sourceId: first.roadmap?.id,
+      targetId: architecture.architecture?.id,
+    })
+    expect(() => createRoadmapPlanningState(architecture, { ...draft, id: "agent-id" }))
+      .toThrow("id")
+    expect(() => createRoadmapPlanningState(architecture, { milestones: [] }))
+      .toThrow("milestones")
+    expect(() => createRoadmapPlanningState(first, draft)).toThrow("already complete")
+    expect(() => createRoadmapPlanningState(foundation, draft))
+      .toThrow("requires completed Foundation and Architecture")
+  })
+
+  it("does not invoke a planning provider for Roadmap authoring", async () => {
+    const target = await workspace()
+    const foundation = createFoundationPlanningState("Build a task tracker.", {
+      vision: { title: "Tasks", problem: "Work is lost.", audience: "Teams.", outcome: "Work is traceable." },
+      constitution: { principles: ["Keep work traceable."] },
+    })
+    const architecture = createArchitecturePlanningState(foundation, {
+      overview: "A bounded planning system.",
+      components: ["Planning boundary — manages plans"],
+    })
+    let calls = 0
+    const planner = createProgressivePlanner({
+      async generate() {
+        calls += 1
+        return { title: "Unused", problem: "Unused", audience: "Unused", outcome: "Unused" }
+      },
+    })
+
+    await expect(planner.generate({ workspace: target, stage: "roadmap", state: architecture }))
+      .rejects.toThrow("agent-authored draft")
+    expect(calls).toBe(0)
+  })
+
+  it("renders the complete ordered Roadmap structure", () => {
+    expect(renderRoadmap({
+      id: "roadmap" as never,
+      milestones: [
+        { title: "First", objective: "Deliver the first outcome.", outcomes: ["First is complete."] },
+        { title: "Second", objective: "Deliver the second outcome.", outcomes: ["Second is complete."] },
+      ],
+    })).toBe([
+      "# Roadmap",
+      "",
+      "## 1. First",
+      "",
+      "**Objective:** Deliver the first outcome.",
+      "",
+      "### Outcomes",
+      "",
+      "- First is complete.",
+      "",
+      "## 2. Second",
+      "",
+      "**Objective:** Deliver the second outcome.",
+      "",
+      "### Outcomes",
+      "",
+      "- Second is complete.",
+      "",
+    ].join("\n"))
   })
 
   it("renders template-based planning artifacts with stories and tasks inside the epic", async () => {

@@ -132,9 +132,29 @@ export const architectureDraftSchema = z.object({
 }).strict()
 export type ArchitectureDraft = z.infer<typeof architectureDraftSchema>
 
-export const roadmapSchema = z.object({
+/** Validated semantic content for one ordered Roadmap delivery milestone. */
+export const roadmapMilestoneSchema = z.object({
+  title: nonEmptyTextSchema,
+  objective: nonEmptyTextSchema,
+  outcomes: z.array(nonEmptyTextSchema).min(1).superRefine(uniqueStrings("Roadmap milestone outcomes")),
+}).strict()
+/** Agent-authored Roadmap content before Specta assigns graph metadata. */
+export const roadmapDraftSchema = z.object({
+  milestones: z.array(roadmapMilestoneSchema).min(1).superRefine((milestones, context) => {
+    const seen = new Set<string>()
+    for (const [index, milestone] of milestones.entries()) {
+      const key = milestone.title.toLowerCase()
+      if (seen.has(key)) {
+        context.addIssue({ code: "custom", message: "Roadmap milestone titles must be unique.", path: [index, "title"] })
+      }
+      seen.add(key)
+    }
+  }),
+}).strict()
+export type RoadmapDraft = z.infer<typeof roadmapDraftSchema>
+
+export const roadmapSchema = roadmapDraftSchema.extend({
   id: planningIdSchema,
-  milestones: z.array(nonEmptyTextSchema).min(1),
 }).strict()
 export type Roadmap = z.infer<typeof roadmapSchema>
 
@@ -189,7 +209,8 @@ export type ProjectPlan = z.infer<typeof projectPlanSchema>
 export const planningStageSchema = z.enum(["foundation", "architecture", "roadmap", "epics"])
 export type PlanningStage = z.infer<typeof planningStageSchema>
 
-export const planningStateSchema = z.object({
+/** Structural planning-state schema reused by persistence migrations before canonical refinement. */
+export const planningStateDataSchema = z.object({
   brief: nonEmptyTextSchema,
   completedStages: z.array(planningStageSchema),
   vision: visionSchema.optional(),
@@ -198,7 +219,9 @@ export const planningStateSchema = z.object({
   roadmap: roadmapSchema.optional(),
   epics: z.array(epicSchema).min(1).optional(),
   relationships: z.array(planningRelationshipSchema),
-}).strict().superRefine((state, context) => {
+}).strict()
+
+export const planningStateSchema = planningStateDataSchema.superRefine((state, context) => {
   const expectedOrder: PlanningStage[] = ["foundation", "architecture", "roadmap", "epics"]
   if (state.completedStages.some((stage, index) => stage !== expectedOrder[index])) {
     context.addIssue({ code: "custom", message: "Planning stages must be completed in order.", path: ["completedStages"] })

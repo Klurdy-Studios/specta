@@ -1,13 +1,15 @@
 import { fileURLToPath } from "node:url"
 import { join } from "node:path"
+import { isDeepStrictEqual } from "node:util"
 import { createWorkspaceRepository, workspaceManifestPath, type WorkspaceRepository } from "@specta/core/config"
-import type { ArchitectureDraft, FoundationDraft, PlanningArtifactSet, PlanningStage, PlanningState, ProjectPlan, WorkflowDefinition, Workspace } from "@specta/core"
+import type { ArchitectureDraft, FoundationDraft, PlanningArtifactSet, PlanningStage, PlanningState, ProjectPlan, RoadmapDraft, WorkflowDefinition, Workspace } from "@specta/core"
 import type { FileSystem } from "@specta/core/filesystem"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import { createWorkflowManifestRepository, type WorkflowManifestRepository, type WorkflowModule } from "@specta/core/workflow"
 import {
   createArchitecturePlanningState,
   createFoundationPlanningState,
+  createRoadmapPlanningState,
   createPlanner,
   createPlanningStateGraphUpdater,
   createPlanningStateRepository,
@@ -18,13 +20,17 @@ import {
   type PlanningStateRepository,
 } from "./planning.ts"
 
-export interface PlanWorkflowRequest {
-  workspace: Workspace
-  brief?: string
-  guidance?: string
-  stage?: PlanningStage | "next"
-  draft?: PlanningState | FoundationDraft | ArchitectureDraft
-}
+type PlanningStageDraft = PlanningState | FoundationDraft | ArchitectureDraft | RoadmapDraft
+
+/** Stage-specific planning input; invalid stage and draft combinations are rejected by TypeScript. */
+export type PlanWorkflowInput =
+  | { stage: "foundation", brief: string, guidance?: never, draft?: FoundationDraft }
+  | { stage: "architecture", brief?: never, guidance?: string, draft?: ArchitectureDraft }
+  | { stage: "roadmap", brief?: never, guidance?: never, draft?: RoadmapDraft }
+  | { stage: "epics", brief?: never, guidance?: never, draft?: PlanningState }
+  | { stage?: "next", brief?: string, guidance?: never, draft?: PlanningStageDraft }
+
+export type PlanWorkflowRequest = PlanWorkflowInput & { workspace: Workspace }
 
 export interface PlanWorkflowResult {
   plan: ProjectPlan | undefined
@@ -77,6 +83,9 @@ export function createPlanWorkflow(
           } else if (stage === "architecture") {
             if (currentState === null) throw new Error("Architecture planning requires a completed Foundation.")
             state = createArchitecturePlanningState(currentState, request.draft, request.guidance)
+          } else if (stage === "roadmap") {
+            if (currentState === null) throw new Error("Roadmap planning requires completed Foundation and Architecture stages.")
+            state = createRoadmapPlanningState(currentState, request.draft)
           } else {
             state = request.draft as PlanningState
             validatePlanningState(state)
@@ -238,8 +247,9 @@ function ensureUpstreamArtifactsPreserved(current: PlanningState | null, submitt
     : stage === "roadmap"
       ? ["vision", "constitution", "architecture"]
       : ["vision", "constitution", "architecture", "roadmap"]
-  if (fields.some((field) => JSON.stringify(current[field]) !== JSON.stringify(submitted[field]))) {
-    throw new Error("A planning draft cannot replace approved upstream artifacts.")
+  const replaced = fields.find((field) => !isDeepStrictEqual(current[field], submitted[field]))
+  if (replaced !== undefined) {
+    throw new Error("A planning draft cannot replace the approved " + replaced + " artifact.")
   }
 }
 

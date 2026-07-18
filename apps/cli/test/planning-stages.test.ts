@@ -12,7 +12,7 @@ afterEach(async () => {
   await Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })))
 })
 
-it("submits agent-authored Foundation and Architecture JSON through the CLI", async () => {
+it("submits agent-authored planning stages through the CLI", async () => {
   const rootPath = await mkdtemp(join(tmpdir(), "specta-cli-foundation-"))
   temporaryDirectories.push(rootPath)
   await writeFile(join(rootPath, "package.json"), JSON.stringify({ name: "foundation-test", private: true }) + "\n")
@@ -77,6 +77,41 @@ it("submits agent-authored Foundation and Architecture JSON through the CLI", as
   expect(architectureGraph.relationships).toHaveLength(2)
   expect(architectureGraph.planning.architecture.guidance)
     .toBe("Use a local-first TypeScript architecture with SQLite.")
+
+  await writeFile(join(rootPath, ".specta", "drafts", "plan-roadmap.json"), JSON.stringify({
+    milestones: [
+      {
+        title: "Traceable planning",
+        objective: "Give product teams an approved, graph-backed plan.",
+        outcomes: ["Teams can create and inspect traceable project plans."],
+      },
+      {
+        title: "Reliable delivery",
+        objective: "Connect approved plans to validated delivery work.",
+        outcomes: ["Delivery work remains linked to its planning intent."],
+      },
+    ],
+  }, null, 2) + "\n")
+
+  await runCli([
+    "plan",
+    "roadmap",
+    "--draft",
+    ".specta/drafts/plan-roadmap.json",
+  ], rootPath)
+
+  const roadmapMarkdown = await readFile(join(rootPath, ".specta", "planning", "roadmap.md"), "utf8")
+  expect(roadmapMarkdown).toContain("## 1. Traceable planning")
+  expect(roadmapMarkdown).toContain("**Objective:** Give product teams an approved, graph-backed plan.")
+  expect(roadmapMarkdown).toContain("- Delivery work remains linked to its planning intent.")
+  const roadmapGraph = JSON.parse(await readFile(join(rootPath, ".specta", "graph", "planning-relationships.json"), "utf8"))
+  expect(roadmapGraph.completedStages).toEqual(["foundation", "architecture", "roadmap"])
+  expect(roadmapGraph.nodes.at(-1).type).toBe("ROADMAP")
+  expect(roadmapGraph.relationships.at(-1)).toEqual({
+    type: "DEPENDS_ON",
+    sourceId: roadmapGraph.planning.roadmap.id,
+    targetId: roadmapGraph.planning.architecture.id,
+  })
 }, 20_000)
 
 function runCli(arguments_: string[], cwd: string): Promise<{ stdout: string, stderr: string }> {

@@ -40,7 +40,20 @@ export function renderArchitecture(architecture: Architecture): string {
 }
 
 export function renderRoadmap(roadmap: Roadmap): string {
-  return ["# Roadmap", "", ...roadmap.milestones.map((milestone, index) => String(index + 1) + ". " + milestone), ""].join("\n")
+  const lines = ["# Roadmap", ""]
+  for (const [index, milestone] of roadmap.milestones.entries()) {
+    lines.push(
+      "## " + String(index + 1) + ". " + milestone.title,
+      "",
+      "**Objective:** " + milestone.objective,
+      "",
+      "### Outcomes",
+      "",
+      ...milestone.outcomes.map((outcome) => "- " + outcome),
+      "",
+    )
+  }
+  return lines.join("\n")
 }
 
 export function renderEpic(epic: Epic): string {

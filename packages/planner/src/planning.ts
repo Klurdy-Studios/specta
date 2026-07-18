@@ -14,6 +14,7 @@ import type {
   PlanningRelationship,
   ProjectPlan,
   Roadmap,
+  RoadmapDraft,
   Story,
   Task,
   Vision,
@@ -22,6 +23,7 @@ import type {
 import {
   foundationDraftSchema,
   architectureDraftSchema,
+  roadmapDraftSchema,
   planningBriefSchema,
   planningStateSchema,
   projectPlanSchema,
@@ -160,6 +162,9 @@ export function createProgressivePlanner(
 
       if (state === null) throw new PlanningError("Foundation planning must be completed before " + stage + ".")
       assertStagePrerequisites(state, stage)
+      if (stage === "roadmap") {
+        throw new PlanningError("Roadmap content must be submitted as an agent-authored draft.")
+      }
       const draft = await provider.generate({ workspace, brief: state.brief, context: state, ...(prompt === undefined ? {} : { prompt }) })
       if (stage === "architecture") {
         const generated = materializePlan(draft).architecture
@@ -168,12 +173,11 @@ export function createProgressivePlanner(
           components: generated.components,
         }, guidance)
       }
-      const generated = materializeStage(draft, state, stage)
+      const generated = materializeEpics(draft, state)
       const next: PlanningState = {
         ...state,
         completedStages: [...state.completedStages, stage],
-        ...(generated.roadmap ? { roadmap: generated.roadmap } : {}),
-        ...(generated.epics ? { epics: generated.epics } : {}),
+        epics: generated.epics,
         relationships: uniqueRelationships([...state.relationships, ...generated.relationships]),
       }
       validatePlanningState(next)
@@ -245,6 +249,40 @@ export function createArchitecturePlanningState(
       ...current.relationships,
       { type: "DEPENDS_ON", sourceId: architecture.id, targetId: current.vision.id },
       { type: "DEPENDS_ON", sourceId: architecture.id, targetId: current.constitution.id },
+    ]),
+  }
+  validatePlanningState(state)
+  return state
+}
+
+/** Validates agent-authored Roadmap JSON and extends the graph-owned Architecture state. */
+export function createRoadmapPlanningState(current: PlanningState, value: unknown): PlanningState {
+  validatePlanningState(current)
+  if (
+    !current.completedStages.includes("foundation")
+    || !current.completedStages.includes("architecture")
+    || !current.architecture
+  ) {
+    throw new PlanningError("Roadmap planning requires completed Foundation and Architecture stages.")
+  }
+  if (current.completedStages.includes("roadmap")) {
+    throw new PlanningError("Roadmap planning is already complete.")
+  }
+  const draft: RoadmapDraft = parsePlanningValue(
+    roadmapDraftSchema.safeParse(value),
+    "Invalid Roadmap draft",
+  )
+  const roadmap: Roadmap = {
+    id: planningId("roadmap", JSON.stringify({ architectureId: current.architecture.id, draft })),
+    milestones: draft.milestones,
+  }
+  const state: PlanningState = {
+    ...current,
+    completedStages: [...current.completedStages, "roadmap"],
+    roadmap,
+    relationships: uniqueRelationships([
+      ...current.relationships,
+      { type: "DEPENDS_ON", sourceId: roadmap.id, targetId: current.architecture.id },
     ]),
   }
   validatePlanningState(state)
@@ -352,7 +390,11 @@ function materializePlan(draft: PlanningDraft): ProjectPlan {
   }
   const roadmap: Roadmap = {
     id: planningId("roadmap", draft.title),
-    milestones: ["Define " + focus, "Plan delivery for " + focus, "Implement and validate " + focus],
+    milestones: [
+      { title: "Define " + focus, objective: "Establish the intended delivery outcome.", outcomes: ["The scope and constraints are explicit."] },
+      { title: "Plan delivery for " + focus, objective: "Turn approved intent into ordered delivery work.", outcomes: ["Delivery work is traceable to the plan."] },
+      { title: "Implement and validate " + focus, objective: "Deliver and verify the intended outcome.", outcomes: ["The planned outcome is validated."] },
+    ],
   }
   const task: Task = {
     id: planningId("task", draft.title),
@@ -386,37 +428,45 @@ function materializePlan(draft: PlanningDraft): ProjectPlan {
   return { vision, constitution, architecture, roadmap, epics: [epic], relationships }
 }
 
-function materializeStage(
+function materializeEpics(
   draft: PlanningDraft,
   state: PlanningState,
-  stage: "roadmap" | "epics",
-): { roadmap?: Roadmap, epics?: Epic[], relationships: PlanningRelationship[] } {
+): { epics: Epic[], relationships: PlanningRelationship[] } {
   const fullPlan = materializePlan(draft)
-  if (stage === "roadmap") {
-    const roadmap: Roadmap = {
-      ...fullPlan.roadmap,
-      milestones: state.architecture!.components.map((component) => "Deliver " + component),
+  const baseEpic = fullPlan.epics[0]!
+  const baseStory = baseEpic.stories[0]!
+  const baseTask = baseStory.tasks[0]!
+  const epics = state.roadmap!.milestones.map((milestone, index): Epic => {
+    const identity = JSON.stringify({ roadmapId: state.roadmap!.id, milestone, index })
+    const task: Task = { ...baseTask, id: planningId("task", identity), title: "Deliver " + milestone.title }
+    const story: Story = {
+      ...baseStory,
+      id: planningId("story", identity),
+      title: milestone.title,
+      description: milestone.objective,
+      acceptanceCriteria: milestone.outcomes,
+      tasks: [task],
     }
     return {
-      roadmap,
-      relationships: [{ type: "DEPENDS_ON", sourceId: roadmap.id, targetId: state.architecture!.id }],
+      ...baseEpic,
+      id: planningId("epic", identity),
+      title: milestone.title,
+      goal: milestone.objective,
+      stories: [story],
     }
-  }
-  const epic: Epic = {
-    ...fullPlan.epics[0]!,
-    title: state.roadmap!.milestones[0]!,
-    goal: state.vision!.outcome,
-  }
-  const stories = epic.stories
-  const relationships: PlanningRelationship[] = [
-    { type: "DEPENDS_ON", sourceId: epic.id, targetId: state.vision!.id },
-    { type: "DEPENDS_ON", sourceId: epic.id, targetId: state.constitution!.id },
-    { type: "DEPENDS_ON", sourceId: epic.id, targetId: state.roadmap!.id },
-    { type: "IMPLEMENTS", sourceId: epic.id, targetId: state.architecture!.id },
-    { type: "CONTAINS", sourceId: epic.id, targetId: stories[0]!.id },
-    { type: "CONTAINS", sourceId: stories[0]!.id, targetId: stories[0]!.tasks[0]!.id },
-  ]
-  return { epics: [epic], relationships }
+  })
+  const relationships: PlanningRelationship[] = epics.flatMap((epic) => {
+    const story = epic.stories[0]!
+    return [
+      { type: "DEPENDS_ON" as const, sourceId: epic.id, targetId: state.vision!.id },
+      { type: "DEPENDS_ON" as const, sourceId: epic.id, targetId: state.constitution!.id },
+      { type: "DEPENDS_ON" as const, sourceId: epic.id, targetId: state.roadmap!.id },
+      { type: "IMPLEMENTS" as const, sourceId: epic.id, targetId: state.architecture!.id },
+      { type: "CONTAINS" as const, sourceId: epic.id, targetId: story.id },
+      { type: "CONTAINS" as const, sourceId: story.id, targetId: story.tasks[0]!.id },
+    ]
+  })
+  return { epics, relationships }
 }
 
 function planningId(kind: string, value: string): PlanningId {

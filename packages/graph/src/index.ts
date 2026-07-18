@@ -7,8 +7,10 @@ import {
   planningIdSchema,
   planningRelationshipSchema,
   planningStageSchema,
+  planningStateDataSchema,
   planningStateSchema,
   roadmapSchema,
+  roadmapMilestoneSchema,
   storySchema,
   taskSchema,
   technicalDesignSchema,
@@ -106,6 +108,7 @@ export type PlanningGraphNode = z.infer<typeof planningGraphNodeSchema>
 
 /** Serializable graph snapshot used until the TypeGraph persistence backend is introduced. */
 export const planningGraphSnapshotSchema = z.object({
+  schemaVersion: z.literal(2),
   planning: planningStateSchema,
   completedStages: z.array(planningStageSchema),
   nodes: z.array(planningGraphNodeSchema),
@@ -119,6 +122,23 @@ export const planningGraphSnapshotSchema = z.object({
   }
 })
 export type PlanningGraphSnapshot = z.infer<typeof planningGraphSnapshotSchema>
+
+const persistedRoadmapSchema = z.object({
+  id: planningIdSchema,
+  milestones: z.array(z.union([z.string().trim().min(1), roadmapMilestoneSchema])).min(1),
+}).strict()
+
+const persistedPlanningStateSchema = planningStateDataSchema.omit({ roadmap: true }).extend({
+  roadmap: persistedRoadmapSchema.optional(),
+}).strict()
+
+const persistedPlanningGraphSnapshotSchema = z.object({
+  schemaVersion: z.literal(2).optional(),
+  planning: persistedPlanningStateSchema,
+  completedStages: z.array(planningStageSchema),
+  nodes: z.array(planningGraphNodeSchema),
+  relationships: z.array(planningRelationshipSchema),
+}).strict()
 
 export interface PlanningGraphRepository {
   loadPlanningState(workspace: Workspace): Promise<PlanningState | null>
@@ -134,13 +154,14 @@ export function createPlanningGraphRepository(
       const path = join(workspace.rootPath, ".specta", "graph", "planning-relationships.json")
       if (!(await fileSystem.exists(path))) return null
       try {
-        return planningGraphSnapshotSchema.parse(JSON.parse(await fileSystem.readText(path))).planning
+        return migratePlanningGraphSnapshot(JSON.parse(await fileSystem.readText(path))).planning
       } catch (error) {
         throw new Error("Unable to read planning state from the Workspace Graph.", { cause: error })
       }
     },
     async savePlanningState(workspace, state) {
       const snapshot = planningGraphSnapshotSchema.parse({
+        schemaVersion: 2,
         planning: state,
         completedStages: state.completedStages,
         nodes: planningNodes(state),
@@ -153,6 +174,33 @@ export function createPlanningGraphRepository(
       }
     },
   }
+}
+
+function migratePlanningGraphSnapshot(value: unknown): PlanningGraphSnapshot {
+  const persisted = persistedPlanningGraphSnapshotSchema.parse(value)
+  const roadmap = persisted.planning.roadmap
+  const planning = {
+    ...persisted.planning,
+    ...(roadmap === undefined ? {} : {
+      roadmap: {
+        id: roadmap.id,
+        milestones: roadmap.milestones.map((milestone) => typeof milestone === "string"
+          ? {
+              title: milestone,
+              objective: "Complete the " + milestone + " milestone.",
+              outcomes: [milestone + " is complete."],
+            }
+          : milestone),
+      },
+    }),
+  }
+  return planningGraphSnapshotSchema.parse({
+    schemaVersion: 2,
+    planning,
+    completedStages: persisted.completedStages,
+    nodes: persisted.nodes,
+    relationships: persisted.relationships,
+  })
 }
 
 function planningNodes(state: PlanningState): PlanningGraphNode[] {

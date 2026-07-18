@@ -48,15 +48,25 @@ it("progressively updates workspace planning artifacts and graph state", async (
   const workflow = createPlanWorkflow()
   const foundation = await submitStage(workflow, workspace, "foundation", null, "Create a reliable planning workflow.")
   const architecture = await submitStage(workflow, foundation.workspace, "architecture", foundation.state)
+  await expect(workflow.execute({
+    workspace: architecture.workspace,
+    stage: "roadmap",
+    draft: JSON.parse(JSON.stringify(architecture.state)),
+  })).rejects.toThrow("Invalid Roadmap draft")
   const roadmap = await submitStage(workflow, architecture.workspace, "roadmap", architecture.state)
+  await expect(workflow.execute({
+    workspace: roadmap.workspace,
+    stage: "roadmap",
+    draft: { milestones: roadmap.state.roadmap!.milestones },
+  })).rejects.toThrow("already complete")
   const result = await submitStage(workflow, roadmap.workspace, "epics", roadmap.state)
   const persisted = await createWorkspaceRepository(nodeFileSystem).load(rootPath)
 
   expect(foundation.artifacts.documents).toHaveLength(2)
   expect(architecture.state.architecture?.components.length).toBeGreaterThan(0)
-  expect(result.artifacts.documents).toHaveLength(1)
+  expect(result.artifacts.documents).toHaveLength(architecture.state.architecture?.components.length)
   expect(result.state.completedStages).toEqual(["foundation", "architecture", "roadmap", "epics"])
-  expect(result.plan?.epics).toHaveLength(1)
+  expect(result.plan?.epics).toHaveLength(roadmap.state.roadmap?.milestones.length)
   expect(persisted?.artifacts.planningPath).toBe(".specta/planning")
   await expect(readFile(join(rootPath, ".specta", "graph", "planning-relationships.json"), "utf8"))
     .resolves.toContain("\"planning\"")
@@ -146,6 +156,14 @@ it("rolls back planning artifacts and graph state when a stage commit fails", as
       constitution: { principles: ["Never expose partial planning state."] },
     },
   })
+  const architecture = await createPlanWorkflow().execute({
+    workspace: foundation.workspace,
+    stage: "architecture",
+    draft: {
+      overview: "A transactional workflow prevents partial planning state.",
+      components: ["Commit boundary — applies or rolls back a planning stage"],
+    },
+  })
   const graphPath = join(rootPath, ".specta", "graph", "planning-relationships.json")
   const workspacePath = join(rootPath, ".specta", "workspace.json")
   const graphBefore = await readFile(graphPath, "utf8")
@@ -171,15 +189,18 @@ it("rolls back planning artifacts and graph state when a stage commit fails", as
   )
 
   await expect(workflow.execute({
-    workspace: foundation.workspace,
-    stage: "architecture",
+    workspace: architecture.workspace,
+    stage: "roadmap",
     draft: {
-      overview: "A transactional workflow prevents partial planning state.",
-      components: ["Commit boundary — applies or rolls back a planning stage"],
+      milestones: [{
+        title: "Atomic delivery",
+        objective: "Commit a planning stage without partial state.",
+        outcomes: ["Failed commits restore every persisted artifact."],
+      }],
     },
   })).rejects.toThrow("Injected workspace write failure")
 
-  await expect(readFile(join(rootPath, ".specta", "planning", "architecture.md"), "utf8")).rejects.toThrow()
+  await expect(readFile(join(rootPath, ".specta", "planning", "roadmap.md"), "utf8")).rejects.toThrow()
   await expect(readFile(graphPath, "utf8")).resolves.toBe(graphBefore)
   await expect(readFile(workspacePath, "utf8")).resolves.toBe(workspaceBefore)
 })
@@ -244,6 +265,16 @@ function draft() {
 }
 
 async function submitStage(workflow: ReturnType<typeof createPlanWorkflow>, workspace: Workspace, stage: "foundation" | "architecture" | "roadmap" | "epics", state: import("@specta/core").PlanningState | null, brief?: string) {
+  if (stage === "roadmap") {
+    const draft = {
+      milestones: state!.architecture!.components.map((component) => ({
+        title: "Deliver " + component,
+        objective: "Make the " + component + " capability usable.",
+        outcomes: [component + " is usable and validated."],
+      })),
+    }
+    return workflow.execute({ workspace, stage, draft })
+  }
   const generated = await createProgressivePlanner().generate({ workspace, stage, state, ...(brief === undefined ? {} : { brief }) })
   const draft = stage === "foundation"
     ? {
@@ -261,7 +292,9 @@ async function submitStage(workflow: ReturnType<typeof createPlanWorkflow>, work
           components: generated.architecture!.components,
         }
       : generated
-  return workflow.execute({ workspace, stage, draft, ...(brief === undefined ? {} : { brief }) })
+  if (stage === "foundation") return workflow.execute({ workspace, stage, draft, brief: brief! })
+  if (stage === "architecture") return workflow.execute({ workspace, stage, draft })
+  return workflow.execute({ workspace, stage, draft: generated })
 }
 
 it("rejects artifact templates outside the managed workflow directory", async () => {

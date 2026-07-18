@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   foundationDraftSchema,
+  roadmapDraftSchema,
   technicalDesignSchema,
   workspaceSchema,
 } from "../src/index.js"
@@ -23,6 +24,29 @@ describe("canonical schemas", () => {
       projects: [],
       artifacts: {},
       workflow: { skillTargets: ["codex", "codex"], manifestPath: ".specta/workflows/manifest.json" },
+    })).toThrow()
+  })
+
+  it("rejects duplicate Roadmap milestone titles and outcomes", () => {
+    expect(() => roadmapDraftSchema.parse({
+      milestones: [
+        { title: "MVP", objective: "Deliver the MVP.", outcomes: ["Users can plan work.", "users can plan work."] },
+      ],
+    })).toThrow("Roadmap milestone outcomes must be unique")
+    expect(() => roadmapDraftSchema.parse({
+      milestones: [
+        { title: "MVP", objective: "Deliver the MVP.", outcomes: ["Users can plan work."] },
+        { title: "mvp", objective: "Repeat the MVP.", outcomes: ["The MVP is repeated."] },
+      ],
+    })).toThrow("Roadmap milestone titles must be unique")
+    expect(() => roadmapDraftSchema.parse({
+      milestones: [{ title: "MVP", objective: "", outcomes: ["Delivered."] }],
+    })).toThrow()
+    expect(() => roadmapDraftSchema.parse({
+      milestones: [{ title: "MVP", objective: "Deliver it.", outcomes: [] }],
+    })).toThrow()
+    expect(() => roadmapDraftSchema.parse({
+      milestones: [{ title: "MVP", objective: "Deliver it.", outcomes: ["Delivered."], status: "planned" }],
     })).toThrow()
   })
 
