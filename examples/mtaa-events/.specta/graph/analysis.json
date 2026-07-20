@@ -1,0 +1,3879 @@
+{
+  "schemaVersion": 1,
+  "analysis": {
+    "schemaVersion": 1,
+    "specifications": [
+      {
+        "path": ".specta/planning/architecture.md",
+        "title": "Architecture",
+        "headings": [
+          {
+            "depth": 1,
+            "title": "Architecture",
+            "location": {
+              "path": ".specta/planning/architecture.md",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 14
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Components",
+            "location": {
+              "path": ".specta/planning/architecture.md",
+              "start": {
+                "line": 5,
+                "column": 0
+              },
+              "end": {
+                "line": 5,
+                "column": 13
+              }
+            }
+          }
+        ],
+        "entities": [],
+        "diagnostics": []
+      },
+      {
+        "path": ".specta/planning/constitution.md",
+        "title": "Constitution",
+        "headings": [
+          {
+            "depth": 1,
+            "title": "Constitution",
+            "location": {
+              "path": ".specta/planning/constitution.md",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 14
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Principles",
+            "location": {
+              "path": ".specta/planning/constitution.md",
+              "start": {
+                "line": 3,
+                "column": 0
+              },
+              "end": {
+                "line": 3,
+                "column": 13
+              }
+            }
+          }
+        ],
+        "entities": [],
+        "diagnostics": []
+      },
+      {
+        "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+        "title": "Epic — Storage-Neutral Event Catalog",
+        "headings": [
+          {
+            "depth": 1,
+            "title": "Epic — Storage-Neutral Event Catalog",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 38
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Goal",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 3,
+                "column": 0
+              },
+              "end": {
+                "line": 3,
+                "column": 7
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Story — Use Consistent Event Records",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 7,
+                "column": 0
+              },
+              "end": {
+                "line": 7,
+                "column": 39
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Acceptance Criteria",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 11,
+                "column": 0
+              },
+              "end": {
+                "line": 11,
+                "column": 23
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Tasks",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 17,
+                "column": 0
+              },
+              "end": {
+                "line": 17,
+                "column": 9
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Story — Query Events Without Storage Knowledge",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 22,
+                "column": 0
+              },
+              "end": {
+                "line": 22,
+                "column": 49
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Acceptance Criteria",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 26,
+                "column": 0
+              },
+              "end": {
+                "line": 26,
+                "column": 23
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Tasks",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 33,
+                "column": 0
+              },
+              "end": {
+                "line": 33,
+                "column": 9
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Story — Serve JSON Through a Replaceable Source",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 38,
+                "column": 0
+              },
+              "end": {
+                "line": 38,
+                "column": 50
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Acceptance Criteria",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 42,
+                "column": 0
+              },
+              "end": {
+                "line": 42,
+                "column": 23
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Tasks",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 48,
+                "column": 0
+              },
+              "end": {
+                "line": 48,
+                "column": 9
+              }
+            }
+          }
+        ],
+        "entities": [
+          {
+            "kind": "epic",
+            "title": "Storage-Neutral Event Catalog",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 38
+              }
+            }
+          },
+          {
+            "kind": "story",
+            "title": "Use Consistent Event Records",
+            "parentTitle": "Storage-Neutral Event Catalog",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 7,
+                "column": 0
+              },
+              "end": {
+                "line": 7,
+                "column": 39
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "Every available event has a stable identifier, title, category, location, schedule, description, and attendance-relevant information.",
+            "parentTitle": "Use Consistent Event Records",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 13,
+                "column": 0
+              },
+              "end": {
+                "line": 13,
+                "column": 135
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "Event records exposed to consumers use the same field meanings regardless of the underlying content source.",
+            "parentTitle": "Use Consistent Event Records",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 14,
+                "column": 0
+              },
+              "end": {
+                "line": 14,
+                "column": 109
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "Invalid or incomplete source records are identified without silently presenting misleading event information.",
+            "parentTitle": "Use Consistent Event Records",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 15,
+                "column": 0
+              },
+              "end": {
+                "line": 15,
+                "column": 111
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Define the Catalog Event Contract — Specify the storage-neutral event representation and the meaning and validity rules for each visitor-facing field.",
+            "parentTitle": "Use Consistent Event Records",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 19,
+                "column": 0
+              },
+              "end": {
+                "line": 19,
+                "column": 156
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Normalize Source Records — Map source content into the catalog representation and handle records that do not satisfy its validity rules.",
+            "parentTitle": "Use Consistent Event Records",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 20,
+                "column": 0
+              },
+              "end": {
+                "line": 20,
+                "column": 142
+              }
+            }
+          },
+          {
+            "kind": "story",
+            "title": "Query Events Without Storage Knowledge",
+            "parentTitle": "Storage-Neutral Event Catalog",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 22,
+                "column": 0
+              },
+              "end": {
+                "line": 22,
+                "column": 49
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "A consumer can request the available event collection without accessing the active content source directly.",
+            "parentTitle": "Query Events Without Storage Knowledge",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 28,
+                "column": 0
+              },
+              "end": {
+                "line": 28,
+                "column": 109
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "A consumer can request events matching a category, a location, or both filters together.",
+            "parentTitle": "Query Events Without Storage Knowledge",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 29,
+                "column": 0
+              },
+              "end": {
+                "line": 29,
+                "column": 90
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "A consumer can request one event by its stable identifier and can distinguish a missing event from an available event.",
+            "parentTitle": "Query Events Without Storage Knowledge",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 30,
+                "column": 0
+              },
+              "end": {
+                "line": 30,
+                "column": 120
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "All catalog capabilities are read-only and expose no authentication or event-management behavior.",
+            "parentTitle": "Query Events Without Storage Knowledge",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 31,
+                "column": 0
+              },
+              "end": {
+                "line": 31,
+                "column": 99
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Specify Read-Only Catalog Operations — Define the list, filter, and single-event operations and their success, empty, and missing-result behavior.",
+            "parentTitle": "Query Events Without Storage Knowledge",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 35,
+                "column": 0
+              },
+              "end": {
+                "line": 35,
+                "column": 152
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Coordinate Discovery Queries — Deliver application behavior that applies category and location criteria and returns catalog results to consumers.",
+            "parentTitle": "Query Events Without Storage Knowledge",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 36,
+                "column": 0
+              },
+              "end": {
+                "line": 36,
+                "column": 151
+              }
+            }
+          },
+          {
+            "kind": "story",
+            "title": "Serve JSON Through a Replaceable Source",
+            "parentTitle": "Storage-Neutral Event Catalog",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 38,
+                "column": 0
+              },
+              "end": {
+                "line": 38,
+                "column": 50
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "The initial JSON content supplies all catalog operations through the storage-neutral contract.",
+            "parentTitle": "Serve JSON Through a Replaceable Source",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 44,
+                "column": 0
+              },
+              "end": {
+                "line": 44,
+                "column": 96
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "JSON-specific structure and loading behavior are not exposed to catalog consumers.",
+            "parentTitle": "Serve JSON Through a Replaceable Source",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 45,
+                "column": 0
+              },
+              "end": {
+                "line": 45,
+                "column": 84
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "A different conforming content-source adapter can be substituted without changing the catalog operation signatures or event representation.",
+            "parentTitle": "Serve JSON Through a Replaceable Source",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 46,
+                "column": 0
+              },
+              "end": {
+                "line": 46,
+                "column": 141
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Define the Content Source Contract — Establish the source responsibilities needed to supply normalized records without leaking storage-specific details.",
+            "parentTitle": "Serve JSON Through a Replaceable Source",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 50,
+                "column": 0
+              },
+              "end": {
+                "line": 50,
+                "column": 158
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Deliver the JSON Source Adapter — Load the initial event content and translate it through the content-source and catalog contracts.",
+            "parentTitle": "Serve JSON Through a Replaceable Source",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 51,
+                "column": 0
+              },
+              "end": {
+                "line": 51,
+                "column": 137
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Verify Source Substitutability — Confirm catalog consumers retain identical operations and event meanings when a conforming alternate source is used.",
+            "parentTitle": "Serve JSON Through a Replaceable Source",
+            "location": {
+              "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+              "start": {
+                "line": 52,
+                "column": 0
+              },
+              "end": {
+                "line": 52,
+                "column": 155
+              }
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+        "title": "Epic — Mobile-First Event Discovery",
+        "headings": [
+          {
+            "depth": 1,
+            "title": "Epic — Mobile-First Event Discovery",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 37
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Goal",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 3,
+                "column": 0
+              },
+              "end": {
+                "line": 3,
+                "column": 7
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Story — Browse Local Events on Small Screens",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 7,
+                "column": 0
+              },
+              "end": {
+                "line": 7,
+                "column": 47
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Acceptance Criteria",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 11,
+                "column": 0
+              },
+              "end": {
+                "line": 11,
+                "column": 23
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Tasks",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 18,
+                "column": 0
+              },
+              "end": {
+                "line": 18,
+                "column": 9
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Story — Filter by Category and Location",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 24,
+                "column": 0
+              },
+              "end": {
+                "line": 24,
+                "column": 42
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Acceptance Criteria",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 28,
+                "column": 0
+              },
+              "end": {
+                "line": 28,
+                "column": 23
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Tasks",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 36,
+                "column": 0
+              },
+              "end": {
+                "line": 36,
+                "column": 9
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Story — Understand Discovery States",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 42,
+                "column": 0
+              },
+              "end": {
+                "line": 42,
+                "column": 38
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Acceptance Criteria",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 46,
+                "column": 0
+              },
+              "end": {
+                "line": 46,
+                "column": 23
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Tasks",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 53,
+                "column": 0
+              },
+              "end": {
+                "line": 53,
+                "column": 9
+              }
+            }
+          }
+        ],
+        "entities": [
+          {
+            "kind": "epic",
+            "title": "Mobile-First Event Discovery",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 37
+              }
+            }
+          },
+          {
+            "kind": "story",
+            "title": "Browse Local Events on Small Screens",
+            "parentTitle": "Mobile-First Event Discovery",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 7,
+                "column": 0
+              },
+              "end": {
+                "line": 7,
+                "column": 47
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "Available events are presented as a legible collection with enough summary information to distinguish one event from another.",
+            "parentTitle": "Browse Local Events on Small Screens",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 13,
+                "column": 0
+              },
+              "end": {
+                "line": 13,
+                "column": 127
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "The event collection is usable without horizontal scrolling at common small-screen widths.",
+            "parentTitle": "Browse Local Events on Small Screens",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 14,
+                "column": 0
+              },
+              "end": {
+                "line": 14,
+                "column": 92
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "The browsing experience remains clear and usable when the viewport expands to larger screen sizes.",
+            "parentTitle": "Browse Local Events on Small Screens",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 15,
+                "column": 0
+              },
+              "end": {
+                "line": 15,
+                "column": 100
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "Each event summary provides an understandable way to open that event's details.",
+            "parentTitle": "Browse Local Events on Small Screens",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 16,
+                "column": 0
+              },
+              "end": {
+                "line": 16,
+                "column": 81
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Shape Event Discovery Summaries — Select and organize the catalog information visitors need to scan and compare event results.",
+            "parentTitle": "Browse Local Events on Small Screens",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 20,
+                "column": 0
+              },
+              "end": {
+                "line": 20,
+                "column": 132
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Deliver the Responsive Event Collection — Create the small-screen-first browsing experience and its adaptations for larger viewports.",
+            "parentTitle": "Browse Local Events on Small Screens",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 21,
+                "column": 0
+              },
+              "end": {
+                "line": 21,
+                "column": 139
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Connect Summaries to Event Details — Provide a clear, accessible interaction from every event summary to its detail destination.",
+            "parentTitle": "Browse Local Events on Small Screens",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 22,
+                "column": 0
+              },
+              "end": {
+                "line": 22,
+                "column": 134
+              }
+            }
+          },
+          {
+            "kind": "story",
+            "title": "Filter by Category and Location",
+            "parentTitle": "Mobile-First Event Discovery",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 24,
+                "column": 0
+              },
+              "end": {
+                "line": 24,
+                "column": 42
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "A visitor can select an available category and see only events in that category.",
+            "parentTitle": "Filter by Category and Location",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 30,
+                "column": 0
+              },
+              "end": {
+                "line": 30,
+                "column": 82
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "A visitor can select an available location and see only events in that location.",
+            "parentTitle": "Filter by Category and Location",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 31,
+                "column": 0
+              },
+              "end": {
+                "line": 31,
+                "column": 82
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "When category and location are both selected, the results satisfy both selections.",
+            "parentTitle": "Filter by Category and Location",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 32,
+                "column": 0
+              },
+              "end": {
+                "line": 32,
+                "column": 84
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "The currently active filters are visible and can be cleared without reloading the experience.",
+            "parentTitle": "Filter by Category and Location",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 33,
+                "column": 0
+              },
+              "end": {
+                "line": 33,
+                "column": 95
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "Filter controls can be understood and operated with keyboard and touch input.",
+            "parentTitle": "Filter by Category and Location",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 34,
+                "column": 0
+              },
+              "end": {
+                "line": 34,
+                "column": 79
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Derive Available Filter Choices — Supply category and location options from the event catalog in a consistent, visitor-readable form.",
+            "parentTitle": "Filter by Category and Location",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 38,
+                "column": 0
+              },
+              "end": {
+                "line": 38,
+                "column": 139
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Deliver Accessible Filter Controls — Provide category and location controls with visible selection, clear, and combined-filter behavior.",
+            "parentTitle": "Filter by Category and Location",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 39,
+                "column": 0
+              },
+              "end": {
+                "line": 39,
+                "column": 142
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Synchronize Filters and Results — Apply active filter criteria to the displayed event collection and keep result feedback current.",
+            "parentTitle": "Filter by Category and Location",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 40,
+                "column": 0
+              },
+              "end": {
+                "line": 40,
+                "column": 136
+              }
+            }
+          },
+          {
+            "kind": "story",
+            "title": "Understand Discovery States",
+            "parentTitle": "Mobile-First Event Discovery",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 42,
+                "column": 0
+              },
+              "end": {
+                "line": 42,
+                "column": 38
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "The discovery experience visibly distinguishes loading, loaded, empty-filter-result, empty-catalog, and unavailable states.",
+            "parentTitle": "Understand Discovery States",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 48,
+                "column": 0
+              },
+              "end": {
+                "line": 48,
+                "column": 125
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "An empty filtered result explains that no events match the active criteria and offers a way to change or clear them.",
+            "parentTitle": "Understand Discovery States",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 49,
+                "column": 0
+              },
+              "end": {
+                "line": 49,
+                "column": 118
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "An unavailable catalog state communicates the problem without displaying stale or misleading results and offers a recovery action when one is possible.",
+            "parentTitle": "Understand Discovery States",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 50,
+                "column": 0
+              },
+              "end": {
+                "line": 50,
+                "column": 153
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "Status feedback is available to assistive technology and does not rely on color alone.",
+            "parentTitle": "Understand Discovery States",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 51,
+                "column": 0
+              },
+              "end": {
+                "line": 51,
+                "column": 88
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Define Discovery State Messages — Specify clear visitor-facing feedback and recovery choices for each discovery state.",
+            "parentTitle": "Understand Discovery States",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 55,
+                "column": 0
+              },
+              "end": {
+                "line": 55,
+                "column": 124
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Deliver Discovery State Presentation — Present loading, empty, unavailable, and successful results accessibly across supported screen sizes.",
+            "parentTitle": "Understand Discovery States",
+            "location": {
+              "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+              "start": {
+                "line": 56,
+                "column": 0
+              },
+              "end": {
+                "line": 56,
+                "column": 146
+              }
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+        "title": "Epic — Complete Event Detail Journey",
+        "headings": [
+          {
+            "depth": 1,
+            "title": "Epic — Complete Event Detail Journey",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 38
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Goal",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 3,
+                "column": 0
+              },
+              "end": {
+                "line": 3,
+                "column": 7
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Story — Evaluate an Event Before Attending",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 7,
+                "column": 0
+              },
+              "end": {
+                "line": 7,
+                "column": 45
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Acceptance Criteria",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 11,
+                "column": 0
+              },
+              "end": {
+                "line": 11,
+                "column": 23
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Tasks",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 18,
+                "column": 0
+              },
+              "end": {
+                "line": 18,
+                "column": 9
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Story — Return to Prior Discovery Context",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 23,
+                "column": 0
+              },
+              "end": {
+                "line": 23,
+                "column": 44
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Acceptance Criteria",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 27,
+                "column": 0
+              },
+              "end": {
+                "line": 27,
+                "column": 23
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Tasks",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 33,
+                "column": 0
+              },
+              "end": {
+                "line": 33,
+                "column": 9
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Story — Recover from Missing Event Details",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 38,
+                "column": 0
+              },
+              "end": {
+                "line": 38,
+                "column": 45
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Acceptance Criteria",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 42,
+                "column": 0
+              },
+              "end": {
+                "line": 42,
+                "column": 23
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Tasks",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 49,
+                "column": 0
+              },
+              "end": {
+                "line": 49,
+                "column": 9
+              }
+            }
+          }
+        ],
+        "entities": [
+          {
+            "kind": "epic",
+            "title": "Complete Event Detail Journey",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 38
+              }
+            }
+          },
+          {
+            "kind": "story",
+            "title": "Evaluate an Event Before Attending",
+            "parentTitle": "Complete Event Detail Journey",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 7,
+                "column": 0
+              },
+              "end": {
+                "line": 7,
+                "column": 45
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "Opening an available event displays its title, category, location, schedule, description, and attendance-relevant information.",
+            "parentTitle": "Evaluate an Event Before Attending",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 13,
+                "column": 0
+              },
+              "end": {
+                "line": 13,
+                "column": 128
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "The detail hierarchy makes the event's time and place easy to identify on a small screen.",
+            "parentTitle": "Evaluate an Event Before Attending",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 14,
+                "column": 0
+              },
+              "end": {
+                "line": 14,
+                "column": 91
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "Event details remain legible and navigable across supported screen sizes and with keyboard input.",
+            "parentTitle": "Evaluate an Event Before Attending",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 15,
+                "column": 0
+              },
+              "end": {
+                "line": 15,
+                "column": 99
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "The detail experience is public and does not require sign-in.",
+            "parentTitle": "Evaluate an Event Before Attending",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 16,
+                "column": 0
+              },
+              "end": {
+                "line": 16,
+                "column": 63
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Organize Attendance Information — Define a clear detail hierarchy that prioritizes the information needed to decide whether and how to attend.",
+            "parentTitle": "Evaluate an Event Before Attending",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 20,
+                "column": 0
+              },
+              "end": {
+                "line": 20,
+                "column": 148
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Deliver the Responsive Detail Experience — Present complete catalog details accessibly with a layout that begins with small-screen constraints.",
+            "parentTitle": "Evaluate an Event Before Attending",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 21,
+                "column": 0
+              },
+              "end": {
+                "line": 21,
+                "column": 149
+              }
+            }
+          },
+          {
+            "kind": "story",
+            "title": "Return to Prior Discovery Context",
+            "parentTitle": "Complete Event Detail Journey",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 23,
+                "column": 0
+              },
+              "end": {
+                "line": 23,
+                "column": 44
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "A visitor can return from event details to the event collection through an explicit navigation action.",
+            "parentTitle": "Return to Prior Discovery Context",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 29,
+                "column": 0
+              },
+              "end": {
+                "line": 29,
+                "column": 104
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "Returning to discovery restores the visitor's previously active category and location filters.",
+            "parentTitle": "Return to Prior Discovery Context",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 30,
+                "column": 0
+              },
+              "end": {
+                "line": 30,
+                "column": 96
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "The restored collection makes it possible to continue from the prior browsing context without repeating filter selections.",
+            "parentTitle": "Return to Prior Discovery Context",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 31,
+                "column": 0
+              },
+              "end": {
+                "line": 31,
+                "column": 124
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Preserve Discovery Context — Carry the active category and location selections through the detail journey in a recoverable form.",
+            "parentTitle": "Return to Prior Discovery Context",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 35,
+                "column": 0
+              },
+              "end": {
+                "line": 35,
+                "column": 134
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Deliver Context-Aware Return Navigation — Provide a clear return path that restores the prior filtered event collection.",
+            "parentTitle": "Return to Prior Discovery Context",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 36,
+                "column": 0
+              },
+              "end": {
+                "line": 36,
+                "column": 126
+              }
+            }
+          },
+          {
+            "kind": "story",
+            "title": "Recover from Missing Event Details",
+            "parentTitle": "Complete Event Detail Journey",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 38,
+                "column": 0
+              },
+              "end": {
+                "line": 38,
+                "column": 45
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "Requesting an unknown event produces a clear not-found state rather than an empty or broken detail view.",
+            "parentTitle": "Recover from Missing Event Details",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 44,
+                "column": 0
+              },
+              "end": {
+                "line": 44,
+                "column": 106
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "A temporarily unavailable event produces a distinct error state without presenting partial information as complete.",
+            "parentTitle": "Recover from Missing Event Details",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 45,
+                "column": 0
+              },
+              "end": {
+                "line": 45,
+                "column": 117
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "Both missing and unavailable states provide an accessible route back to event discovery.",
+            "parentTitle": "Recover from Missing Event Details",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 46,
+                "column": 0
+              },
+              "end": {
+                "line": 46,
+                "column": 90
+              }
+            }
+          },
+          {
+            "kind": "acceptance-criterion",
+            "title": "No missing-event state exposes event-management or authentication controls.",
+            "parentTitle": "Recover from Missing Event Details",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 47,
+                "column": 0
+              },
+              "end": {
+                "line": 47,
+                "column": 77
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Distinguish Detail Failure States — Map missing and unavailable catalog outcomes to separate visitor-facing states.",
+            "parentTitle": "Recover from Missing Event Details",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 51,
+                "column": 0
+              },
+              "end": {
+                "line": 51,
+                "column": 121
+              }
+            }
+          },
+          {
+            "kind": "task",
+            "title": "Deliver Detail Recovery Paths — Present accessible failure guidance and a dependable route back to discovery.",
+            "parentTitle": "Recover from Missing Event Details",
+            "location": {
+              "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+              "start": {
+                "line": 52,
+                "column": 0
+              },
+              "end": {
+                "line": 52,
+                "column": 115
+              }
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "path": ".specta/planning/roadmap.md",
+        "title": "Roadmap",
+        "headings": [
+          {
+            "depth": 1,
+            "title": "Roadmap",
+            "location": {
+              "path": ".specta/planning/roadmap.md",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 9
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "1. Portable Event Catalog",
+            "location": {
+              "path": ".specta/planning/roadmap.md",
+              "start": {
+                "line": 3,
+                "column": 0
+              },
+              "end": {
+                "line": 3,
+                "column": 28
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Outcomes",
+            "location": {
+              "path": ".specta/planning/roadmap.md",
+              "start": {
+                "line": 7,
+                "column": 0
+              },
+              "end": {
+                "line": 7,
+                "column": 12
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "2. Mobile Event Discovery",
+            "location": {
+              "path": ".specta/planning/roadmap.md",
+              "start": {
+                "line": 13,
+                "column": 0
+              },
+              "end": {
+                "line": 13,
+                "column": 28
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Outcomes",
+            "location": {
+              "path": ".specta/planning/roadmap.md",
+              "start": {
+                "line": 17,
+                "column": 0
+              },
+              "end": {
+                "line": 17,
+                "column": 12
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "3. Decision-Ready Event Details",
+            "location": {
+              "path": ".specta/planning/roadmap.md",
+              "start": {
+                "line": 23,
+                "column": 0
+              },
+              "end": {
+                "line": 23,
+                "column": 34
+              }
+            }
+          },
+          {
+            "depth": 3,
+            "title": "Outcomes",
+            "location": {
+              "path": ".specta/planning/roadmap.md",
+              "start": {
+                "line": 27,
+                "column": 0
+              },
+              "end": {
+                "line": 27,
+                "column": 12
+              }
+            }
+          }
+        ],
+        "entities": [],
+        "diagnostics": []
+      },
+      {
+        "path": ".specta/planning/vision.md",
+        "title": "Vision",
+        "headings": [
+          {
+            "depth": 1,
+            "title": "Vision",
+            "location": {
+              "path": ".specta/planning/vision.md",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 8
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Mtaa Events: Local Community Event Discovery",
+            "location": {
+              "path": ".specta/planning/vision.md",
+              "start": {
+                "line": 3,
+                "column": 0
+              },
+              "end": {
+                "line": 3,
+                "column": 47
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Problem",
+            "location": {
+              "path": ".specta/planning/vision.md",
+              "start": {
+                "line": 5,
+                "column": 0
+              },
+              "end": {
+                "line": 5,
+                "column": 10
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Audience",
+            "location": {
+              "path": ".specta/planning/vision.md",
+              "start": {
+                "line": 9,
+                "column": 0
+              },
+              "end": {
+                "line": 9,
+                "column": 11
+              }
+            }
+          },
+          {
+            "depth": 2,
+            "title": "Outcome",
+            "location": {
+              "path": ".specta/planning/vision.md",
+              "start": {
+                "line": 13,
+                "column": 0
+              },
+              "end": {
+                "line": 13,
+                "column": 10
+              }
+            }
+          }
+        ],
+        "entities": [],
+        "diagnostics": []
+      }
+    ],
+    "sourceFiles": [
+      {
+        "path": "src/App.tsx",
+        "projectId": "prj_bdc79697dbf7be52",
+        "language": "typescript",
+        "imports": [
+          {
+            "specifier": "react",
+            "bindings": [
+              "useState"
+            ],
+            "typeOnly": false,
+            "location": {
+              "path": "src/App.tsx",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 32
+              }
+            }
+          },
+          {
+            "specifier": "./assets/react.svg",
+            "bindings": [
+              "reactLogo"
+            ],
+            "typeOnly": false,
+            "location": {
+              "path": "src/App.tsx",
+              "start": {
+                "line": 2,
+                "column": 0
+              },
+              "end": {
+                "line": 2,
+                "column": 42
+              }
+            }
+          },
+          {
+            "specifier": "./assets/vite.svg",
+            "bindings": [
+              "viteLogo"
+            ],
+            "typeOnly": false,
+            "location": {
+              "path": "src/App.tsx",
+              "start": {
+                "line": 3,
+                "column": 0
+              },
+              "end": {
+                "line": 3,
+                "column": 40
+              }
+            }
+          },
+          {
+            "specifier": "./assets/hero.png",
+            "bindings": [
+              "heroImg"
+            ],
+            "typeOnly": false,
+            "location": {
+              "path": "src/App.tsx",
+              "start": {
+                "line": 4,
+                "column": 0
+              },
+              "end": {
+                "line": 4,
+                "column": 39
+              }
+            }
+          },
+          {
+            "specifier": "./App.css",
+            "bindings": [],
+            "typeOnly": false,
+            "location": {
+              "path": "src/App.tsx",
+              "start": {
+                "line": 5,
+                "column": 0
+              },
+              "end": {
+                "line": 5,
+                "column": 18
+              }
+            }
+          }
+        ],
+        "exports": [
+          {
+            "name": "default",
+            "typeOnly": false,
+            "location": {
+              "path": "src/App.tsx",
+              "start": {
+                "line": 122,
+                "column": 0
+              },
+              "end": {
+                "line": 122,
+                "column": 18
+              }
+            }
+          }
+        ],
+        "symbols": [
+          {
+            "name": "App",
+            "kind": "function",
+            "exported": false,
+            "signature": "function App()",
+            "hasBody": true,
+            "location": {
+              "path": "src/App.tsx",
+              "start": {
+                "line": 7,
+                "column": 0
+              },
+              "end": {
+                "line": 120,
+                "column": 1
+              }
+            }
+          }
+        ],
+        "tests": [],
+        "diagnostics": []
+      },
+      {
+        "path": "src/app/catalog.ts",
+        "projectId": "prj_bdc79697dbf7be52",
+        "language": "typescript",
+        "imports": [
+          {
+            "specifier": "../catalog/event-catalog",
+            "bindings": [
+              "EventCatalog"
+            ],
+            "typeOnly": true,
+            "location": {
+              "path": "src/app/catalog.ts",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 60
+              }
+            }
+          }
+        ],
+        "exports": [],
+        "symbols": [],
+        "tests": [],
+        "diagnostics": []
+      },
+      {
+        "path": "src/catalog/event-catalog.test.ts",
+        "projectId": "prj_bdc79697dbf7be52",
+        "language": "typescript",
+        "imports": [],
+        "exports": [],
+        "symbols": [],
+        "tests": [],
+        "diagnostics": []
+      },
+      {
+        "path": "src/catalog/event-catalog.ts",
+        "projectId": "prj_bdc79697dbf7be52",
+        "language": "typescript",
+        "imports": [
+          {
+            "specifier": "../domain/event",
+            "bindings": [
+              "Event",
+              "EventId",
+              "EventQuery",
+              "EventValidationIssue"
+            ],
+            "typeOnly": true,
+            "location": {
+              "path": "src/catalog/event-catalog.ts",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 6,
+                "column": 24
+              }
+            }
+          },
+          {
+            "specifier": "./event-source",
+            "bindings": [
+              "EventSource"
+            ],
+            "typeOnly": true,
+            "location": {
+              "path": "src/catalog/event-catalog.ts",
+              "start": {
+                "line": 7,
+                "column": 0
+              },
+              "end": {
+                "line": 7,
+                "column": 49
+              }
+            }
+          }
+        ],
+        "exports": [
+          {
+            "name": "EventCatalogResult",
+            "typeOnly": true,
+            "location": {
+              "path": "src/catalog/event-catalog.ts",
+              "start": {
+                "line": 9,
+                "column": 7
+              },
+              "end": {
+                "line": 12,
+                "column": 1
+              }
+            }
+          },
+          {
+            "name": "EventCatalog",
+            "typeOnly": true,
+            "location": {
+              "path": "src/catalog/event-catalog.ts",
+              "start": {
+                "line": 14,
+                "column": 7
+              },
+              "end": {
+                "line": 17,
+                "column": 1
+              }
+            }
+          }
+        ],
+        "symbols": [
+          {
+            "name": "EventCatalogResult",
+            "kind": "interface",
+            "exported": true,
+            "signature": "interface EventCatalogResult {\n  events: readonly Event[];\n  issues: readonly EventValidationIssue[]\n}",
+            "hasBody": false,
+            "location": {
+              "path": "src/catalog/event-catalog.ts",
+              "start": {
+                "line": 9,
+                "column": 7
+              },
+              "end": {
+                "line": 12,
+                "column": 1
+              }
+            }
+          },
+          {
+            "name": "EventCatalog",
+            "kind": "interface",
+            "exported": true,
+            "signature": "interface EventCatalog {\n  list(query?: EventQuery): Promise<EventCatalogResult>;\n  findById(id: EventId): Promise<Event | null>\n}",
+            "hasBody": false,
+            "location": {
+              "path": "src/catalog/event-catalog.ts",
+              "start": {
+                "line": 14,
+                "column": 7
+              },
+              "end": {
+                "line": 17,
+                "column": 1
+              }
+            }
+          }
+        ],
+        "tests": [],
+        "diagnostics": []
+      },
+      {
+        "path": "src/catalog/event-source.ts",
+        "projectId": "prj_bdc79697dbf7be52",
+        "language": "typescript",
+        "imports": [
+          {
+            "specifier": "../domain/event",
+            "bindings": [
+              "EventSourceSnapshot"
+            ],
+            "typeOnly": true,
+            "location": {
+              "path": "src/catalog/event-source.ts",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 58
+              }
+            }
+          }
+        ],
+        "exports": [
+          {
+            "name": "EventSource",
+            "typeOnly": true,
+            "location": {
+              "path": "src/catalog/event-source.ts",
+              "start": {
+                "line": 3,
+                "column": 7
+              },
+              "end": {
+                "line": 5,
+                "column": 1
+              }
+            }
+          }
+        ],
+        "symbols": [
+          {
+            "name": "EventSource",
+            "kind": "interface",
+            "exported": true,
+            "signature": "interface EventSource {\n  load(): Promise<EventSourceSnapshot>\n}",
+            "hasBody": false,
+            "location": {
+              "path": "src/catalog/event-source.ts",
+              "start": {
+                "line": 3,
+                "column": 7
+              },
+              "end": {
+                "line": 5,
+                "column": 1
+              }
+            }
+          }
+        ],
+        "tests": [],
+        "diagnostics": []
+      },
+      {
+        "path": "src/data/json-event-source.test.ts",
+        "projectId": "prj_bdc79697dbf7be52",
+        "language": "typescript",
+        "imports": [],
+        "exports": [],
+        "symbols": [],
+        "tests": [],
+        "diagnostics": []
+      },
+      {
+        "path": "src/data/json-event-source.ts",
+        "projectId": "prj_bdc79697dbf7be52",
+        "language": "typescript",
+        "imports": [
+          {
+            "specifier": "../catalog/event-source",
+            "bindings": [
+              "EventSource"
+            ],
+            "typeOnly": true,
+            "location": {
+              "path": "src/data/json-event-source.ts",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 58
+              }
+            }
+          }
+        ],
+        "exports": [],
+        "symbols": [],
+        "tests": [],
+        "diagnostics": []
+      },
+      {
+        "path": "src/domain/event.test.ts",
+        "projectId": "prj_bdc79697dbf7be52",
+        "language": "typescript",
+        "imports": [],
+        "exports": [],
+        "symbols": [],
+        "tests": [],
+        "diagnostics": []
+      },
+      {
+        "path": "src/domain/event.ts",
+        "projectId": "prj_bdc79697dbf7be52",
+        "language": "typescript",
+        "imports": [],
+        "exports": [
+          {
+            "name": "EventId",
+            "typeOnly": true,
+            "location": {
+              "path": "src/domain/event.ts",
+              "start": {
+                "line": 1,
+                "column": 7
+              },
+              "end": {
+                "line": 1,
+                "column": 28
+              }
+            }
+          },
+          {
+            "name": "EventSchedule",
+            "typeOnly": true,
+            "location": {
+              "path": "src/domain/event.ts",
+              "start": {
+                "line": 3,
+                "column": 7
+              },
+              "end": {
+                "line": 6,
+                "column": 1
+              }
+            }
+          },
+          {
+            "name": "Event",
+            "typeOnly": true,
+            "location": {
+              "path": "src/domain/event.ts",
+              "start": {
+                "line": 8,
+                "column": 7
+              },
+              "end": {
+                "line": 16,
+                "column": 1
+              }
+            }
+          },
+          {
+            "name": "EventQuery",
+            "typeOnly": true,
+            "location": {
+              "path": "src/domain/event.ts",
+              "start": {
+                "line": 18,
+                "column": 7
+              },
+              "end": {
+                "line": 21,
+                "column": 1
+              }
+            }
+          },
+          {
+            "name": "EventValidationIssue",
+            "typeOnly": true,
+            "location": {
+              "path": "src/domain/event.ts",
+              "start": {
+                "line": 23,
+                "column": 7
+              },
+              "end": {
+                "line": 26,
+                "column": 1
+              }
+            }
+          },
+          {
+            "name": "EventSourceSnapshot",
+            "typeOnly": true,
+            "location": {
+              "path": "src/domain/event.ts",
+              "start": {
+                "line": 28,
+                "column": 7
+              },
+              "end": {
+                "line": 31,
+                "column": 1
+              }
+            }
+          }
+        ],
+        "symbols": [
+          {
+            "name": "EventId",
+            "kind": "type",
+            "exported": true,
+            "signature": "type EventId = string",
+            "hasBody": false,
+            "location": {
+              "path": "src/domain/event.ts",
+              "start": {
+                "line": 1,
+                "column": 7
+              },
+              "end": {
+                "line": 1,
+                "column": 28
+              }
+            }
+          },
+          {
+            "name": "EventSchedule",
+            "kind": "interface",
+            "exported": true,
+            "signature": "interface EventSchedule {\n  startsAt: string;\n  endsAt?: string\n}",
+            "hasBody": false,
+            "location": {
+              "path": "src/domain/event.ts",
+              "start": {
+                "line": 3,
+                "column": 7
+              },
+              "end": {
+                "line": 6,
+                "column": 1
+              }
+            }
+          },
+          {
+            "name": "Event",
+            "kind": "interface",
+            "exported": true,
+            "signature": "interface Event {\n  id: EventId;\n  title: string;\n  category: string;\n  location: string;\n  schedule: EventSchedule;\n  description: string;\n  attendanceInfo: string\n}",
+            "hasBody": false,
+            "location": {
+              "path": "src/domain/event.ts",
+              "start": {
+                "line": 8,
+                "column": 7
+              },
+              "end": {
+                "line": 16,
+                "column": 1
+              }
+            }
+          },
+          {
+            "name": "EventQuery",
+            "kind": "interface",
+            "exported": true,
+            "signature": "interface EventQuery {\n  category?: string;\n  location?: string\n}",
+            "hasBody": false,
+            "location": {
+              "path": "src/domain/event.ts",
+              "start": {
+                "line": 18,
+                "column": 7
+              },
+              "end": {
+                "line": 21,
+                "column": 1
+              }
+            }
+          },
+          {
+            "name": "EventValidationIssue",
+            "kind": "interface",
+            "exported": true,
+            "signature": "interface EventValidationIssue {\n  recordIndex: number;\n  reasons: readonly string[]\n}",
+            "hasBody": false,
+            "location": {
+              "path": "src/domain/event.ts",
+              "start": {
+                "line": 23,
+                "column": 7
+              },
+              "end": {
+                "line": 26,
+                "column": 1
+              }
+            }
+          },
+          {
+            "name": "EventSourceSnapshot",
+            "kind": "interface",
+            "exported": true,
+            "signature": "interface EventSourceSnapshot {\n  events: readonly Event[];\n  issues: readonly EventValidationIssue[]\n}",
+            "hasBody": false,
+            "location": {
+              "path": "src/domain/event.ts",
+              "start": {
+                "line": 28,
+                "column": 7
+              },
+              "end": {
+                "line": 31,
+                "column": 1
+              }
+            }
+          }
+        ],
+        "tests": [],
+        "diagnostics": []
+      },
+      {
+        "path": "src/main.tsx",
+        "projectId": "prj_bdc79697dbf7be52",
+        "language": "typescript",
+        "imports": [
+          {
+            "specifier": "react",
+            "bindings": [
+              "StrictMode"
+            ],
+            "typeOnly": false,
+            "location": {
+              "path": "src/main.tsx",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 34
+              }
+            }
+          },
+          {
+            "specifier": "react-dom/client",
+            "bindings": [
+              "createRoot"
+            ],
+            "typeOnly": false,
+            "location": {
+              "path": "src/main.tsx",
+              "start": {
+                "line": 2,
+                "column": 0
+              },
+              "end": {
+                "line": 2,
+                "column": 45
+              }
+            }
+          },
+          {
+            "specifier": "./index.css",
+            "bindings": [],
+            "typeOnly": false,
+            "location": {
+              "path": "src/main.tsx",
+              "start": {
+                "line": 3,
+                "column": 0
+              },
+              "end": {
+                "line": 3,
+                "column": 20
+              }
+            }
+          },
+          {
+            "specifier": "./App.tsx",
+            "bindings": [
+              "App"
+            ],
+            "typeOnly": false,
+            "location": {
+              "path": "src/main.tsx",
+              "start": {
+                "line": 4,
+                "column": 0
+              },
+              "end": {
+                "line": 4,
+                "column": 27
+              }
+            }
+          }
+        ],
+        "exports": [],
+        "symbols": [],
+        "tests": [],
+        "diagnostics": []
+      },
+      {
+        "path": "vite.config.ts",
+        "projectId": "prj_bdc79697dbf7be52",
+        "language": "typescript",
+        "imports": [
+          {
+            "specifier": "vite",
+            "bindings": [
+              "defineConfig"
+            ],
+            "typeOnly": false,
+            "location": {
+              "path": "vite.config.ts",
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 35
+              }
+            }
+          },
+          {
+            "specifier": "@vitejs/plugin-react",
+            "bindings": [
+              "react"
+            ],
+            "typeOnly": false,
+            "location": {
+              "path": "vite.config.ts",
+              "start": {
+                "line": 2,
+                "column": 0
+              },
+              "end": {
+                "line": 2,
+                "column": 40
+              }
+            }
+          }
+        ],
+        "exports": [
+          {
+            "name": "default",
+            "typeOnly": false,
+            "location": {
+              "path": "vite.config.ts",
+              "start": {
+                "line": 5,
+                "column": 0
+              },
+              "end": {
+                "line": 7,
+                "column": 2
+              }
+            }
+          }
+        ],
+        "symbols": [],
+        "tests": [],
+        "diagnostics": []
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "MODULE_NOT_FOUND",
+        "severity": "warning",
+        "message": "Unable to resolve ./assets/react.svg from src/App.tsx.",
+        "location": {
+          "path": "src/App.tsx",
+          "start": {
+            "line": 2,
+            "column": 0
+          },
+          "end": {
+            "line": 2,
+            "column": 42
+          }
+        }
+      },
+      {
+        "code": "MODULE_NOT_FOUND",
+        "severity": "warning",
+        "message": "Unable to resolve ./assets/vite.svg from src/App.tsx.",
+        "location": {
+          "path": "src/App.tsx",
+          "start": {
+            "line": 3,
+            "column": 0
+          },
+          "end": {
+            "line": 3,
+            "column": 40
+          }
+        }
+      },
+      {
+        "code": "MODULE_NOT_FOUND",
+        "severity": "warning",
+        "message": "Unable to resolve ./assets/hero.png from src/App.tsx.",
+        "location": {
+          "path": "src/App.tsx",
+          "start": {
+            "line": 4,
+            "column": 0
+          },
+          "end": {
+            "line": 4,
+            "column": 39
+          }
+        }
+      },
+      {
+        "code": "MODULE_NOT_FOUND",
+        "severity": "warning",
+        "message": "Unable to resolve ./App.css from src/App.tsx.",
+        "location": {
+          "path": "src/App.tsx",
+          "start": {
+            "line": 5,
+            "column": 0
+          },
+          "end": {
+            "line": 5,
+            "column": 18
+          }
+        }
+      },
+      {
+        "code": "MODULE_NOT_FOUND",
+        "severity": "warning",
+        "message": "Unable to resolve ./index.css from src/main.tsx.",
+        "location": {
+          "path": "src/main.tsx",
+          "start": {
+            "line": 3,
+            "column": 0
+          },
+          "end": {
+            "line": 3,
+            "column": 20
+          }
+        }
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "acceptance-criterion_11293fad6bf7a85d",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "The restored collection makes it possible to continue from the prior browsing context without repeating filter selections.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_123584e4cf6352a5",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "An empty filtered result explains that no events match the active criteria and offers a way to change or clear them.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_12a011af9a9f1a56",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "The browsing experience remains clear and usable when the viewport expands to larger screen sizes.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_12c69006508d2a28",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "A consumer can request one event by its stable identifier and can distinguish a missing event from an available event.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_1920f84c50315f4a",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "The discovery experience visibly distinguishes loading, loaded, empty-filter-result, empty-catalog, and unavailable states.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_1b271ec9ca1907e5",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "A visitor can select an available location and see only events in that location.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_3ff12880ec0a6005",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "The event collection is usable without horizontal scrolling at common small-screen widths.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_4388a60054bcadbd",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Every available event has a stable identifier, title, category, location, schedule, description, and attendance-relevant information.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_47dc4185ceda9125",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "The currently active filters are visible and can be cleared without reloading the experience.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_4998fccdf295cf23",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "A consumer can request events matching a category, a location, or both filters together.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_4a5b813b4241a4dc",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "A visitor can select an available category and see only events in that category.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_4a91104f819fad31",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Both missing and unavailable states provide an accessible route back to event discovery.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_557f9648d598f446",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Status feedback is available to assistive technology and does not rely on color alone.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_5e9b181e68b9a401",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "A consumer can request the available event collection without accessing the active content source directly.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_6a90ba04efd9ca85",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "No missing-event state exposes event-management or authentication controls.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_707833a403288fda",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Requesting an unknown event produces a clear not-found state rather than an empty or broken detail view.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_76110f727ad00dca",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "The initial JSON content supplies all catalog operations through the storage-neutral contract.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_843443e06f4f43c6",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Each event summary provides an understandable way to open that event's details.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_89dc7d14f7b4533d",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Invalid or incomplete source records are identified without silently presenting misleading event information.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_8eba69a4f996bf9b",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Filter controls can be understood and operated with keyboard and touch input.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_94d2b121203dd57b",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "A temporarily unavailable event produces a distinct error state without presenting partial information as complete.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_995bb3c3fd7dbaa3",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Opening an available event displays its title, category, location, schedule, description, and attendance-relevant information.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_9a7cce817035d20b",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Available events are presented as a legible collection with enough summary information to distinguish one event from another.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_a39e77eb4f25d3fb",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "An unavailable catalog state communicates the problem without displaying stale or misleading results and offers a recovery action when one is possible.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_a4d9f3c24d458afe",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "A visitor can return from event details to the event collection through an explicit navigation action.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_b164feb6202b25e0",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "When category and location are both selected, the results satisfy both selections.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_c8b34d5296a5d74b",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Returning to discovery restores the visitor's previously active category and location filters.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_cffaa5b00597f49f",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Event records exposed to consumers use the same field meanings regardless of the underlying content source.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_dfc1056a6ebafe4b",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "The detail hierarchy makes the event's time and place easy to identify on a small screen.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_e369da14c6e3b479",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Event details remain legible and navigable across supported screen sizes and with keyboard input.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_ed3e6b288a572504",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "All catalog capabilities are read-only and expose no authentication or event-management behavior.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_f5926df521aefa03",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "A different conforming content-source adapter can be substituted without changing the catalog operation signatures or event representation.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_fc96b338b176e1cf",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "JSON-specific structure and loading behavior are not exposed to catalog consumers.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "acceptance-criterion_fdaaf5813db22884",
+      "type": "ACCEPTANCE_CRITERION",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "The detail experience is public and does not require sign-in.",
+      "kind": "acceptance-criterion"
+    },
+    {
+      "id": "dependency_123ba0c55855e63a",
+      "type": "EXTERNAL_DEPENDENCY",
+      "name": "@vitejs/plugin-react"
+    },
+    {
+      "id": "dependency_3bb45183b12ae8b1",
+      "type": "EXTERNAL_DEPENDENCY",
+      "name": "vite"
+    },
+    {
+      "id": "dependency_7264ffcb1cc15042",
+      "type": "EXTERNAL_DEPENDENCY",
+      "name": "react"
+    },
+    {
+      "id": "dependency_9a6a663ec09e200a",
+      "type": "EXTERNAL_DEPENDENCY",
+      "name": "react-dom"
+    },
+    {
+      "id": "epic_3882a7a5c68942ca",
+      "type": "EPIC",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Storage-Neutral Event Catalog",
+      "kind": "epic"
+    },
+    {
+      "id": "epic_4f0c0ca693803b6d",
+      "type": "EPIC",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Complete Event Detail Journey",
+      "kind": "epic"
+    },
+    {
+      "id": "epic_51a0dc0cb718cf5f",
+      "type": "EPIC",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Mobile-First Event Discovery",
+      "kind": "epic"
+    },
+    {
+      "id": "file_2420ab0c4afe98ed",
+      "type": "FILE",
+      "path": "src/domain/event.test.ts",
+      "projectId": "prj_bdc79697dbf7be52"
+    },
+    {
+      "id": "file_3557f95f7de0f519",
+      "type": "FILE",
+      "path": "src/main.tsx",
+      "projectId": "prj_bdc79697dbf7be52"
+    },
+    {
+      "id": "file_4600ce5b783e14bf",
+      "type": "FILE",
+      "path": "src/data/json-event-source.ts",
+      "projectId": "prj_bdc79697dbf7be52"
+    },
+    {
+      "id": "file_46a16b3cc82857b4",
+      "type": "FILE",
+      "path": "src/catalog/event-catalog.ts",
+      "projectId": "prj_bdc79697dbf7be52"
+    },
+    {
+      "id": "file_8d23147416d4f4ac",
+      "type": "FILE",
+      "path": "src/app/catalog.ts",
+      "projectId": "prj_bdc79697dbf7be52"
+    },
+    {
+      "id": "file_a7a2965f282bf498",
+      "type": "FILE",
+      "path": "src/data/json-event-source.test.ts",
+      "projectId": "prj_bdc79697dbf7be52"
+    },
+    {
+      "id": "file_b3a5fdf27a368a89",
+      "type": "FILE",
+      "path": "src/catalog/event-source.ts",
+      "projectId": "prj_bdc79697dbf7be52"
+    },
+    {
+      "id": "file_c2b79ba44e8a439f",
+      "type": "FILE",
+      "path": "vite.config.ts",
+      "projectId": "prj_bdc79697dbf7be52"
+    },
+    {
+      "id": "file_dd1cd26302c2cab4",
+      "type": "FILE",
+      "path": "src/domain/event.ts",
+      "projectId": "prj_bdc79697dbf7be52"
+    },
+    {
+      "id": "file_e750f28ced3d0949",
+      "type": "FILE",
+      "path": "src/App.tsx",
+      "projectId": "prj_bdc79697dbf7be52"
+    },
+    {
+      "id": "file_f20edcdca75c28a5",
+      "type": "FILE",
+      "path": "src/catalog/event-catalog.test.ts",
+      "projectId": "prj_bdc79697dbf7be52"
+    },
+    {
+      "id": "specification_1d6d0a6b76e945ef",
+      "type": "SPECIFICATION_DOCUMENT",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Epic — Complete Event Detail Journey"
+    },
+    {
+      "id": "specification_4bf9bd350b5a418e",
+      "type": "SPECIFICATION_DOCUMENT",
+      "path": ".specta/planning/constitution.md",
+      "name": "Constitution"
+    },
+    {
+      "id": "specification_59d61729e89fd2de",
+      "type": "SPECIFICATION_DOCUMENT",
+      "path": ".specta/planning/architecture.md",
+      "name": "Architecture"
+    },
+    {
+      "id": "specification_dee167fe13da5268",
+      "type": "SPECIFICATION_DOCUMENT",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Epic — Storage-Neutral Event Catalog"
+    },
+    {
+      "id": "specification_ec2dc1455943e7b4",
+      "type": "SPECIFICATION_DOCUMENT",
+      "path": ".specta/planning/vision.md",
+      "name": "Vision"
+    },
+    {
+      "id": "specification_f2814e37ba85ecac",
+      "type": "SPECIFICATION_DOCUMENT",
+      "path": ".specta/planning/roadmap.md",
+      "name": "Roadmap"
+    },
+    {
+      "id": "specification_f931b6a38bcae110",
+      "type": "SPECIFICATION_DOCUMENT",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Epic — Mobile-First Event Discovery"
+    },
+    {
+      "id": "story_07acb24313a1b102",
+      "type": "STORY",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Return to Prior Discovery Context",
+      "kind": "story"
+    },
+    {
+      "id": "story_1467d2d0f527d83e",
+      "type": "STORY",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Recover from Missing Event Details",
+      "kind": "story"
+    },
+    {
+      "id": "story_1e5f8cf38f445666",
+      "type": "STORY",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Understand Discovery States",
+      "kind": "story"
+    },
+    {
+      "id": "story_3d8f20a2b612215d",
+      "type": "STORY",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Serve JSON Through a Replaceable Source",
+      "kind": "story"
+    },
+    {
+      "id": "story_6eb185a0f888037f",
+      "type": "STORY",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Query Events Without Storage Knowledge",
+      "kind": "story"
+    },
+    {
+      "id": "story_781ff6373a9d32ee",
+      "type": "STORY",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Browse Local Events on Small Screens",
+      "kind": "story"
+    },
+    {
+      "id": "story_bc582f028064a172",
+      "type": "STORY",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Filter by Category and Location",
+      "kind": "story"
+    },
+    {
+      "id": "story_e262dd3474eff079",
+      "type": "STORY",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Use Consistent Event Records",
+      "kind": "story"
+    },
+    {
+      "id": "story_f4bf3e1be5e286bb",
+      "type": "STORY",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Evaluate an Event Before Attending",
+      "kind": "story"
+    },
+    {
+      "id": "symbol_0485d6eeedce59db",
+      "type": "CODE_SYMBOL",
+      "path": "src/catalog/event-catalog.ts",
+      "name": "EventCatalogResult",
+      "kind": "interface",
+      "signature": "interface EventCatalogResult {\n  events: readonly Event[];\n  issues: readonly EventValidationIssue[]\n}"
+    },
+    {
+      "id": "symbol_0c1b0f1918992f19",
+      "type": "CODE_SYMBOL",
+      "path": "src/catalog/event-catalog.ts",
+      "name": "EventCatalog",
+      "kind": "interface",
+      "signature": "interface EventCatalog {\n  list(query?: EventQuery): Promise<EventCatalogResult>;\n  findById(id: EventId): Promise<Event | null>\n}"
+    },
+    {
+      "id": "symbol_2d5b7236a86beb4f",
+      "type": "CODE_SYMBOL",
+      "path": "src/App.tsx",
+      "name": "App",
+      "kind": "function",
+      "signature": "function App()"
+    },
+    {
+      "id": "symbol_4ddd240f5bf898ed",
+      "type": "CODE_SYMBOL",
+      "path": "src/domain/event.ts",
+      "name": "EventValidationIssue",
+      "kind": "interface",
+      "signature": "interface EventValidationIssue {\n  recordIndex: number;\n  reasons: readonly string[]\n}"
+    },
+    {
+      "id": "symbol_6c005ef2b5f1199c",
+      "type": "CODE_SYMBOL",
+      "path": "src/domain/event.ts",
+      "name": "EventId",
+      "kind": "type",
+      "signature": "type EventId = string"
+    },
+    {
+      "id": "symbol_8462d1878d4e9022",
+      "type": "CODE_SYMBOL",
+      "path": "src/domain/event.ts",
+      "name": "EventQuery",
+      "kind": "interface",
+      "signature": "interface EventQuery {\n  category?: string;\n  location?: string\n}"
+    },
+    {
+      "id": "symbol_b081cd5cb7cf92cd",
+      "type": "CODE_SYMBOL",
+      "path": "src/domain/event.ts",
+      "name": "EventSchedule",
+      "kind": "interface",
+      "signature": "interface EventSchedule {\n  startsAt: string;\n  endsAt?: string\n}"
+    },
+    {
+      "id": "symbol_d527f01545a44d75",
+      "type": "CODE_SYMBOL",
+      "path": "src/catalog/event-source.ts",
+      "name": "EventSource",
+      "kind": "interface",
+      "signature": "interface EventSource {\n  load(): Promise<EventSourceSnapshot>\n}"
+    },
+    {
+      "id": "symbol_eaa97a6ddb3de74d",
+      "type": "CODE_SYMBOL",
+      "path": "src/domain/event.ts",
+      "name": "EventSourceSnapshot",
+      "kind": "interface",
+      "signature": "interface EventSourceSnapshot {\n  events: readonly Event[];\n  issues: readonly EventValidationIssue[]\n}"
+    },
+    {
+      "id": "symbol_ef15b43cee69299a",
+      "type": "CODE_SYMBOL",
+      "path": "src/domain/event.ts",
+      "name": "Event",
+      "kind": "interface",
+      "signature": "interface Event {\n  id: EventId;\n  title: string;\n  category: string;\n  location: string;\n  schedule: EventSchedule;\n  description: string;\n  attendanceInfo: string\n}"
+    },
+    {
+      "id": "task_09841065fda9a131",
+      "type": "TASK",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Define the Content Source Contract — Establish the source responsibilities needed to supply normalized records without leaking storage-specific details.",
+      "kind": "task"
+    },
+    {
+      "id": "task_0ab5865ca8367830",
+      "type": "TASK",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Deliver Context-Aware Return Navigation — Provide a clear return path that restores the prior filtered event collection.",
+      "kind": "task"
+    },
+    {
+      "id": "task_245d4c29e6e615d5",
+      "type": "TASK",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Specify Read-Only Catalog Operations — Define the list, filter, and single-event operations and their success, empty, and missing-result behavior.",
+      "kind": "task"
+    },
+    {
+      "id": "task_253762ba7f77f024",
+      "type": "TASK",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Deliver the Responsive Detail Experience — Present complete catalog details accessibly with a layout that begins with small-screen constraints.",
+      "kind": "task"
+    },
+    {
+      "id": "task_34c0dae1c8fd0cf9",
+      "type": "TASK",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Deliver Detail Recovery Paths — Present accessible failure guidance and a dependable route back to discovery.",
+      "kind": "task"
+    },
+    {
+      "id": "task_3c5ac3700c06f9ce",
+      "type": "TASK",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Deliver Discovery State Presentation — Present loading, empty, unavailable, and successful results accessibly across supported screen sizes.",
+      "kind": "task"
+    },
+    {
+      "id": "task_3fd0710e63247bf9",
+      "type": "TASK",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Define Discovery State Messages — Specify clear visitor-facing feedback and recovery choices for each discovery state.",
+      "kind": "task"
+    },
+    {
+      "id": "task_50e309dfca599b66",
+      "type": "TASK",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Deliver the Responsive Event Collection — Create the small-screen-first browsing experience and its adaptations for larger viewports.",
+      "kind": "task"
+    },
+    {
+      "id": "task_5d39f5132fb4ccdd",
+      "type": "TASK",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Preserve Discovery Context — Carry the active category and location selections through the detail journey in a recoverable form.",
+      "kind": "task"
+    },
+    {
+      "id": "task_6344dc8b8f1225ab",
+      "type": "TASK",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Deliver the JSON Source Adapter — Load the initial event content and translate it through the content-source and catalog contracts.",
+      "kind": "task"
+    },
+    {
+      "id": "task_6f68ddb241e58a14",
+      "type": "TASK",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Connect Summaries to Event Details — Provide a clear, accessible interaction from every event summary to its detail destination.",
+      "kind": "task"
+    },
+    {
+      "id": "task_6fc7933eb2bebcb0",
+      "type": "TASK",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Distinguish Detail Failure States — Map missing and unavailable catalog outcomes to separate visitor-facing states.",
+      "kind": "task"
+    },
+    {
+      "id": "task_76b02db67056cda1",
+      "type": "TASK",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Define the Catalog Event Contract — Specify the storage-neutral event representation and the meaning and validity rules for each visitor-facing field.",
+      "kind": "task"
+    },
+    {
+      "id": "task_9aa8da09b438f753",
+      "type": "TASK",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Derive Available Filter Choices — Supply category and location options from the event catalog in a consistent, visitor-readable form.",
+      "kind": "task"
+    },
+    {
+      "id": "task_9b64ec46b77d91fb",
+      "type": "TASK",
+      "path": ".specta/planning/epics/003-complete-event-detail-journey.md",
+      "name": "Organize Attendance Information — Define a clear detail hierarchy that prioritizes the information needed to decide whether and how to attend.",
+      "kind": "task"
+    },
+    {
+      "id": "task_9b92730adce53b5e",
+      "type": "TASK",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Synchronize Filters and Results — Apply active filter criteria to the displayed event collection and keep result feedback current.",
+      "kind": "task"
+    },
+    {
+      "id": "task_a52fef3777503419",
+      "type": "TASK",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Shape Event Discovery Summaries — Select and organize the catalog information visitors need to scan and compare event results.",
+      "kind": "task"
+    },
+    {
+      "id": "task_ae18f2df6ef627cc",
+      "type": "TASK",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Normalize Source Records — Map source content into the catalog representation and handle records that do not satisfy its validity rules.",
+      "kind": "task"
+    },
+    {
+      "id": "task_c0243d99b35bc70e",
+      "type": "TASK",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Verify Source Substitutability — Confirm catalog consumers retain identical operations and event meanings when a conforming alternate source is used.",
+      "kind": "task"
+    },
+    {
+      "id": "task_f0186a07137bd7a6",
+      "type": "TASK",
+      "path": ".specta/planning/epics/001-storage-neutral-event-catalog.md",
+      "name": "Coordinate Discovery Queries — Deliver application behavior that applies category and location criteria and returns catalog results to consumers.",
+      "kind": "task"
+    },
+    {
+      "id": "task_fde48a3d31993dcd",
+      "type": "TASK",
+      "path": ".specta/planning/epics/002-mobile-first-event-discovery.md",
+      "name": "Deliver Accessible Filter Controls — Provide category and location controls with visible selection, clear, and combined-filter behavior.",
+      "kind": "task"
+    }
+  ],
+  "relationships": [
+    {
+      "type": "CONTAINS",
+      "sourceId": "epic_3882a7a5c68942ca",
+      "targetId": "story_3d8f20a2b612215d"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "epic_3882a7a5c68942ca",
+      "targetId": "story_6eb185a0f888037f"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "epic_3882a7a5c68942ca",
+      "targetId": "story_e262dd3474eff079"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "epic_4f0c0ca693803b6d",
+      "targetId": "story_07acb24313a1b102"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "epic_4f0c0ca693803b6d",
+      "targetId": "story_1467d2d0f527d83e"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "epic_4f0c0ca693803b6d",
+      "targetId": "story_f4bf3e1be5e286bb"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "epic_51a0dc0cb718cf5f",
+      "targetId": "story_1e5f8cf38f445666"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "epic_51a0dc0cb718cf5f",
+      "targetId": "story_781ff6373a9d32ee"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "epic_51a0dc0cb718cf5f",
+      "targetId": "story_bc582f028064a172"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_46a16b3cc82857b4",
+      "targetId": "symbol_0485d6eeedce59db"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_46a16b3cc82857b4",
+      "targetId": "symbol_0c1b0f1918992f19"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_b3a5fdf27a368a89",
+      "targetId": "symbol_d527f01545a44d75"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_dd1cd26302c2cab4",
+      "targetId": "symbol_4ddd240f5bf898ed"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_dd1cd26302c2cab4",
+      "targetId": "symbol_6c005ef2b5f1199c"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_dd1cd26302c2cab4",
+      "targetId": "symbol_8462d1878d4e9022"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_dd1cd26302c2cab4",
+      "targetId": "symbol_b081cd5cb7cf92cd"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_dd1cd26302c2cab4",
+      "targetId": "symbol_eaa97a6ddb3de74d"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_dd1cd26302c2cab4",
+      "targetId": "symbol_ef15b43cee69299a"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_e750f28ced3d0949",
+      "targetId": "symbol_2d5b7236a86beb4f"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "specification_1d6d0a6b76e945ef",
+      "targetId": "epic_4f0c0ca693803b6d"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "specification_dee167fe13da5268",
+      "targetId": "epic_3882a7a5c68942ca"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "specification_f931b6a38bcae110",
+      "targetId": "epic_51a0dc0cb718cf5f"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_07acb24313a1b102",
+      "targetId": "acceptance-criterion_11293fad6bf7a85d"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_07acb24313a1b102",
+      "targetId": "acceptance-criterion_a4d9f3c24d458afe"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_07acb24313a1b102",
+      "targetId": "acceptance-criterion_c8b34d5296a5d74b"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_07acb24313a1b102",
+      "targetId": "task_0ab5865ca8367830"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_07acb24313a1b102",
+      "targetId": "task_5d39f5132fb4ccdd"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_1467d2d0f527d83e",
+      "targetId": "acceptance-criterion_4a91104f819fad31"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_1467d2d0f527d83e",
+      "targetId": "acceptance-criterion_6a90ba04efd9ca85"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_1467d2d0f527d83e",
+      "targetId": "acceptance-criterion_707833a403288fda"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_1467d2d0f527d83e",
+      "targetId": "acceptance-criterion_94d2b121203dd57b"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_1467d2d0f527d83e",
+      "targetId": "task_34c0dae1c8fd0cf9"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_1467d2d0f527d83e",
+      "targetId": "task_6fc7933eb2bebcb0"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_1e5f8cf38f445666",
+      "targetId": "acceptance-criterion_123584e4cf6352a5"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_1e5f8cf38f445666",
+      "targetId": "acceptance-criterion_1920f84c50315f4a"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_1e5f8cf38f445666",
+      "targetId": "acceptance-criterion_557f9648d598f446"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_1e5f8cf38f445666",
+      "targetId": "acceptance-criterion_a39e77eb4f25d3fb"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_1e5f8cf38f445666",
+      "targetId": "task_3c5ac3700c06f9ce"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_1e5f8cf38f445666",
+      "targetId": "task_3fd0710e63247bf9"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_3d8f20a2b612215d",
+      "targetId": "acceptance-criterion_76110f727ad00dca"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_3d8f20a2b612215d",
+      "targetId": "acceptance-criterion_f5926df521aefa03"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_3d8f20a2b612215d",
+      "targetId": "acceptance-criterion_fc96b338b176e1cf"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_3d8f20a2b612215d",
+      "targetId": "task_09841065fda9a131"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_3d8f20a2b612215d",
+      "targetId": "task_6344dc8b8f1225ab"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_3d8f20a2b612215d",
+      "targetId": "task_c0243d99b35bc70e"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_6eb185a0f888037f",
+      "targetId": "acceptance-criterion_12c69006508d2a28"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_6eb185a0f888037f",
+      "targetId": "acceptance-criterion_4998fccdf295cf23"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_6eb185a0f888037f",
+      "targetId": "acceptance-criterion_5e9b181e68b9a401"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_6eb185a0f888037f",
+      "targetId": "acceptance-criterion_ed3e6b288a572504"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_6eb185a0f888037f",
+      "targetId": "task_245d4c29e6e615d5"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_6eb185a0f888037f",
+      "targetId": "task_f0186a07137bd7a6"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_781ff6373a9d32ee",
+      "targetId": "acceptance-criterion_12a011af9a9f1a56"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_781ff6373a9d32ee",
+      "targetId": "acceptance-criterion_3ff12880ec0a6005"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_781ff6373a9d32ee",
+      "targetId": "acceptance-criterion_843443e06f4f43c6"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_781ff6373a9d32ee",
+      "targetId": "acceptance-criterion_9a7cce817035d20b"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_781ff6373a9d32ee",
+      "targetId": "task_50e309dfca599b66"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_781ff6373a9d32ee",
+      "targetId": "task_6f68ddb241e58a14"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_781ff6373a9d32ee",
+      "targetId": "task_a52fef3777503419"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_bc582f028064a172",
+      "targetId": "acceptance-criterion_1b271ec9ca1907e5"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_bc582f028064a172",
+      "targetId": "acceptance-criterion_47dc4185ceda9125"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_bc582f028064a172",
+      "targetId": "acceptance-criterion_4a5b813b4241a4dc"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_bc582f028064a172",
+      "targetId": "acceptance-criterion_8eba69a4f996bf9b"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_bc582f028064a172",
+      "targetId": "acceptance-criterion_b164feb6202b25e0"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_bc582f028064a172",
+      "targetId": "task_9aa8da09b438f753"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_bc582f028064a172",
+      "targetId": "task_9b92730adce53b5e"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_bc582f028064a172",
+      "targetId": "task_fde48a3d31993dcd"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_e262dd3474eff079",
+      "targetId": "acceptance-criterion_4388a60054bcadbd"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_e262dd3474eff079",
+      "targetId": "acceptance-criterion_89dc7d14f7b4533d"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_e262dd3474eff079",
+      "targetId": "acceptance-criterion_cffaa5b00597f49f"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_e262dd3474eff079",
+      "targetId": "task_76b02db67056cda1"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_e262dd3474eff079",
+      "targetId": "task_ae18f2df6ef627cc"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_f4bf3e1be5e286bb",
+      "targetId": "acceptance-criterion_995bb3c3fd7dbaa3"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_f4bf3e1be5e286bb",
+      "targetId": "acceptance-criterion_dfc1056a6ebafe4b"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_f4bf3e1be5e286bb",
+      "targetId": "acceptance-criterion_e369da14c6e3b479"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_f4bf3e1be5e286bb",
+      "targetId": "acceptance-criterion_fdaaf5813db22884"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_f4bf3e1be5e286bb",
+      "targetId": "task_253762ba7f77f024"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "story_f4bf3e1be5e286bb",
+      "targetId": "task_9b64ec46b77d91fb"
+    },
+    {
+      "type": "EXPORTS",
+      "sourceId": "file_46a16b3cc82857b4",
+      "targetId": "symbol_0485d6eeedce59db"
+    },
+    {
+      "type": "EXPORTS",
+      "sourceId": "file_46a16b3cc82857b4",
+      "targetId": "symbol_0c1b0f1918992f19"
+    },
+    {
+      "type": "EXPORTS",
+      "sourceId": "file_b3a5fdf27a368a89",
+      "targetId": "symbol_d527f01545a44d75"
+    },
+    {
+      "type": "EXPORTS",
+      "sourceId": "file_dd1cd26302c2cab4",
+      "targetId": "symbol_4ddd240f5bf898ed"
+    },
+    {
+      "type": "EXPORTS",
+      "sourceId": "file_dd1cd26302c2cab4",
+      "targetId": "symbol_6c005ef2b5f1199c"
+    },
+    {
+      "type": "EXPORTS",
+      "sourceId": "file_dd1cd26302c2cab4",
+      "targetId": "symbol_8462d1878d4e9022"
+    },
+    {
+      "type": "EXPORTS",
+      "sourceId": "file_dd1cd26302c2cab4",
+      "targetId": "symbol_b081cd5cb7cf92cd"
+    },
+    {
+      "type": "EXPORTS",
+      "sourceId": "file_dd1cd26302c2cab4",
+      "targetId": "symbol_eaa97a6ddb3de74d"
+    },
+    {
+      "type": "EXPORTS",
+      "sourceId": "file_dd1cd26302c2cab4",
+      "targetId": "symbol_ef15b43cee69299a"
+    },
+    {
+      "type": "IMPORTS",
+      "sourceId": "file_3557f95f7de0f519",
+      "targetId": "dependency_7264ffcb1cc15042"
+    },
+    {
+      "type": "IMPORTS",
+      "sourceId": "file_3557f95f7de0f519",
+      "targetId": "dependency_9a6a663ec09e200a"
+    },
+    {
+      "type": "IMPORTS",
+      "sourceId": "file_3557f95f7de0f519",
+      "targetId": "file_e750f28ced3d0949"
+    },
+    {
+      "type": "IMPORTS",
+      "sourceId": "file_4600ce5b783e14bf",
+      "targetId": "file_b3a5fdf27a368a89"
+    },
+    {
+      "type": "IMPORTS",
+      "sourceId": "file_46a16b3cc82857b4",
+      "targetId": "file_b3a5fdf27a368a89"
+    },
+    {
+      "type": "IMPORTS",
+      "sourceId": "file_46a16b3cc82857b4",
+      "targetId": "file_dd1cd26302c2cab4"
+    },
+    {
+      "type": "IMPORTS",
+      "sourceId": "file_8d23147416d4f4ac",
+      "targetId": "file_46a16b3cc82857b4"
+    },
+    {
+      "type": "IMPORTS",
+      "sourceId": "file_b3a5fdf27a368a89",
+      "targetId": "file_dd1cd26302c2cab4"
+    },
+    {
+      "type": "IMPORTS",
+      "sourceId": "file_c2b79ba44e8a439f",
+      "targetId": "dependency_123ba0c55855e63a"
+    },
+    {
+      "type": "IMPORTS",
+      "sourceId": "file_c2b79ba44e8a439f",
+      "targetId": "dependency_3bb45183b12ae8b1"
+    },
+    {
+      "type": "IMPORTS",
+      "sourceId": "file_e750f28ced3d0949",
+      "targetId": "dependency_7264ffcb1cc15042"
+    }
+  ]
+}
