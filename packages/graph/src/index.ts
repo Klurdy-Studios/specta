@@ -31,6 +31,8 @@ import { nodeFileSystem } from "@specta/core/filesystem"
 import { z } from "zod"
 
 export * from "./implementation.ts"
+export * from "./analysis/index.ts"
+export * from "./parser/index.ts"
 
 export const VisionNode = defineNode("Vision", { schema: visionSchema.omit({ id: true }) })
 export const ConstitutionNode = defineNode("Constitution", { schema: constitutionSchema.omit({ id: true }) })
@@ -74,10 +76,29 @@ export const ProjectProfileNode = defineNode("ProjectProfile", { schema: project
 export const ScaffoldRunNode = defineNode("ScaffoldRun", {
   schema: scaffoldPlanSchema.omit({ id: true, expectedFiles: true, existingFiles: true }),
 })
+export const SpecificationDocumentNode = defineNode("SpecificationDocument", {
+  schema: z.object({ path: z.string().min(1), title: z.string().min(1).optional() }).strict(),
+})
+export const RequirementNode = defineNode("Requirement", {
+  schema: z.object({ title: z.string().min(1), path: z.string().min(1) }).strict(),
+})
+export const ArchitectureDecisionNode = defineNode("ArchitectureDecision", {
+  schema: z.object({ title: z.string().min(1), path: z.string().min(1) }).strict(),
+})
+export const TestNode = defineNode("Test", {
+  schema: z.object({ name: z.string().min(1), framework: z.string().min(1), path: z.string().min(1) }).strict(),
+})
+export const ExternalDependencyNode = defineNode("ExternalDependency", {
+  schema: z.object({ name: z.string().min(1) }).strict(),
+})
 
 export const ContainsEdge = defineEdge("CONTAINS")
 export const DependsOnEdge = defineEdge("DEPENDS_ON")
 export const ImplementsEdge = defineEdge("IMPLEMENTS")
+export const ImportsEdge = defineEdge("IMPORTS")
+export const ExportsEdge = defineEdge("EXPORTS")
+export const TestsEdge = defineEdge("TESTS")
+export const ReferencesEdge = defineEdge("REFERENCES")
 
 /** TypeGraph ontology for Specta's currently implemented planning and design entities. */
 export const workspaceGraph = defineGraph({
@@ -97,12 +118,17 @@ export const workspaceGraph = defineGraph({
     CodeSymbol: { type: CodeSymbolNode },
     ProjectProfile: { type: ProjectProfileNode },
     ScaffoldRun: { type: ScaffoldRunNode },
+    SpecificationDocument: { type: SpecificationDocumentNode },
+    Requirement: { type: RequirementNode },
+    ArchitectureDecision: { type: ArchitectureDecisionNode },
+    Test: { type: TestNode },
+    ExternalDependency: { type: ExternalDependencyNode },
   },
   edges: {
     CONTAINS: {
       type: ContainsEdge,
-      from: [EpicNode, StoryNode, TechnicalDesignNode, ModuleNode, FileNode],
-      to: [StoryNode, AcceptanceCriterionNode, TaskNode, ModuleNode, FileNode, CodeSymbolNode],
+      from: [EpicNode, StoryNode, TechnicalDesignNode, ModuleNode, FileNode, SpecificationDocumentNode],
+      to: [StoryNode, AcceptanceCriterionNode, TaskNode, ModuleNode, FileNode, CodeSymbolNode, RequirementNode, ArchitectureDecisionNode, EpicNode, TestNode],
     },
     DEPENDS_ON: {
       type: DependsOnEdge,
@@ -113,6 +139,26 @@ export const workspaceGraph = defineGraph({
       type: ImplementsEdge,
       from: [EpicNode, TechnicalDesignNode, ModuleNode, FileNode, ScaffoldRunNode],
       to: [ArchitectureNode, EpicNode, TechnicalDesignNode, ModuleNode],
+    },
+    IMPORTS: {
+      type: ImportsEdge,
+      from: [FileNode],
+      to: [FileNode, ExternalDependencyNode],
+    },
+    EXPORTS: {
+      type: ExportsEdge,
+      from: [FileNode],
+      to: [CodeSymbolNode],
+    },
+    TESTS: {
+      type: TestsEdge,
+      from: [TestNode],
+      to: [CodeSymbolNode, FileNode],
+    },
+    REFERENCES: {
+      type: ReferencesEdge,
+      from: [SpecificationDocumentNode, RequirementNode, ArchitectureDecisionNode, EpicNode, StoryNode, FileNode, CodeSymbolNode],
+      to: [SpecificationDocumentNode, RequirementNode, ArchitectureDecisionNode, EpicNode, StoryNode, FileNode, CodeSymbolNode],
     },
   },
 })

@@ -29,8 +29,13 @@ describe("workspace graph ontology", () => {
       "CodeSymbol",
       "ProjectProfile",
       "ScaffoldRun",
+      "SpecificationDocument",
+      "Requirement",
+      "ArchitectureDecision",
+      "Test",
+      "ExternalDependency",
     ])
-    expect(getEdgeKinds(workspaceGraph)).toEqual(["CONTAINS", "DEPENDS_ON", "IMPLEMENTS"])
+    expect(getEdgeKinds(workspaceGraph)).toEqual(["CONTAINS", "DEPENDS_ON", "IMPLEMENTS", "IMPORTS", "EXPORTS", "TESTS", "REFERENCES"])
   })
 
   it("validates graph snapshots with Zod", () => {

@@ -11,3 +11,9 @@ subpaths:
 - `@specta/core/skills`
 
 The root entry point does not re-export Node adapters or concrete workflows.
+
+The root also exports the canonical, language-independent analysis contracts:
+`ParsedSpecification`, `ParsedSpecificationEntity`, `ParsedSourceFile`,
+`ParsedImport`, `ParsedExport`, `ParsedCodeSymbol`, `ParsedTest`,
+`ParseDiagnostic`, `SourceLocation`, and `WorkspaceAnalysis`, together with
+their Zod schemas.

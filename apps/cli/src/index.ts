@@ -5,6 +5,7 @@ import type { ArchitectureDraft, EpicsDraft, FoundationDraft, RoadmapDraft, Scaf
 import { createWorkspaceRepository } from "@specta/core/config"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import { createWorkspaceInitializer, type InitializeWorkspaceRequest } from "@specta/core/workspace"
+import { createWorkspaceAnalyzer } from "@specta/graph"
 import {
   createScaffoldWorkflow,
   createTechnicalDesignApprovalWorkflow,
@@ -28,6 +29,21 @@ if (command === "init") {
     console.log("Configured native Skill targets: " + (skillTargets.length === 0 ? "none" : skillTargets.join(", ")) + ".")
   } catch (error) {
     console.error(error instanceof Error ? "specta: " + error.message : "specta: Unable to initialize workspace.")
+    process.exitCode = 1
+  }
+} else if (command === "compile") {
+  try {
+    if (arguments_.length > 0) throw new Error("Usage: specta compile")
+    const workspace = await createWorkspaceRepository(nodeFileSystem).load(resolve("."))
+    if (workspace === null) throw new Error("Initialize a Specta workspace before compiling it.")
+    const snapshot = await createWorkspaceAnalyzer().compile(workspace)
+    console.log("Compiled " + snapshot.analysis.specifications.length + " specification(s) and " + snapshot.analysis.sourceFiles.length + " source file(s).")
+    console.log("Workspace Graph: " + resolve(workspace.rootPath, ".specta", "graph", "analysis.json"))
+    if (snapshot.analysis.diagnostics.length > 0) {
+      console.log("Diagnostics: " + snapshot.analysis.diagnostics.length + ".")
+    }
+  } catch (error) {
+    console.error(error instanceof Error ? "specta: " + error.message : "specta: Unable to compile workspace analysis.")
     process.exitCode = 1
   }
 } else if (command === "plan") {
@@ -79,7 +95,7 @@ if (command === "init") {
     process.exitCode = 1
   }
 } else {
-  console.error("Usage: specta init [path] [--skill-target <target>] | specta plan [foundation <brief> | architecture | roadmap | epics | <brief>] | specta design <epic-id> --draft <draft.json> | specta approve-design <design-id> | specta scaffold <design-id> --prepare | --finalize <scaffold-run-id>")
+  console.error("Usage: specta init [path] [--skill-target <target>] | specta compile | specta plan [foundation <brief> | architecture | roadmap | epics | <brief>] | specta design <epic-id> --draft <draft.json> | specta approve-design <design-id> | specta scaffold <design-id> --prepare | --finalize <scaffold-run-id>")
   process.exitCode = 1
 }
 

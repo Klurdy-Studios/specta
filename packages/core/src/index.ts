@@ -468,6 +468,114 @@ export interface ScaffoldResult {
   workspace: Workspace
 }
 
+export const sourcePositionSchema = z.object({
+  line: z.number().int().positive(),
+  column: z.number().int().nonnegative(),
+}).strict()
+export type SourcePosition = z.infer<typeof sourcePositionSchema>
+
+export const sourceLocationSchema = z.object({
+  path: nonEmptyTextSchema,
+  start: sourcePositionSchema,
+  end: sourcePositionSchema,
+}).strict()
+export type SourceLocation = z.infer<typeof sourceLocationSchema>
+
+export const parseDiagnosticSchema = z.object({
+  code: nonEmptyTextSchema,
+  severity: z.enum(["warning", "error"]),
+  message: nonEmptyTextSchema,
+  location: sourceLocationSchema.optional(),
+}).strict()
+export type ParseDiagnostic = z.infer<typeof parseDiagnosticSchema>
+
+export const parsedHeadingSchema = z.object({
+  depth: z.number().int().min(1).max(6),
+  title: nonEmptyTextSchema,
+  location: sourceLocationSchema,
+}).strict()
+export type ParsedHeading = z.infer<typeof parsedHeadingSchema>
+
+export const specificationEntityKindSchema = z.enum([
+  "requirement",
+  "architecture-decision",
+  "epic",
+  "story",
+  "acceptance-criterion",
+  "task",
+])
+export type SpecificationEntityKind = z.infer<typeof specificationEntityKindSchema>
+
+export const parsedSpecificationEntitySchema = z.object({
+  kind: specificationEntityKindSchema,
+  title: nonEmptyTextSchema,
+  parentTitle: nonEmptyTextSchema.optional(),
+  location: sourceLocationSchema,
+}).strict()
+export type ParsedSpecificationEntity = z.infer<typeof parsedSpecificationEntitySchema>
+
+export const parsedSpecificationSchema = z.object({
+  path: nonEmptyTextSchema,
+  title: nonEmptyTextSchema.optional(),
+  headings: z.array(parsedHeadingSchema),
+  entities: z.array(parsedSpecificationEntitySchema),
+  diagnostics: z.array(parseDiagnosticSchema),
+}).strict()
+export type ParsedSpecification = z.infer<typeof parsedSpecificationSchema>
+
+export const parsedImportSchema = z.object({
+  specifier: nonEmptyTextSchema,
+  bindings: z.array(nonEmptyTextSchema),
+  typeOnly: z.boolean(),
+  location: sourceLocationSchema,
+}).strict()
+export type ParsedImport = z.infer<typeof parsedImportSchema>
+
+export const parsedExportSchema = z.object({
+  name: nonEmptyTextSchema,
+  typeOnly: z.boolean(),
+  location: sourceLocationSchema,
+}).strict()
+export type ParsedExport = z.infer<typeof parsedExportSchema>
+
+export const parsedCodeSymbolSchema = z.object({
+  name: nonEmptyTextSchema,
+  kind: technicalSymbolKindSchema,
+  exported: z.boolean(),
+  signature: nonEmptyTextSchema.optional(),
+  hasBody: z.boolean(),
+  location: sourceLocationSchema,
+}).strict()
+export type ParsedCodeSymbol = z.infer<typeof parsedCodeSymbolSchema>
+
+export const parsedTestSchema = z.object({
+  name: nonEmptyTextSchema,
+  framework: z.enum(["vitest", "jest", "node", "unknown"]),
+  testedSymbols: z.array(nonEmptyTextSchema),
+  location: sourceLocationSchema,
+}).strict()
+export type ParsedTest = z.infer<typeof parsedTestSchema>
+
+export const parsedSourceFileSchema = z.object({
+  path: nonEmptyTextSchema,
+  projectId: projectIdSchema.optional(),
+  language: languageIdSchema,
+  imports: z.array(parsedImportSchema),
+  exports: z.array(parsedExportSchema),
+  symbols: z.array(parsedCodeSymbolSchema),
+  tests: z.array(parsedTestSchema),
+  diagnostics: z.array(parseDiagnosticSchema),
+}).strict()
+export type ParsedSourceFile = z.infer<typeof parsedSourceFileSchema>
+
+export const workspaceAnalysisSchema = z.object({
+  schemaVersion: z.literal(1),
+  specifications: z.array(parsedSpecificationSchema),
+  sourceFiles: z.array(parsedSourceFileSchema),
+  diagnostics: z.array(parseDiagnosticSchema),
+}).strict()
+export type WorkspaceAnalysis = z.infer<typeof workspaceAnalysisSchema>
+
 export const workspaceSchema = z.object({
   schemaVersion: z.literal(1),
   id: workspaceIdSchema,

@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@specta/core": "workspace:*",
+    "@specta/graph": "workspace:*",
     "@specta/implementation": "workspace:*",
     "@specta/planner": "workspace:*"
   },
