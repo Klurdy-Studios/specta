@@ -1,0 +1,244 @@
+{
+  "version": 1,
+  "workflows": [
+    {
+      "name": "plan",
+      "description": "Execute the next eligible planning stage.",
+      "parameters": [],
+      "requires": [],
+      "produces": [],
+      "executionSteps": [
+        "select-next-planning-stage"
+      ],
+      "promptTemplate": ".specta/workflows/prompts/plan.md",
+      "artifactTemplates": [],
+      "completionCriteria": [],
+      "validationRequirements": []
+    },
+    {
+      "name": "plan-foundation",
+      "description": "Generate Vision and Constitution from a planning brief.",
+      "parameters": [
+        {
+          "name": "brief",
+          "description": "The planning brief.",
+          "required": true
+        }
+      ],
+      "requires": [],
+      "produces": [
+        "vision",
+        "constitution"
+      ],
+      "executionSteps": [
+        "compile-workspace",
+        "generate-foundation",
+        "persist-planning-stage",
+        "update-workspace-graph",
+        "persist-workspace"
+      ],
+      "promptTemplate": ".specta/workflows/prompts/plan-foundation.md",
+      "artifactTemplates": [
+        ".specta/workflows/artifacts/vision.md",
+        ".specta/workflows/artifacts/constitution.md"
+      ],
+      "completionCriteria": [
+        "vision is generated and linked to the Workspace Graph.",
+        "constitution is generated and linked to the Workspace Graph."
+      ],
+      "validationRequirements": [
+        "planning-stage"
+      ]
+    },
+    {
+      "name": "plan-architecture",
+      "description": "Generate Architecture from Vision and Constitution.",
+      "parameters": [
+        {
+          "name": "guidance",
+          "description": "Optional architectural constraints or preferences.",
+          "required": false
+        }
+      ],
+      "requires": [
+        "vision",
+        "constitution"
+      ],
+      "produces": [
+        "architecture"
+      ],
+      "executionSteps": [
+        "compile-workspace",
+        "generate-architecture",
+        "persist-planning-stage",
+        "update-workspace-graph",
+        "persist-workspace"
+      ],
+      "promptTemplate": ".specta/workflows/prompts/plan-architecture.md",
+      "artifactTemplates": [
+        ".specta/workflows/artifacts/architecture.md"
+      ],
+      "completionCriteria": [
+        "architecture is generated and linked to the Workspace Graph."
+      ],
+      "validationRequirements": [
+        "planning-stage"
+      ]
+    },
+    {
+      "name": "plan-roadmap",
+      "description": "Generate Roadmap from approved planning artifacts.",
+      "parameters": [],
+      "requires": [
+        "vision",
+        "constitution",
+        "architecture"
+      ],
+      "produces": [
+        "roadmap"
+      ],
+      "executionSteps": [
+        "compile-workspace",
+        "generate-roadmap",
+        "persist-planning-stage",
+        "update-workspace-graph",
+        "persist-workspace"
+      ],
+      "promptTemplate": ".specta/workflows/prompts/plan-roadmap.md",
+      "artifactTemplates": [
+        ".specta/workflows/artifacts/roadmap.md"
+      ],
+      "completionCriteria": [
+        "roadmap is generated and linked to the Workspace Graph."
+      ],
+      "validationRequirements": [
+        "planning-stage"
+      ]
+    },
+    {
+      "name": "plan-epics",
+      "description": "Generate Epics with nested Stories, acceptance criteria and Tasks.",
+      "parameters": [],
+      "requires": [
+        "vision",
+        "constitution",
+        "architecture",
+        "roadmap"
+      ],
+      "produces": [
+        "epics"
+      ],
+      "executionSteps": [
+        "compile-workspace",
+        "generate-epics",
+        "persist-planning-stage",
+        "update-workspace-graph",
+        "persist-workspace"
+      ],
+      "promptTemplate": ".specta/workflows/prompts/plan-epics.md",
+      "artifactTemplates": [
+        ".specta/workflows/artifacts/epic.md"
+      ],
+      "completionCriteria": [
+        "epics is generated and linked to the Workspace Graph."
+      ],
+      "validationRequirements": [
+        "planning-stage"
+      ]
+    },
+    {
+      "name": "design",
+      "description": "Create a reviewable Technical Design for one Epic and target project.",
+      "parameters": [
+        {
+          "name": "target-id",
+          "description": "The Epic to design.",
+          "required": true
+        }
+      ],
+      "requires": [
+        "architecture",
+        "epics"
+      ],
+      "produces": [
+        "technical-design"
+      ],
+      "executionSteps": [
+        "resolve-epic",
+        "resolve-project-profile",
+        "validate-language",
+        "persist-technical-design"
+      ],
+      "promptTemplate": ".specta/workflows/prompts/design.md",
+      "artifactTemplates": [],
+      "completionCriteria": [
+        "technical-design is generated and linked to the Workspace Graph."
+      ],
+      "validationRequirements": [
+        "workflow-state"
+      ]
+    },
+    {
+      "name": "approve-design",
+      "description": "Approve the latest reviewed Technical Design after resolving cross-Epic dependencies.",
+      "parameters": [
+        {
+          "name": "design-id",
+          "description": "The Technical Design to approve.",
+          "required": true
+        }
+      ],
+      "requires": [
+        "technical-design"
+      ],
+      "produces": [
+        "approved-technical-design"
+      ],
+      "executionSteps": [
+        "resolve-technical-design",
+        "validate-language",
+        "validate-dependencies",
+        "approve-technical-design"
+      ],
+      "promptTemplate": ".specta/workflows/prompts/approve-design.md",
+      "artifactTemplates": [],
+      "completionCriteria": [
+        "approved-technical-design is generated and linked to the Workspace Graph."
+      ],
+      "validationRequirements": [
+        "workflow-state"
+      ]
+    },
+    {
+      "name": "scaffold",
+      "description": "Prepare and finalize declaration-only scaffolding through the selected coding agent.",
+      "parameters": [
+        {
+          "name": "design-id",
+          "description": "The approved Technical Design to scaffold.",
+          "required": true
+        }
+      ],
+      "requires": [
+        "approved-technical-design"
+      ],
+      "produces": [
+        "scaffolded-structure"
+      ],
+      "executionSteps": [
+        "prepare-scaffold",
+        "agent-apply-scaffold",
+        "finalize-scaffold",
+        "update-workspace-graph"
+      ],
+      "promptTemplate": ".specta/workflows/prompts/scaffold.md",
+      "artifactTemplates": [],
+      "completionCriteria": [
+        "scaffolded-structure is generated and linked to the Workspace Graph."
+      ],
+      "validationRequirements": [
+        "workflow-state"
+      ]
+    }
+  ]
+}

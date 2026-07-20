@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "ws_5846eb79-2cfc-42a0-9c9d-14bb28d16137",
+  "rootPath": "/home/brian-wachanga/Projects/specta/examples/mtaa-events",
+  "createdAt": "2026-07-20T21:39:45.221Z",
+  "packageManager": "unknown",
+  "projects": [
+    {
+      "id": "prj_bdc79697dbf7be52",
+      "name": ".",
+      "rootPath": ".",
+      "kind": "unknown",
+      "manifestPath": "package.json"
+    }
+  ],
+  "artifacts": {
+    "visionPath": ".specta/planning/vision.md",
+    "constitutionPath": ".specta/planning/constitution.md",
+    "architecturePath": ".specta/planning/architecture.md",
+    "roadmapPath": ".specta/planning/roadmap.md",
+    "planningPath": ".specta/planning"
+  },
+  "workflow": {
+    "skillTargets": [
+      "codex"
+    ],
+    "manifestPath": ".specta/workflows/manifest.json"
+  }
+}

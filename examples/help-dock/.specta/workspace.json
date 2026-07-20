@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "ws_f4682420-86c0-430e-8190-849a98e4e68a",
+  "rootPath": "/home/brian-wachanga/Projects/specta/examples/help-dock",
+  "createdAt": "2026-07-20T21:39:52.849Z",
+  "packageManager": "npm",
+  "projects": [
+    {
+      "id": "prj_9a550361e7f327b4",
+      "name": "help-dock",
+      "rootPath": ".",
+      "kind": "unknown",
+      "manifestPath": "package.json"
+    }
+  ],
+  "artifacts": {},
+  "workflow": {
+    "skillTargets": [
+      "codex"
+    ],
+    "manifestPath": ".specta/workflows/manifest.json"
+  }
+}
