@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "profiles": [
+    {
+      "name": "mtaa-events",
+      "rootPath": "",
+      "state": "blank",
+      "language": "typescript",
+      "framework": "react",
+      "toolchain": "vite",
+      "packageManager": "unknown",
+      "sourceRoots": [
+        "src"
+      ],
+      "evidence": [],
+      "source": "technical-design"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "",
+      "type": "PROJECT_PROFILE"
+    }
+  ]
+}

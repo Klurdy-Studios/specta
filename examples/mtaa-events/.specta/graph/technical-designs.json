@@ -1,0 +1,459 @@
+{
+  "schemaVersion": 1,
+  "designs": [
+    {
+      "summary": "Create the first Epic as a TypeScript React single-page application bootstrapped with Vite. The Epic introduces a storage-neutral event domain, read-only catalog operations, and a bundled JSON adapter. The React surface will consume only the EventCatalog contract in later Epics, so JSON can be replaced by localStorage, Firestore, or another source without changing catalog consumers. Invalid JSON records are reported separately from valid events instead of being silently displayed.",
+      "target": {
+        "kind": "new",
+        "name": "mtaa-events",
+        "rootPath": "",
+        "projectKind": "application",
+        "framework": {
+          "language": "typescript",
+          "framework": "react",
+          "toolchain": "vite"
+        }
+      },
+      "modules": [
+        {
+          "name": "Event Domain",
+          "path": "src/domain",
+          "purpose": "Define the canonical, storage-independent event representation, query values, and validation outcomes used by every catalog source and consumer.",
+          "files": [
+            {
+              "path": "src/domain/event.ts",
+              "kind": "source",
+              "language": "typescript",
+              "ownership": "epic",
+              "exports": [
+                {
+                  "name": "EventId",
+                  "kind": "type",
+                  "signature": "export type EventId = string",
+                  "purpose": "Identify one event consistently across content sources and application journeys."
+                },
+                {
+                  "name": "EventSchedule",
+                  "kind": "interface",
+                  "signature": "export interface EventSchedule { startsAt: string; endsAt?: string }",
+                  "purpose": "Represent the portable start and optional end values for an event."
+                },
+                {
+                  "name": "Event",
+                  "kind": "interface",
+                  "signature": "export interface Event { id: EventId; title: string; category: string; location: string; schedule: EventSchedule; description: string; attendanceInfo: string }",
+                  "purpose": "Provide the canonical visitor-facing event record independent of storage format."
+                },
+                {
+                  "name": "EventQuery",
+                  "kind": "interface",
+                  "signature": "export interface EventQuery { category?: string; location?: string }",
+                  "purpose": "Express optional category and location criteria for read-only discovery."
+                },
+                {
+                  "name": "EventValidationIssue",
+                  "kind": "interface",
+                  "signature": "export interface EventValidationIssue { recordIndex: number; reasons: readonly string[] }",
+                  "purpose": "Identify an invalid source record and explain why it was rejected."
+                },
+                {
+                  "name": "EventSourceSnapshot",
+                  "kind": "interface",
+                  "signature": "export interface EventSourceSnapshot { events: readonly Event[]; issues: readonly EventValidationIssue[] }",
+                  "purpose": "Return valid normalized events alongside explicit source validation issues."
+                }
+              ]
+            },
+            {
+              "path": "src/domain/event.test.ts",
+              "kind": "test",
+              "language": "typescript",
+              "ownership": "epic",
+              "exports": []
+            }
+          ]
+        },
+        {
+          "name": "Event Catalog",
+          "path": "src/catalog",
+          "purpose": "Expose source-agnostic, public read-only operations for listing, filtering, and retrieving normalized events.",
+          "files": [
+            {
+              "path": "src/catalog/event-source.ts",
+              "kind": "source",
+              "language": "typescript",
+              "ownership": "epic",
+              "exports": [
+                {
+                  "name": "EventSource",
+                  "kind": "interface",
+                  "signature": "export interface EventSource { load(): Promise<EventSourceSnapshot> }",
+                  "purpose": "Define the replaceable asynchronous boundary implemented by JSON, localStorage, Firestore, or another event source."
+                }
+              ]
+            },
+            {
+              "path": "src/catalog/event-catalog.ts",
+              "kind": "source",
+              "language": "typescript",
+              "ownership": "epic",
+              "exports": [
+                {
+                  "name": "EventCatalogResult",
+                  "kind": "interface",
+                  "signature": "export interface EventCatalogResult { events: readonly Event[]; issues: readonly EventValidationIssue[] }",
+                  "purpose": "Return query results without discarding source validation information."
+                },
+                {
+                  "name": "EventCatalog",
+                  "kind": "interface",
+                  "signature": "export interface EventCatalog { list(query?: EventQuery): Promise<EventCatalogResult>; findById(id: EventId): Promise<Event | null> }",
+                  "purpose": "Provide the complete read-only catalog contract consumed by the application."
+                },
+                {
+                  "name": "createEventCatalog",
+                  "kind": "function",
+                  "signature": "export declare function createEventCatalog(source: EventSource): EventCatalog",
+                  "purpose": "Create catalog behavior around any conforming content source."
+                }
+              ]
+            },
+            {
+              "path": "src/catalog/event-catalog.test.ts",
+              "kind": "test",
+              "language": "typescript",
+              "ownership": "epic",
+              "exports": []
+            }
+          ]
+        },
+        {
+          "name": "JSON Content Source",
+          "path": "src/data",
+          "purpose": "Supply the initial bundled event collection through the EventSource contract while containing JSON parsing and normalization details.",
+          "files": [
+            {
+              "path": "src/data/json-event-source.ts",
+              "kind": "source",
+              "language": "typescript",
+              "ownership": "epic",
+              "exports": [
+                {
+                  "name": "createJsonEventSource",
+                  "kind": "function",
+                  "signature": "export declare function createJsonEventSource(records: readonly unknown[]): EventSource",
+                  "purpose": "Validate and normalize bundled JSON records behind the replaceable EventSource boundary."
+                }
+              ]
+            },
+            {
+              "path": "src/data/events.json",
+              "kind": "configuration",
+              "language": "typescript",
+              "ownership": "epic",
+              "exports": []
+            },
+            {
+              "path": "src/data/json-event-source.test.ts",
+              "kind": "test",
+              "language": "typescript",
+              "ownership": "epic",
+              "exports": []
+            }
+          ]
+        },
+        {
+          "name": "Catalog Composition",
+          "path": "src/app",
+          "purpose": "Compose the current JSON source with the storage-neutral catalog behind one application-facing entry point for later React features.",
+          "files": [
+            {
+              "path": "src/app/catalog.ts",
+              "kind": "source",
+              "language": "typescript",
+              "ownership": "epic",
+              "exports": [
+                {
+                  "name": "eventCatalog",
+                  "kind": "constant",
+                  "signature": "export declare const eventCatalog: EventCatalog",
+                  "purpose": "Expose the configured read-only catalog without revealing the active JSON source to React consumers."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "dependencies": [],
+      "impactRequests": [],
+      "id": "design_aa0465e39d8ae5e0",
+      "targetId": "plan_69546d6ed82d51f9",
+      "status": "scaffolded",
+      "revision": 1,
+      "profile": {
+        "name": "mtaa-events",
+        "rootPath": "",
+        "state": "blank",
+        "language": "typescript",
+        "framework": "react",
+        "toolchain": "vite",
+        "packageManager": "unknown",
+        "sourceRoots": [
+          "src"
+        ],
+        "evidence": [],
+        "source": "technical-design"
+      },
+      "resolution": [],
+      "scaffoldedPaths": [
+        "src/domain/event.ts",
+        "src/domain/event.test.ts",
+        "src/catalog/event-source.ts",
+        "src/catalog/event-catalog.ts",
+        "src/catalog/event-catalog.test.ts",
+        "src/data/json-event-source.ts",
+        "src/data/events.json",
+        "src/data/json-event-source.test.ts",
+        "src/app/catalog.ts"
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "id": "design_aa0465e39d8ae5e0",
+      "type": "TECHNICAL_DESIGN"
+    },
+    {
+      "id": "module_7478929e8a5d65c2",
+      "type": "MODULE"
+    },
+    {
+      "id": "file_2b0417d934de34a6",
+      "type": "FILE"
+    },
+    {
+      "id": "symbol_22761f675f8c8b57",
+      "type": "CODE_SYMBOL"
+    },
+    {
+      "id": "symbol_04cd234f3d31f58b",
+      "type": "CODE_SYMBOL"
+    },
+    {
+      "id": "symbol_532725de20d3942b",
+      "type": "CODE_SYMBOL"
+    },
+    {
+      "id": "symbol_0cf885a2f351c05c",
+      "type": "CODE_SYMBOL"
+    },
+    {
+      "id": "symbol_4824021d93e61ae3",
+      "type": "CODE_SYMBOL"
+    },
+    {
+      "id": "symbol_4215dc43bf9b02a7",
+      "type": "CODE_SYMBOL"
+    },
+    {
+      "id": "file_7d5c1f2eb9d24687",
+      "type": "FILE"
+    },
+    {
+      "id": "module_64094f7d0ac7b7c7",
+      "type": "MODULE"
+    },
+    {
+      "id": "file_948ed71c6b424d62",
+      "type": "FILE"
+    },
+    {
+      "id": "symbol_e853d533471222c0",
+      "type": "CODE_SYMBOL"
+    },
+    {
+      "id": "file_9b0eaf6316dccde1",
+      "type": "FILE"
+    },
+    {
+      "id": "symbol_cad9ff2e35d2967f",
+      "type": "CODE_SYMBOL"
+    },
+    {
+      "id": "symbol_80eebf87b2a40be6",
+      "type": "CODE_SYMBOL"
+    },
+    {
+      "id": "symbol_8ac88121df71741b",
+      "type": "CODE_SYMBOL"
+    },
+    {
+      "id": "file_63ca51eab55223ba",
+      "type": "FILE"
+    },
+    {
+      "id": "module_a679501fa7e1d648",
+      "type": "MODULE"
+    },
+    {
+      "id": "file_6de9b5765a64ba4c",
+      "type": "FILE"
+    },
+    {
+      "id": "symbol_91148b82af058706",
+      "type": "CODE_SYMBOL"
+    },
+    {
+      "id": "file_059f883c4ba2118f",
+      "type": "FILE"
+    },
+    {
+      "id": "file_b232adcb7ce16601",
+      "type": "FILE"
+    },
+    {
+      "id": "module_db4cb5a2473a205b",
+      "type": "MODULE"
+    },
+    {
+      "id": "file_12cccea0b86e18a1",
+      "type": "FILE"
+    },
+    {
+      "id": "symbol_a1e69d8a199326b7",
+      "type": "CODE_SYMBOL"
+    }
+  ],
+  "relationships": [
+    {
+      "type": "IMPLEMENTS",
+      "sourceId": "design_aa0465e39d8ae5e0",
+      "targetId": "plan_69546d6ed82d51f9"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "design_aa0465e39d8ae5e0",
+      "targetId": "module_7478929e8a5d65c2"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "module_7478929e8a5d65c2",
+      "targetId": "file_2b0417d934de34a6"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_2b0417d934de34a6",
+      "targetId": "symbol_22761f675f8c8b57"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_2b0417d934de34a6",
+      "targetId": "symbol_04cd234f3d31f58b"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_2b0417d934de34a6",
+      "targetId": "symbol_532725de20d3942b"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_2b0417d934de34a6",
+      "targetId": "symbol_0cf885a2f351c05c"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_2b0417d934de34a6",
+      "targetId": "symbol_4824021d93e61ae3"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_2b0417d934de34a6",
+      "targetId": "symbol_4215dc43bf9b02a7"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "module_7478929e8a5d65c2",
+      "targetId": "file_7d5c1f2eb9d24687"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "design_aa0465e39d8ae5e0",
+      "targetId": "module_64094f7d0ac7b7c7"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "module_64094f7d0ac7b7c7",
+      "targetId": "file_948ed71c6b424d62"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_948ed71c6b424d62",
+      "targetId": "symbol_e853d533471222c0"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "module_64094f7d0ac7b7c7",
+      "targetId": "file_9b0eaf6316dccde1"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_9b0eaf6316dccde1",
+      "targetId": "symbol_cad9ff2e35d2967f"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_9b0eaf6316dccde1",
+      "targetId": "symbol_80eebf87b2a40be6"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_9b0eaf6316dccde1",
+      "targetId": "symbol_8ac88121df71741b"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "module_64094f7d0ac7b7c7",
+      "targetId": "file_63ca51eab55223ba"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "design_aa0465e39d8ae5e0",
+      "targetId": "module_a679501fa7e1d648"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "module_a679501fa7e1d648",
+      "targetId": "file_6de9b5765a64ba4c"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_6de9b5765a64ba4c",
+      "targetId": "symbol_91148b82af058706"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "module_a679501fa7e1d648",
+      "targetId": "file_059f883c4ba2118f"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "module_a679501fa7e1d648",
+      "targetId": "file_b232adcb7ce16601"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "design_aa0465e39d8ae5e0",
+      "targetId": "module_db4cb5a2473a205b"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "module_db4cb5a2473a205b",
+      "targetId": "file_12cccea0b86e18a1"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "file_12cccea0b86e18a1",
+      "targetId": "symbol_a1e69d8a199326b7"
+    }
+  ]
+}

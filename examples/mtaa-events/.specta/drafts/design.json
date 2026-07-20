@@ -1,0 +1,186 @@
+{
+  "summary": "Create the first Epic as a TypeScript React single-page application bootstrapped with Vite. The Epic introduces a storage-neutral event domain, read-only catalog operations, and a bundled JSON adapter. The React surface will consume only the EventCatalog contract in later Epics, so JSON can be replaced by localStorage, Firestore, or another source without changing catalog consumers. Invalid JSON records are reported separately from valid events instead of being silently displayed.",
+  "target": {
+    "kind": "new",
+    "name": "mtaa-events",
+    "rootPath": "",
+    "projectKind": "application",
+    "framework": {
+      "language": "typescript",
+      "framework": "react",
+      "toolchain": "vite"
+    }
+  },
+  "modules": [
+    {
+      "name": "Event Domain",
+      "path": "src/domain",
+      "purpose": "Define the canonical, storage-independent event representation, query values, and validation outcomes used by every catalog source and consumer.",
+      "files": [
+        {
+          "path": "src/domain/event.ts",
+          "kind": "source",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": [
+            {
+              "name": "EventId",
+              "kind": "type",
+              "signature": "export type EventId = string",
+              "purpose": "Identify one event consistently across content sources and application journeys."
+            },
+            {
+              "name": "EventSchedule",
+              "kind": "interface",
+              "signature": "export interface EventSchedule { startsAt: string; endsAt?: string }",
+              "purpose": "Represent the portable start and optional end values for an event."
+            },
+            {
+              "name": "Event",
+              "kind": "interface",
+              "signature": "export interface Event { id: EventId; title: string; category: string; location: string; schedule: EventSchedule; description: string; attendanceInfo: string }",
+              "purpose": "Provide the canonical visitor-facing event record independent of storage format."
+            },
+            {
+              "name": "EventQuery",
+              "kind": "interface",
+              "signature": "export interface EventQuery { category?: string; location?: string }",
+              "purpose": "Express optional category and location criteria for read-only discovery."
+            },
+            {
+              "name": "EventValidationIssue",
+              "kind": "interface",
+              "signature": "export interface EventValidationIssue { recordIndex: number; reasons: readonly string[] }",
+              "purpose": "Identify an invalid source record and explain why it was rejected."
+            },
+            {
+              "name": "EventSourceSnapshot",
+              "kind": "interface",
+              "signature": "export interface EventSourceSnapshot { events: readonly Event[]; issues: readonly EventValidationIssue[] }",
+              "purpose": "Return valid normalized events alongside explicit source validation issues."
+            }
+          ]
+        },
+        {
+          "path": "src/domain/event.test.ts",
+          "kind": "test",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": []
+        }
+      ]
+    },
+    {
+      "name": "Event Catalog",
+      "path": "src/catalog",
+      "purpose": "Expose source-agnostic, public read-only operations for listing, filtering, and retrieving normalized events.",
+      "files": [
+        {
+          "path": "src/catalog/event-source.ts",
+          "kind": "source",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": [
+            {
+              "name": "EventSource",
+              "kind": "interface",
+              "signature": "export interface EventSource { load(): Promise<EventSourceSnapshot> }",
+              "purpose": "Define the replaceable asynchronous boundary implemented by JSON, localStorage, Firestore, or another event source."
+            }
+          ]
+        },
+        {
+          "path": "src/catalog/event-catalog.ts",
+          "kind": "source",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": [
+            {
+              "name": "EventCatalogResult",
+              "kind": "interface",
+              "signature": "export interface EventCatalogResult { events: readonly Event[]; issues: readonly EventValidationIssue[] }",
+              "purpose": "Return query results without discarding source validation information."
+            },
+            {
+              "name": "EventCatalog",
+              "kind": "interface",
+              "signature": "export interface EventCatalog { list(query?: EventQuery): Promise<EventCatalogResult>; findById(id: EventId): Promise<Event | null> }",
+              "purpose": "Provide the complete read-only catalog contract consumed by the application."
+            },
+            {
+              "name": "createEventCatalog",
+              "kind": "function",
+              "signature": "export declare function createEventCatalog(source: EventSource): EventCatalog",
+              "purpose": "Create catalog behavior around any conforming content source."
+            }
+          ]
+        },
+        {
+          "path": "src/catalog/event-catalog.test.ts",
+          "kind": "test",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": []
+        }
+      ]
+    },
+    {
+      "name": "JSON Content Source",
+      "path": "src/data",
+      "purpose": "Supply the initial bundled event collection through the EventSource contract while containing JSON parsing and normalization details.",
+      "files": [
+        {
+          "path": "src/data/json-event-source.ts",
+          "kind": "source",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": [
+            {
+              "name": "createJsonEventSource",
+              "kind": "function",
+              "signature": "export declare function createJsonEventSource(records: readonly unknown[]): EventSource",
+              "purpose": "Validate and normalize bundled JSON records behind the replaceable EventSource boundary."
+            }
+          ]
+        },
+        {
+          "path": "src/data/events.json",
+          "kind": "configuration",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": []
+        },
+        {
+          "path": "src/data/json-event-source.test.ts",
+          "kind": "test",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": []
+        }
+      ]
+    },
+    {
+      "name": "Catalog Composition",
+      "path": "src/app",
+      "purpose": "Compose the current JSON source with the storage-neutral catalog behind one application-facing entry point for later React features.",
+      "files": [
+        {
+          "path": "src/app/catalog.ts",
+          "kind": "source",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": [
+            {
+              "name": "eventCatalog",
+              "kind": "constant",
+              "signature": "export declare const eventCatalog: EventCatalog",
+              "purpose": "Expose the configured read-only catalog without revealing the active JSON source to React consumers."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "dependencies": [],
+  "impactRequests": []
+}

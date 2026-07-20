@@ -1,0 +1,215 @@
+{
+  "epics": [
+    {
+      "title": "Storage-Neutral Event Catalog",
+      "goal": "Deliver a consistent public event catalog that supports discovery and details from JSON today while allowing the content source to change without affecting consumers.",
+      "roadmapMilestone": "Portable Event Catalog",
+      "stories": [
+        {
+          "title": "Use Consistent Event Records",
+          "description": "As a visitor-experience developer, I need event content represented consistently so that every discovery and detail view can rely on the same meaningful fields.",
+          "acceptanceCriteria": [
+            "Every available event has a stable identifier, title, category, location, schedule, description, and attendance-relevant information.",
+            "Event records exposed to consumers use the same field meanings regardless of the underlying content source.",
+            "Invalid or incomplete source records are identified without silently presenting misleading event information."
+          ],
+          "tasks": [
+            {
+              "title": "Define the Catalog Event Contract",
+              "description": "Specify the storage-neutral event representation and the meaning and validity rules for each visitor-facing field."
+            },
+            {
+              "title": "Normalize Source Records",
+              "description": "Map source content into the catalog representation and handle records that do not satisfy its validity rules."
+            }
+          ]
+        },
+        {
+          "title": "Query Events Without Storage Knowledge",
+          "description": "As a visitor-experience developer, I need read-only catalog capabilities for discovery and details so that product behavior does not depend on storage mechanics.",
+          "acceptanceCriteria": [
+            "A consumer can request the available event collection without accessing the active content source directly.",
+            "A consumer can request events matching a category, a location, or both filters together.",
+            "A consumer can request one event by its stable identifier and can distinguish a missing event from an available event.",
+            "All catalog capabilities are read-only and expose no authentication or event-management behavior."
+          ],
+          "tasks": [
+            {
+              "title": "Specify Read-Only Catalog Operations",
+              "description": "Define the list, filter, and single-event operations and their success, empty, and missing-result behavior."
+            },
+            {
+              "title": "Coordinate Discovery Queries",
+              "description": "Deliver application behavior that applies category and location criteria and returns catalog results to consumers."
+            }
+          ]
+        },
+        {
+          "title": "Serve JSON Through a Replaceable Source",
+          "description": "As a maintainer, I need JSON content isolated behind the catalog boundary so that a future Firestore source can be introduced without redesigning consumer behavior.",
+          "acceptanceCriteria": [
+            "The initial JSON content supplies all catalog operations through the storage-neutral contract.",
+            "JSON-specific structure and loading behavior are not exposed to catalog consumers.",
+            "A different conforming content-source adapter can be substituted without changing the catalog operation signatures or event representation."
+          ],
+          "tasks": [
+            {
+              "title": "Define the Content Source Contract",
+              "description": "Establish the source responsibilities needed to supply normalized records without leaking storage-specific details."
+            },
+            {
+              "title": "Deliver the JSON Source Adapter",
+              "description": "Load the initial event content and translate it through the content-source and catalog contracts."
+            },
+            {
+              "title": "Verify Source Substitutability",
+              "description": "Confirm catalog consumers retain identical operations and event meanings when a conforming alternate source is used."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Mobile-First Event Discovery",
+      "goal": "Give visitors an accessible, responsive way to browse local events and narrow the collection by category and location with clear feedback.",
+      "roadmapMilestone": "Mobile Event Discovery",
+      "stories": [
+        {
+          "title": "Browse Local Events on Small Screens",
+          "description": "As a visitor using a mobile device, I want to scan available local events easily so that I can identify activities that interest me.",
+          "acceptanceCriteria": [
+            "Available events are presented as a legible collection with enough summary information to distinguish one event from another.",
+            "The event collection is usable without horizontal scrolling at common small-screen widths.",
+            "The browsing experience remains clear and usable when the viewport expands to larger screen sizes.",
+            "Each event summary provides an understandable way to open that event's details."
+          ],
+          "tasks": [
+            {
+              "title": "Shape Event Discovery Summaries",
+              "description": "Select and organize the catalog information visitors need to scan and compare event results."
+            },
+            {
+              "title": "Deliver the Responsive Event Collection",
+              "description": "Create the small-screen-first browsing experience and its adaptations for larger viewports."
+            },
+            {
+              "title": "Connect Summaries to Event Details",
+              "description": "Provide a clear, accessible interaction from every event summary to its detail destination."
+            }
+          ]
+        },
+        {
+          "title": "Filter by Category and Location",
+          "description": "As a visitor, I want to narrow events by category and location so that I can focus on activities relevant to my interests and area.",
+          "acceptanceCriteria": [
+            "A visitor can select an available category and see only events in that category.",
+            "A visitor can select an available location and see only events in that location.",
+            "When category and location are both selected, the results satisfy both selections.",
+            "The currently active filters are visible and can be cleared without reloading the experience.",
+            "Filter controls can be understood and operated with keyboard and touch input."
+          ],
+          "tasks": [
+            {
+              "title": "Derive Available Filter Choices",
+              "description": "Supply category and location options from the event catalog in a consistent, visitor-readable form."
+            },
+            {
+              "title": "Deliver Accessible Filter Controls",
+              "description": "Provide category and location controls with visible selection, clear, and combined-filter behavior."
+            },
+            {
+              "title": "Synchronize Filters and Results",
+              "description": "Apply active filter criteria to the displayed event collection and keep result feedback current."
+            }
+          ]
+        },
+        {
+          "title": "Understand Discovery States",
+          "description": "As a visitor, I want clear feedback while events load or cannot be shown so that I understand what is happening and what I can do next.",
+          "acceptanceCriteria": [
+            "The discovery experience visibly distinguishes loading, loaded, empty-filter-result, empty-catalog, and unavailable states.",
+            "An empty filtered result explains that no events match the active criteria and offers a way to change or clear them.",
+            "An unavailable catalog state communicates the problem without displaying stale or misleading results and offers a recovery action when one is possible.",
+            "Status feedback is available to assistive technology and does not rely on color alone."
+          ],
+          "tasks": [
+            {
+              "title": "Define Discovery State Messages",
+              "description": "Specify clear visitor-facing feedback and recovery choices for each discovery state."
+            },
+            {
+              "title": "Deliver Discovery State Presentation",
+              "description": "Present loading, empty, unavailable, and successful results accessibly across supported screen sizes."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Complete Event Detail Journey",
+      "goal": "Enable visitors to evaluate an event using complete, readable details and return to their prior discovery context when finished.",
+      "roadmapMilestone": "Decision-Ready Event Details",
+      "stories": [
+        {
+          "title": "Evaluate an Event Before Attending",
+          "description": "As a visitor, I want complete event information in a readable detail view so that I can decide whether and how to attend.",
+          "acceptanceCriteria": [
+            "Opening an available event displays its title, category, location, schedule, description, and attendance-relevant information.",
+            "The detail hierarchy makes the event's time and place easy to identify on a small screen.",
+            "Event details remain legible and navigable across supported screen sizes and with keyboard input.",
+            "The detail experience is public and does not require sign-in."
+          ],
+          "tasks": [
+            {
+              "title": "Organize Attendance Information",
+              "description": "Define a clear detail hierarchy that prioritizes the information needed to decide whether and how to attend."
+            },
+            {
+              "title": "Deliver the Responsive Detail Experience",
+              "description": "Present complete catalog details accessibly with a layout that begins with small-screen constraints."
+            }
+          ]
+        },
+        {
+          "title": "Return to Prior Discovery Context",
+          "description": "As a visitor, I want to return from an event to the discovery state I was using so that I can continue comparing relevant events.",
+          "acceptanceCriteria": [
+            "A visitor can return from event details to the event collection through an explicit navigation action.",
+            "Returning to discovery restores the visitor's previously active category and location filters.",
+            "The restored collection makes it possible to continue from the prior browsing context without repeating filter selections."
+          ],
+          "tasks": [
+            {
+              "title": "Preserve Discovery Context",
+              "description": "Carry the active category and location selections through the detail journey in a recoverable form."
+            },
+            {
+              "title": "Deliver Context-Aware Return Navigation",
+              "description": "Provide a clear return path that restores the prior filtered event collection."
+            }
+          ]
+        },
+        {
+          "title": "Recover from Missing Event Details",
+          "description": "As a visitor, I want helpful guidance when an event cannot be found or loaded so that I can continue discovering other events.",
+          "acceptanceCriteria": [
+            "Requesting an unknown event produces a clear not-found state rather than an empty or broken detail view.",
+            "A temporarily unavailable event produces a distinct error state without presenting partial information as complete.",
+            "Both missing and unavailable states provide an accessible route back to event discovery.",
+            "No missing-event state exposes event-management or authentication controls."
+          ],
+          "tasks": [
+            {
+              "title": "Distinguish Detail Failure States",
+              "description": "Map missing and unavailable catalog outcomes to separate visitor-facing states."
+            },
+            {
+              "title": "Deliver Detail Recovery Paths",
+              "description": "Present accessible failure guidance and a dependable route back to discovery."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

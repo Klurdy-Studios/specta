@@ -1,0 +1,1447 @@
+{
+  "schemaVersion": 3,
+  "planning": {
+    "brief": "Build a mobile-first directory for discovering local community events. Events are initially stored in JSON. Visitors can browse, filter by category and location, and view event details. Content access must support later migration to Firestore. Event management and authentication are deferred to a future admin panel.",
+    "completedStages": [
+      "foundation",
+      "architecture",
+      "roadmap",
+      "epics"
+    ],
+    "vision": {
+      "id": "plan_0308769ebff9234a",
+      "title": "Mtaa Events: Local Community Event Discovery",
+      "problem": "People lack a simple, mobile-friendly way to find relevant events happening in their local communities. Event information can be difficult to browse by interest or place, making nearby activities less visible and reducing community participation.",
+      "audience": "Residents and visitors who want to discover local community events from a mobile device, especially people looking for activities that match a preferred category or location.",
+      "outcome": "Visitors can quickly browse a directory of local events, narrow results by category and location, and view the details needed to decide whether to attend, while the event content remains portable enough to move from an initial JSON source to Firestore later."
+    },
+    "constitution": {
+      "id": "plan_9398e359ffc006b7",
+      "principles": [
+        "Design every visitor-facing experience for small screens first, then enhance it for larger screens without reducing clarity or usability.",
+        "Make event discovery fast and understandable by presenting consistent event information and useful category and location filters.",
+        "Keep content access independent of its storage source so that replacing JSON with Firestore does not require redesigning visitor-facing behavior.",
+        "Treat event browsing as public and read-only in the initial product; authentication and event-management capabilities remain outside the current scope.",
+        "Provide event details that are accurate, legible, and sufficient for a visitor to decide whether and how to attend.",
+        "Prefer accessible, resilient interactions that remain usable across common mobile devices and connection conditions."
+      ]
+    },
+    "architecture": {
+      "id": "plan_872383c64a8e8cb4",
+      "overview": "Mtaa Events is a public, read-only directory organized around a mobile-first visitor experience, an application boundary for browsing and event detail use cases, and a storage-independent event catalog boundary. The visitor experience requests event lists, category and location filtering, and individual event details through stable application capabilities rather than reading content directly. The catalog boundary supplies a consistent event representation while source-specific adapters handle the initial JSON content and allow a later Firestore implementation to replace it without changing visitor-facing behavior. This separation keeps the initial system small while preserving accessibility, resilience, content clarity, and future content portability required by the Constitution.",
+      "components": [
+        "Visitor Experience — presents accessible, mobile-first event browsing, filter controls, result states, and event details across screen sizes and common connection conditions.",
+        "Event Discovery Application — coordinates public read-only use cases for listing events, applying category and location filters, and retrieving a selected event's details.",
+        "Event Catalog Boundary — defines the storage-neutral event model and query contract consumed by discovery capabilities, keeping content behavior consistent across data sources.",
+        "Content Source Adapter — loads and maps event records from the active content source into the catalog contract, using JSON initially and permitting a later Firestore adapter."
+      ]
+    },
+    "roadmap": {
+      "milestones": [
+        {
+          "title": "Portable Event Catalog",
+          "objective": "Establish a dependable, public read-only event catalog whose behavior is independent of the active content source, reducing migration risk before visitor experiences depend on it.",
+          "outcomes": [
+            "Event records from the initial JSON source are presented through a consistent, storage-neutral event model.",
+            "Consumers can list events, filter them by category and location, and retrieve one event without knowing how content is stored.",
+            "The active content-source adapter can be replaced by a future Firestore adapter without changing catalog consumers."
+          ]
+        },
+        {
+          "title": "Mobile Event Discovery",
+          "objective": "Enable visitors to quickly find relevant local events through a clear, accessible browsing experience designed first for mobile devices.",
+          "outcomes": [
+            "Visitors can browse a legible collection of local events on common small-screen devices.",
+            "Visitors can narrow the visible events by category and location and understand which filters are active.",
+            "The discovery experience communicates loading, empty, and unavailable states clearly and remains usable across supported screen sizes."
+          ]
+        },
+        {
+          "title": "Decision-Ready Event Details",
+          "objective": "Complete the public discovery journey by giving visitors accurate, readable information sufficient to decide whether and how to attend an event.",
+          "outcomes": [
+            "Visitors can open an event from discovery results and view its complete attendance-relevant details.",
+            "Visitors can move between discovery and event details without losing the context of their search.",
+            "Missing or unavailable events produce a clear, recoverable experience rather than a broken journey.",
+            "All delivered visitor journeys remain public and read-only, with authentication and event management excluded."
+          ]
+        }
+      ],
+      "id": "plan_9dc4bf9f2a524b84"
+    },
+    "epics": [
+      {
+        "title": "Storage-Neutral Event Catalog",
+        "goal": "Deliver a consistent public event catalog that supports discovery and details from JSON today while allowing the content source to change without affecting consumers.",
+        "roadmapMilestone": "Portable Event Catalog",
+        "id": "plan_69546d6ed82d51f9",
+        "stories": [
+          {
+            "title": "Use Consistent Event Records",
+            "description": "As a visitor-experience developer, I need event content represented consistently so that every discovery and detail view can rely on the same meaningful fields.",
+            "id": "plan_9200ca230ffa2204",
+            "acceptanceCriteria": [
+              {
+                "id": "plan_e34de04d2755c7a2",
+                "description": "Every available event has a stable identifier, title, category, location, schedule, description, and attendance-relevant information."
+              },
+              {
+                "id": "plan_7f9a2defde996804",
+                "description": "Event records exposed to consumers use the same field meanings regardless of the underlying content source."
+              },
+              {
+                "id": "plan_005f0d8d1b3d1723",
+                "description": "Invalid or incomplete source records are identified without silently presenting misleading event information."
+              }
+            ],
+            "tasks": [
+              {
+                "title": "Define the Catalog Event Contract",
+                "description": "Specify the storage-neutral event representation and the meaning and validity rules for each visitor-facing field.",
+                "id": "plan_f84e24ce130616b5"
+              },
+              {
+                "title": "Normalize Source Records",
+                "description": "Map source content into the catalog representation and handle records that do not satisfy its validity rules.",
+                "id": "plan_8ca45c7618bd1fe7"
+              }
+            ]
+          },
+          {
+            "title": "Query Events Without Storage Knowledge",
+            "description": "As a visitor-experience developer, I need read-only catalog capabilities for discovery and details so that product behavior does not depend on storage mechanics.",
+            "id": "plan_94e3af1c26052c61",
+            "acceptanceCriteria": [
+              {
+                "id": "plan_21353b6701970eb2",
+                "description": "A consumer can request the available event collection without accessing the active content source directly."
+              },
+              {
+                "id": "plan_0a8ecb3558215ab7",
+                "description": "A consumer can request events matching a category, a location, or both filters together."
+              },
+              {
+                "id": "plan_d4c07661da419a7b",
+                "description": "A consumer can request one event by its stable identifier and can distinguish a missing event from an available event."
+              },
+              {
+                "id": "plan_5290a7fe4bbaf2b6",
+                "description": "All catalog capabilities are read-only and expose no authentication or event-management behavior."
+              }
+            ],
+            "tasks": [
+              {
+                "title": "Specify Read-Only Catalog Operations",
+                "description": "Define the list, filter, and single-event operations and their success, empty, and missing-result behavior.",
+                "id": "plan_650d0fd442f5f53d"
+              },
+              {
+                "title": "Coordinate Discovery Queries",
+                "description": "Deliver application behavior that applies category and location criteria and returns catalog results to consumers.",
+                "id": "plan_c4570885e3135ee2"
+              }
+            ]
+          },
+          {
+            "title": "Serve JSON Through a Replaceable Source",
+            "description": "As a maintainer, I need JSON content isolated behind the catalog boundary so that a future Firestore source can be introduced without redesigning consumer behavior.",
+            "id": "plan_403070fb56a231f7",
+            "acceptanceCriteria": [
+              {
+                "id": "plan_7cbc8f32b015b5dd",
+                "description": "The initial JSON content supplies all catalog operations through the storage-neutral contract."
+              },
+              {
+                "id": "plan_c2661763c0dd6d93",
+                "description": "JSON-specific structure and loading behavior are not exposed to catalog consumers."
+              },
+              {
+                "id": "plan_1b8150b30a1f2913",
+                "description": "A different conforming content-source adapter can be substituted without changing the catalog operation signatures or event representation."
+              }
+            ],
+            "tasks": [
+              {
+                "title": "Define the Content Source Contract",
+                "description": "Establish the source responsibilities needed to supply normalized records without leaking storage-specific details.",
+                "id": "plan_71966a22f54cf878"
+              },
+              {
+                "title": "Deliver the JSON Source Adapter",
+                "description": "Load the initial event content and translate it through the content-source and catalog contracts.",
+                "id": "plan_f43cd4bd4554b70c"
+              },
+              {
+                "title": "Verify Source Substitutability",
+                "description": "Confirm catalog consumers retain identical operations and event meanings when a conforming alternate source is used.",
+                "id": "plan_8e16c9655ec750e2"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Mobile-First Event Discovery",
+        "goal": "Give visitors an accessible, responsive way to browse local events and narrow the collection by category and location with clear feedback.",
+        "roadmapMilestone": "Mobile Event Discovery",
+        "id": "plan_50e6cd24a82e3e93",
+        "stories": [
+          {
+            "title": "Browse Local Events on Small Screens",
+            "description": "As a visitor using a mobile device, I want to scan available local events easily so that I can identify activities that interest me.",
+            "id": "plan_fc3a6f44938b1135",
+            "acceptanceCriteria": [
+              {
+                "id": "plan_8035fec284be0a37",
+                "description": "Available events are presented as a legible collection with enough summary information to distinguish one event from another."
+              },
+              {
+                "id": "plan_966b6ed05ae62b77",
+                "description": "The event collection is usable without horizontal scrolling at common small-screen widths."
+              },
+              {
+                "id": "plan_e852a9ee8f4dd44d",
+                "description": "The browsing experience remains clear and usable when the viewport expands to larger screen sizes."
+              },
+              {
+                "id": "plan_51943c12b5a3fc66",
+                "description": "Each event summary provides an understandable way to open that event's details."
+              }
+            ],
+            "tasks": [
+              {
+                "title": "Shape Event Discovery Summaries",
+                "description": "Select and organize the catalog information visitors need to scan and compare event results.",
+                "id": "plan_ca84629a1efcfd63"
+              },
+              {
+                "title": "Deliver the Responsive Event Collection",
+                "description": "Create the small-screen-first browsing experience and its adaptations for larger viewports.",
+                "id": "plan_c01e1d923496c5c3"
+              },
+              {
+                "title": "Connect Summaries to Event Details",
+                "description": "Provide a clear, accessible interaction from every event summary to its detail destination.",
+                "id": "plan_fed6f42b29c1b8c3"
+              }
+            ]
+          },
+          {
+            "title": "Filter by Category and Location",
+            "description": "As a visitor, I want to narrow events by category and location so that I can focus on activities relevant to my interests and area.",
+            "id": "plan_db333bc02199bf61",
+            "acceptanceCriteria": [
+              {
+                "id": "plan_d4dbef58a3a0fc50",
+                "description": "A visitor can select an available category and see only events in that category."
+              },
+              {
+                "id": "plan_727a3fd3745a0cfc",
+                "description": "A visitor can select an available location and see only events in that location."
+              },
+              {
+                "id": "plan_2bf7534ccaac5ad9",
+                "description": "When category and location are both selected, the results satisfy both selections."
+              },
+              {
+                "id": "plan_ac12896a0727891b",
+                "description": "The currently active filters are visible and can be cleared without reloading the experience."
+              },
+              {
+                "id": "plan_b908b817bf0306a7",
+                "description": "Filter controls can be understood and operated with keyboard and touch input."
+              }
+            ],
+            "tasks": [
+              {
+                "title": "Derive Available Filter Choices",
+                "description": "Supply category and location options from the event catalog in a consistent, visitor-readable form.",
+                "id": "plan_7113705f5bb9ed51"
+              },
+              {
+                "title": "Deliver Accessible Filter Controls",
+                "description": "Provide category and location controls with visible selection, clear, and combined-filter behavior.",
+                "id": "plan_e3b0436e5a5098dd"
+              },
+              {
+                "title": "Synchronize Filters and Results",
+                "description": "Apply active filter criteria to the displayed event collection and keep result feedback current.",
+                "id": "plan_0ae2ac30a16f5a35"
+              }
+            ]
+          },
+          {
+            "title": "Understand Discovery States",
+            "description": "As a visitor, I want clear feedback while events load or cannot be shown so that I understand what is happening and what I can do next.",
+            "id": "plan_908458dca21edadb",
+            "acceptanceCriteria": [
+              {
+                "id": "plan_1ab54eede7062b86",
+                "description": "The discovery experience visibly distinguishes loading, loaded, empty-filter-result, empty-catalog, and unavailable states."
+              },
+              {
+                "id": "plan_48b3ea1f8c30c012",
+                "description": "An empty filtered result explains that no events match the active criteria and offers a way to change or clear them."
+              },
+              {
+                "id": "plan_4204e6fb14ee2e2e",
+                "description": "An unavailable catalog state communicates the problem without displaying stale or misleading results and offers a recovery action when one is possible."
+              },
+              {
+                "id": "plan_a4455105a3b5f196",
+                "description": "Status feedback is available to assistive technology and does not rely on color alone."
+              }
+            ],
+            "tasks": [
+              {
+                "title": "Define Discovery State Messages",
+                "description": "Specify clear visitor-facing feedback and recovery choices for each discovery state.",
+                "id": "plan_a50d07a9b3bc84c6"
+              },
+              {
+                "title": "Deliver Discovery State Presentation",
+                "description": "Present loading, empty, unavailable, and successful results accessibly across supported screen sizes.",
+                "id": "plan_4130855b163ebc9c"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Complete Event Detail Journey",
+        "goal": "Enable visitors to evaluate an event using complete, readable details and return to their prior discovery context when finished.",
+        "roadmapMilestone": "Decision-Ready Event Details",
+        "id": "plan_28d7c87019cdd321",
+        "stories": [
+          {
+            "title": "Evaluate an Event Before Attending",
+            "description": "As a visitor, I want complete event information in a readable detail view so that I can decide whether and how to attend.",
+            "id": "plan_ac15fcff61519455",
+            "acceptanceCriteria": [
+              {
+                "id": "plan_82e71e48778e6fb8",
+                "description": "Opening an available event displays its title, category, location, schedule, description, and attendance-relevant information."
+              },
+              {
+                "id": "plan_c3902d69fa3faae8",
+                "description": "The detail hierarchy makes the event's time and place easy to identify on a small screen."
+              },
+              {
+                "id": "plan_ef6f9f41207a812b",
+                "description": "Event details remain legible and navigable across supported screen sizes and with keyboard input."
+              },
+              {
+                "id": "plan_ccba24197f3ad89d",
+                "description": "The detail experience is public and does not require sign-in."
+              }
+            ],
+            "tasks": [
+              {
+                "title": "Organize Attendance Information",
+                "description": "Define a clear detail hierarchy that prioritizes the information needed to decide whether and how to attend.",
+                "id": "plan_111d5bf685118659"
+              },
+              {
+                "title": "Deliver the Responsive Detail Experience",
+                "description": "Present complete catalog details accessibly with a layout that begins with small-screen constraints.",
+                "id": "plan_ec23cb73459af89b"
+              }
+            ]
+          },
+          {
+            "title": "Return to Prior Discovery Context",
+            "description": "As a visitor, I want to return from an event to the discovery state I was using so that I can continue comparing relevant events.",
+            "id": "plan_af3a50ec3b53f0dc",
+            "acceptanceCriteria": [
+              {
+                "id": "plan_1c5dc3ae9b369517",
+                "description": "A visitor can return from event details to the event collection through an explicit navigation action."
+              },
+              {
+                "id": "plan_970b7a44f7ca3bf6",
+                "description": "Returning to discovery restores the visitor's previously active category and location filters."
+              },
+              {
+                "id": "plan_3a77f414e007b004",
+                "description": "The restored collection makes it possible to continue from the prior browsing context without repeating filter selections."
+              }
+            ],
+            "tasks": [
+              {
+                "title": "Preserve Discovery Context",
+                "description": "Carry the active category and location selections through the detail journey in a recoverable form.",
+                "id": "plan_a2d52bbeb661dc50"
+              },
+              {
+                "title": "Deliver Context-Aware Return Navigation",
+                "description": "Provide a clear return path that restores the prior filtered event collection.",
+                "id": "plan_2c15b3b73d0b858a"
+              }
+            ]
+          },
+          {
+            "title": "Recover from Missing Event Details",
+            "description": "As a visitor, I want helpful guidance when an event cannot be found or loaded so that I can continue discovering other events.",
+            "id": "plan_54e132a1ab0707e5",
+            "acceptanceCriteria": [
+              {
+                "id": "plan_b8a7bc9be5afaac4",
+                "description": "Requesting an unknown event produces a clear not-found state rather than an empty or broken detail view."
+              },
+              {
+                "id": "plan_06f2607e9eabd85b",
+                "description": "A temporarily unavailable event produces a distinct error state without presenting partial information as complete."
+              },
+              {
+                "id": "plan_b8f1b55e805cb4fc",
+                "description": "Both missing and unavailable states provide an accessible route back to event discovery."
+              },
+              {
+                "id": "plan_ac67b89b92bb0a54",
+                "description": "No missing-event state exposes event-management or authentication controls."
+              }
+            ],
+            "tasks": [
+              {
+                "title": "Distinguish Detail Failure States",
+                "description": "Map missing and unavailable catalog outcomes to separate visitor-facing states.",
+                "id": "plan_1e20c636708ed2d2"
+              },
+              {
+                "title": "Deliver Detail Recovery Paths",
+                "description": "Present accessible failure guidance and a dependable route back to discovery.",
+                "id": "plan_8c34c4425631b3bd"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "type": "DEPENDS_ON",
+        "sourceId": "plan_872383c64a8e8cb4",
+        "targetId": "plan_0308769ebff9234a"
+      },
+      {
+        "type": "DEPENDS_ON",
+        "sourceId": "plan_872383c64a8e8cb4",
+        "targetId": "plan_9398e359ffc006b7"
+      },
+      {
+        "type": "DEPENDS_ON",
+        "sourceId": "plan_9dc4bf9f2a524b84",
+        "targetId": "plan_872383c64a8e8cb4"
+      },
+      {
+        "type": "DEPENDS_ON",
+        "sourceId": "plan_69546d6ed82d51f9",
+        "targetId": "plan_9dc4bf9f2a524b84"
+      },
+      {
+        "type": "IMPLEMENTS",
+        "sourceId": "plan_69546d6ed82d51f9",
+        "targetId": "plan_872383c64a8e8cb4"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_69546d6ed82d51f9",
+        "targetId": "plan_9200ca230ffa2204"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_9200ca230ffa2204",
+        "targetId": "plan_e34de04d2755c7a2"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_9200ca230ffa2204",
+        "targetId": "plan_7f9a2defde996804"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_9200ca230ffa2204",
+        "targetId": "plan_005f0d8d1b3d1723"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_9200ca230ffa2204",
+        "targetId": "plan_f84e24ce130616b5"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_9200ca230ffa2204",
+        "targetId": "plan_8ca45c7618bd1fe7"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_69546d6ed82d51f9",
+        "targetId": "plan_94e3af1c26052c61"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_94e3af1c26052c61",
+        "targetId": "plan_21353b6701970eb2"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_94e3af1c26052c61",
+        "targetId": "plan_0a8ecb3558215ab7"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_94e3af1c26052c61",
+        "targetId": "plan_d4c07661da419a7b"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_94e3af1c26052c61",
+        "targetId": "plan_5290a7fe4bbaf2b6"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_94e3af1c26052c61",
+        "targetId": "plan_650d0fd442f5f53d"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_94e3af1c26052c61",
+        "targetId": "plan_c4570885e3135ee2"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_69546d6ed82d51f9",
+        "targetId": "plan_403070fb56a231f7"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_403070fb56a231f7",
+        "targetId": "plan_7cbc8f32b015b5dd"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_403070fb56a231f7",
+        "targetId": "plan_c2661763c0dd6d93"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_403070fb56a231f7",
+        "targetId": "plan_1b8150b30a1f2913"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_403070fb56a231f7",
+        "targetId": "plan_71966a22f54cf878"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_403070fb56a231f7",
+        "targetId": "plan_f43cd4bd4554b70c"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_403070fb56a231f7",
+        "targetId": "plan_8e16c9655ec750e2"
+      },
+      {
+        "type": "DEPENDS_ON",
+        "sourceId": "plan_50e6cd24a82e3e93",
+        "targetId": "plan_9dc4bf9f2a524b84"
+      },
+      {
+        "type": "IMPLEMENTS",
+        "sourceId": "plan_50e6cd24a82e3e93",
+        "targetId": "plan_872383c64a8e8cb4"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_50e6cd24a82e3e93",
+        "targetId": "plan_fc3a6f44938b1135"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_fc3a6f44938b1135",
+        "targetId": "plan_8035fec284be0a37"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_fc3a6f44938b1135",
+        "targetId": "plan_966b6ed05ae62b77"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_fc3a6f44938b1135",
+        "targetId": "plan_e852a9ee8f4dd44d"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_fc3a6f44938b1135",
+        "targetId": "plan_51943c12b5a3fc66"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_fc3a6f44938b1135",
+        "targetId": "plan_ca84629a1efcfd63"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_fc3a6f44938b1135",
+        "targetId": "plan_c01e1d923496c5c3"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_fc3a6f44938b1135",
+        "targetId": "plan_fed6f42b29c1b8c3"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_50e6cd24a82e3e93",
+        "targetId": "plan_db333bc02199bf61"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_db333bc02199bf61",
+        "targetId": "plan_d4dbef58a3a0fc50"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_db333bc02199bf61",
+        "targetId": "plan_727a3fd3745a0cfc"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_db333bc02199bf61",
+        "targetId": "plan_2bf7534ccaac5ad9"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_db333bc02199bf61",
+        "targetId": "plan_ac12896a0727891b"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_db333bc02199bf61",
+        "targetId": "plan_b908b817bf0306a7"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_db333bc02199bf61",
+        "targetId": "plan_7113705f5bb9ed51"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_db333bc02199bf61",
+        "targetId": "plan_e3b0436e5a5098dd"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_db333bc02199bf61",
+        "targetId": "plan_0ae2ac30a16f5a35"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_50e6cd24a82e3e93",
+        "targetId": "plan_908458dca21edadb"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_908458dca21edadb",
+        "targetId": "plan_1ab54eede7062b86"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_908458dca21edadb",
+        "targetId": "plan_48b3ea1f8c30c012"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_908458dca21edadb",
+        "targetId": "plan_4204e6fb14ee2e2e"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_908458dca21edadb",
+        "targetId": "plan_a4455105a3b5f196"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_908458dca21edadb",
+        "targetId": "plan_a50d07a9b3bc84c6"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_908458dca21edadb",
+        "targetId": "plan_4130855b163ebc9c"
+      },
+      {
+        "type": "DEPENDS_ON",
+        "sourceId": "plan_28d7c87019cdd321",
+        "targetId": "plan_9dc4bf9f2a524b84"
+      },
+      {
+        "type": "IMPLEMENTS",
+        "sourceId": "plan_28d7c87019cdd321",
+        "targetId": "plan_872383c64a8e8cb4"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_28d7c87019cdd321",
+        "targetId": "plan_ac15fcff61519455"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_ac15fcff61519455",
+        "targetId": "plan_82e71e48778e6fb8"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_ac15fcff61519455",
+        "targetId": "plan_c3902d69fa3faae8"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_ac15fcff61519455",
+        "targetId": "plan_ef6f9f41207a812b"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_ac15fcff61519455",
+        "targetId": "plan_ccba24197f3ad89d"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_ac15fcff61519455",
+        "targetId": "plan_111d5bf685118659"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_ac15fcff61519455",
+        "targetId": "plan_ec23cb73459af89b"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_28d7c87019cdd321",
+        "targetId": "plan_af3a50ec3b53f0dc"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_af3a50ec3b53f0dc",
+        "targetId": "plan_1c5dc3ae9b369517"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_af3a50ec3b53f0dc",
+        "targetId": "plan_970b7a44f7ca3bf6"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_af3a50ec3b53f0dc",
+        "targetId": "plan_3a77f414e007b004"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_af3a50ec3b53f0dc",
+        "targetId": "plan_a2d52bbeb661dc50"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_af3a50ec3b53f0dc",
+        "targetId": "plan_2c15b3b73d0b858a"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_28d7c87019cdd321",
+        "targetId": "plan_54e132a1ab0707e5"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_54e132a1ab0707e5",
+        "targetId": "plan_b8a7bc9be5afaac4"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_54e132a1ab0707e5",
+        "targetId": "plan_06f2607e9eabd85b"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_54e132a1ab0707e5",
+        "targetId": "plan_b8f1b55e805cb4fc"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_54e132a1ab0707e5",
+        "targetId": "plan_ac67b89b92bb0a54"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_54e132a1ab0707e5",
+        "targetId": "plan_1e20c636708ed2d2"
+      },
+      {
+        "type": "CONTAINS",
+        "sourceId": "plan_54e132a1ab0707e5",
+        "targetId": "plan_8c34c4425631b3bd"
+      }
+    ]
+  },
+  "completedStages": [
+    "foundation",
+    "architecture",
+    "roadmap",
+    "epics"
+  ],
+  "nodes": [
+    {
+      "id": "plan_0308769ebff9234a",
+      "type": "VISION"
+    },
+    {
+      "id": "plan_9398e359ffc006b7",
+      "type": "CONSTITUTION"
+    },
+    {
+      "id": "plan_872383c64a8e8cb4",
+      "type": "ARCHITECTURE"
+    },
+    {
+      "id": "plan_9dc4bf9f2a524b84",
+      "type": "ROADMAP"
+    },
+    {
+      "id": "plan_69546d6ed82d51f9",
+      "type": "EPIC"
+    },
+    {
+      "id": "plan_9200ca230ffa2204",
+      "type": "STORY"
+    },
+    {
+      "id": "plan_e34de04d2755c7a2",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_7f9a2defde996804",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_005f0d8d1b3d1723",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_f84e24ce130616b5",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_8ca45c7618bd1fe7",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_94e3af1c26052c61",
+      "type": "STORY"
+    },
+    {
+      "id": "plan_21353b6701970eb2",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_0a8ecb3558215ab7",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_d4c07661da419a7b",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_5290a7fe4bbaf2b6",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_650d0fd442f5f53d",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_c4570885e3135ee2",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_403070fb56a231f7",
+      "type": "STORY"
+    },
+    {
+      "id": "plan_7cbc8f32b015b5dd",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_c2661763c0dd6d93",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_1b8150b30a1f2913",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_71966a22f54cf878",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_f43cd4bd4554b70c",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_8e16c9655ec750e2",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_50e6cd24a82e3e93",
+      "type": "EPIC"
+    },
+    {
+      "id": "plan_fc3a6f44938b1135",
+      "type": "STORY"
+    },
+    {
+      "id": "plan_8035fec284be0a37",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_966b6ed05ae62b77",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_e852a9ee8f4dd44d",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_51943c12b5a3fc66",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_ca84629a1efcfd63",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_c01e1d923496c5c3",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_fed6f42b29c1b8c3",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_db333bc02199bf61",
+      "type": "STORY"
+    },
+    {
+      "id": "plan_d4dbef58a3a0fc50",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_727a3fd3745a0cfc",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_2bf7534ccaac5ad9",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_ac12896a0727891b",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_b908b817bf0306a7",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_7113705f5bb9ed51",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_e3b0436e5a5098dd",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_0ae2ac30a16f5a35",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_908458dca21edadb",
+      "type": "STORY"
+    },
+    {
+      "id": "plan_1ab54eede7062b86",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_48b3ea1f8c30c012",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_4204e6fb14ee2e2e",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_a4455105a3b5f196",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_a50d07a9b3bc84c6",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_4130855b163ebc9c",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_28d7c87019cdd321",
+      "type": "EPIC"
+    },
+    {
+      "id": "plan_ac15fcff61519455",
+      "type": "STORY"
+    },
+    {
+      "id": "plan_82e71e48778e6fb8",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_c3902d69fa3faae8",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_ef6f9f41207a812b",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_ccba24197f3ad89d",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_111d5bf685118659",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_ec23cb73459af89b",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_af3a50ec3b53f0dc",
+      "type": "STORY"
+    },
+    {
+      "id": "plan_1c5dc3ae9b369517",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_970b7a44f7ca3bf6",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_3a77f414e007b004",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_a2d52bbeb661dc50",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_2c15b3b73d0b858a",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_54e132a1ab0707e5",
+      "type": "STORY"
+    },
+    {
+      "id": "plan_b8a7bc9be5afaac4",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_06f2607e9eabd85b",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_b8f1b55e805cb4fc",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_ac67b89b92bb0a54",
+      "type": "ACCEPTANCE_CRITERION"
+    },
+    {
+      "id": "plan_1e20c636708ed2d2",
+      "type": "TASK"
+    },
+    {
+      "id": "plan_8c34c4425631b3bd",
+      "type": "TASK"
+    }
+  ],
+  "relationships": [
+    {
+      "type": "DEPENDS_ON",
+      "sourceId": "plan_872383c64a8e8cb4",
+      "targetId": "plan_0308769ebff9234a"
+    },
+    {
+      "type": "DEPENDS_ON",
+      "sourceId": "plan_872383c64a8e8cb4",
+      "targetId": "plan_9398e359ffc006b7"
+    },
+    {
+      "type": "DEPENDS_ON",
+      "sourceId": "plan_9dc4bf9f2a524b84",
+      "targetId": "plan_872383c64a8e8cb4"
+    },
+    {
+      "type": "DEPENDS_ON",
+      "sourceId": "plan_69546d6ed82d51f9",
+      "targetId": "plan_9dc4bf9f2a524b84"
+    },
+    {
+      "type": "IMPLEMENTS",
+      "sourceId": "plan_69546d6ed82d51f9",
+      "targetId": "plan_872383c64a8e8cb4"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_69546d6ed82d51f9",
+      "targetId": "plan_9200ca230ffa2204"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_9200ca230ffa2204",
+      "targetId": "plan_e34de04d2755c7a2"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_9200ca230ffa2204",
+      "targetId": "plan_7f9a2defde996804"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_9200ca230ffa2204",
+      "targetId": "plan_005f0d8d1b3d1723"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_9200ca230ffa2204",
+      "targetId": "plan_f84e24ce130616b5"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_9200ca230ffa2204",
+      "targetId": "plan_8ca45c7618bd1fe7"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_69546d6ed82d51f9",
+      "targetId": "plan_94e3af1c26052c61"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_94e3af1c26052c61",
+      "targetId": "plan_21353b6701970eb2"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_94e3af1c26052c61",
+      "targetId": "plan_0a8ecb3558215ab7"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_94e3af1c26052c61",
+      "targetId": "plan_d4c07661da419a7b"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_94e3af1c26052c61",
+      "targetId": "plan_5290a7fe4bbaf2b6"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_94e3af1c26052c61",
+      "targetId": "plan_650d0fd442f5f53d"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_94e3af1c26052c61",
+      "targetId": "plan_c4570885e3135ee2"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_69546d6ed82d51f9",
+      "targetId": "plan_403070fb56a231f7"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_403070fb56a231f7",
+      "targetId": "plan_7cbc8f32b015b5dd"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_403070fb56a231f7",
+      "targetId": "plan_c2661763c0dd6d93"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_403070fb56a231f7",
+      "targetId": "plan_1b8150b30a1f2913"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_403070fb56a231f7",
+      "targetId": "plan_71966a22f54cf878"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_403070fb56a231f7",
+      "targetId": "plan_f43cd4bd4554b70c"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_403070fb56a231f7",
+      "targetId": "plan_8e16c9655ec750e2"
+    },
+    {
+      "type": "DEPENDS_ON",
+      "sourceId": "plan_50e6cd24a82e3e93",
+      "targetId": "plan_9dc4bf9f2a524b84"
+    },
+    {
+      "type": "IMPLEMENTS",
+      "sourceId": "plan_50e6cd24a82e3e93",
+      "targetId": "plan_872383c64a8e8cb4"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_50e6cd24a82e3e93",
+      "targetId": "plan_fc3a6f44938b1135"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_fc3a6f44938b1135",
+      "targetId": "plan_8035fec284be0a37"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_fc3a6f44938b1135",
+      "targetId": "plan_966b6ed05ae62b77"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_fc3a6f44938b1135",
+      "targetId": "plan_e852a9ee8f4dd44d"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_fc3a6f44938b1135",
+      "targetId": "plan_51943c12b5a3fc66"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_fc3a6f44938b1135",
+      "targetId": "plan_ca84629a1efcfd63"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_fc3a6f44938b1135",
+      "targetId": "plan_c01e1d923496c5c3"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_fc3a6f44938b1135",
+      "targetId": "plan_fed6f42b29c1b8c3"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_50e6cd24a82e3e93",
+      "targetId": "plan_db333bc02199bf61"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_db333bc02199bf61",
+      "targetId": "plan_d4dbef58a3a0fc50"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_db333bc02199bf61",
+      "targetId": "plan_727a3fd3745a0cfc"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_db333bc02199bf61",
+      "targetId": "plan_2bf7534ccaac5ad9"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_db333bc02199bf61",
+      "targetId": "plan_ac12896a0727891b"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_db333bc02199bf61",
+      "targetId": "plan_b908b817bf0306a7"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_db333bc02199bf61",
+      "targetId": "plan_7113705f5bb9ed51"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_db333bc02199bf61",
+      "targetId": "plan_e3b0436e5a5098dd"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_db333bc02199bf61",
+      "targetId": "plan_0ae2ac30a16f5a35"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_50e6cd24a82e3e93",
+      "targetId": "plan_908458dca21edadb"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_908458dca21edadb",
+      "targetId": "plan_1ab54eede7062b86"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_908458dca21edadb",
+      "targetId": "plan_48b3ea1f8c30c012"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_908458dca21edadb",
+      "targetId": "plan_4204e6fb14ee2e2e"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_908458dca21edadb",
+      "targetId": "plan_a4455105a3b5f196"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_908458dca21edadb",
+      "targetId": "plan_a50d07a9b3bc84c6"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_908458dca21edadb",
+      "targetId": "plan_4130855b163ebc9c"
+    },
+    {
+      "type": "DEPENDS_ON",
+      "sourceId": "plan_28d7c87019cdd321",
+      "targetId": "plan_9dc4bf9f2a524b84"
+    },
+    {
+      "type": "IMPLEMENTS",
+      "sourceId": "plan_28d7c87019cdd321",
+      "targetId": "plan_872383c64a8e8cb4"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_28d7c87019cdd321",
+      "targetId": "plan_ac15fcff61519455"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_ac15fcff61519455",
+      "targetId": "plan_82e71e48778e6fb8"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_ac15fcff61519455",
+      "targetId": "plan_c3902d69fa3faae8"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_ac15fcff61519455",
+      "targetId": "plan_ef6f9f41207a812b"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_ac15fcff61519455",
+      "targetId": "plan_ccba24197f3ad89d"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_ac15fcff61519455",
+      "targetId": "plan_111d5bf685118659"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_ac15fcff61519455",
+      "targetId": "plan_ec23cb73459af89b"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_28d7c87019cdd321",
+      "targetId": "plan_af3a50ec3b53f0dc"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_af3a50ec3b53f0dc",
+      "targetId": "plan_1c5dc3ae9b369517"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_af3a50ec3b53f0dc",
+      "targetId": "plan_970b7a44f7ca3bf6"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_af3a50ec3b53f0dc",
+      "targetId": "plan_3a77f414e007b004"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_af3a50ec3b53f0dc",
+      "targetId": "plan_a2d52bbeb661dc50"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_af3a50ec3b53f0dc",
+      "targetId": "plan_2c15b3b73d0b858a"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_28d7c87019cdd321",
+      "targetId": "plan_54e132a1ab0707e5"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_54e132a1ab0707e5",
+      "targetId": "plan_b8a7bc9be5afaac4"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_54e132a1ab0707e5",
+      "targetId": "plan_06f2607e9eabd85b"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_54e132a1ab0707e5",
+      "targetId": "plan_b8f1b55e805cb4fc"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_54e132a1ab0707e5",
+      "targetId": "plan_ac67b89b92bb0a54"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_54e132a1ab0707e5",
+      "targetId": "plan_1e20c636708ed2d2"
+    },
+    {
+      "type": "CONTAINS",
+      "sourceId": "plan_54e132a1ab0707e5",
+      "targetId": "plan_8c34c4425631b3bd"
+    }
+  ]
+}
