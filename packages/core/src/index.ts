@@ -287,7 +287,64 @@ export interface PlanningArtifactSet {
   documents: PlanningArtifact[]
 }
 
-export const technicalDesignStatusSchema = z.enum(["draft", "needs-changes", "approved"])
+export type TechnicalDesignId = string & { readonly __brand: "TechnicalDesignId" }
+export type ScaffoldRunId = string & { readonly __brand: "ScaffoldRunId" }
+
+export const technicalDesignIdSchema = z.string().min(1).transform((value) => value as TechnicalDesignId)
+export const scaffoldRunIdSchema = z.string().min(1).transform((value) => value as ScaffoldRunId)
+export const frameworkIdSchema = skillTargetSchema
+export type FrameworkId = z.infer<typeof frameworkIdSchema>
+export const languageIdSchema = skillTargetSchema
+export type LanguageId = z.infer<typeof languageIdSchema>
+
+export interface ValidationResult {
+  valid: boolean
+  issues: string[]
+  summary: string
+}
+
+const workspaceRelativeRootSchema = z.string().trim().refine((path) =>
+  !path.startsWith("/") && !path.includes("\\") && !path.split("/").includes(".."),
+"Project root must be workspace-relative.")
+
+export const projectProfileSchema = z.object({
+  projectId: projectIdSchema.optional(),
+  name: nonEmptyTextSchema,
+  rootPath: workspaceRelativeRootSchema,
+  state: z.enum(["blank", "existing"]),
+  language: languageIdSchema,
+  framework: frameworkIdSchema,
+  toolchain: skillTargetSchema,
+  packageManager: packageManagerSchema,
+  sourceRoots: z.array(z.string().trim().min(1)),
+  evidence: z.array(z.object({
+    kind: z.enum(["dependency", "script", "configuration"]),
+    source: nonEmptyTextSchema,
+    value: nonEmptyTextSchema,
+  }).strict()),
+  source: z.enum(["detected", "architecture", "technical-design"]),
+}).strict()
+export type ProjectProfile = z.infer<typeof projectProfileSchema>
+
+const newProjectTargetSchema = z.object({
+  kind: z.literal("new"),
+  name: nonEmptyTextSchema,
+  rootPath: workspaceRelativeRootSchema,
+  projectKind: projectKindSchema,
+  framework: z.object({
+    language: languageIdSchema,
+    framework: frameworkIdSchema,
+    toolchain: skillTargetSchema,
+  }).strict(),
+}).strict()
+const existingProjectTargetSchema = z.object({
+  kind: z.literal("existing"),
+  projectId: projectIdSchema,
+}).strict()
+export const projectTargetSchema = z.discriminatedUnion("kind", [existingProjectTargetSchema, newProjectTargetSchema])
+export type ProjectTarget = z.infer<typeof projectTargetSchema>
+
+export const technicalDesignStatusSchema = z.enum(["draft", "needs-changes", "approved", "superseded", "scaffolded"])
 export type TechnicalDesignStatus = z.infer<typeof technicalDesignStatusSchema>
 export const technicalFileKindSchema = z.enum(["source", "test", "configuration"])
 export type TechnicalFileKind = z.infer<typeof technicalFileKindSchema>
@@ -304,14 +361,15 @@ export const technicalSymbolSchema = z.object({
 }).strict()
 export type TechnicalSymbol = z.infer<typeof technicalSymbolSchema>
 
-const technicalFilePathSchema = z.string().refine((path) =>
-  /^src\/[a-z0-9-]+\/[a-z0-9-]+(?:\.(?:types|service))?\.ts$/.test(path) ||
-  /^src\/[a-z0-9-]+\/index\.ts$/.test(path),
-"Technical file path must be a managed TypeScript source path.")
+export const technicalFilePathSchema = z.string().trim().min(1).refine((path) =>
+  !path.startsWith("/") && !path.includes("\\") && !path.split("/").includes(".."),
+"Technical file path must be safe and workspace-relative.")
 
 export const technicalFileSchema = z.object({
   path: technicalFilePathSchema,
   kind: technicalFileKindSchema,
+  language: languageIdSchema.default("typescript"),
+  ownership: z.enum(["framework-baseline", "epic"]).default("epic"),
   exports: z.array(technicalSymbolSchema),
 }).strict()
 export type TechnicalFile = z.infer<typeof technicalFileSchema>
@@ -321,16 +379,23 @@ export const technicalModuleSchema = z.object({
   path: nonEmptyTextSchema,
   purpose: nonEmptyTextSchema,
   files: z.array(technicalFileSchema).min(1),
-  dependencies: z.array(planningIdSchema),
 }).strict()
 export type TechnicalModule = z.infer<typeof technicalModuleSchema>
 
-export const technicalDependencySchema = z.object({
-  targetId: planningIdSchema,
-  kind: z.enum(["file", "symbol", "technical-design"]),
-  status: technicalDependencyStatusSchema,
-}).strict()
+export const technicalDependencySchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("technical-design"), targetDesignId: technicalDesignIdSchema }).strict(),
+  z.object({ kind: z.literal("file"), targetDesignId: technicalDesignIdSchema, filePath: technicalFilePathSchema }).strict(),
+  z.object({ kind: z.literal("symbol"), targetDesignId: technicalDesignIdSchema, filePath: technicalFilePathSchema, symbolName: nonEmptyTextSchema }).strict(),
+])
 export type TechnicalDependency = z.infer<typeof technicalDependencySchema>
+
+export const resolvedTechnicalDependencySchema = z.object({
+  dependency: technicalDependencySchema,
+  status: technicalDependencyStatusSchema,
+  resolvedEntityId: nonEmptyTextSchema.optional(),
+  reason: nonEmptyTextSchema.optional(),
+}).strict()
+export type ResolvedTechnicalDependency = z.infer<typeof resolvedTechnicalDependencySchema>
 
 export const impactRequestSchema = z.object({
   targetId: planningIdSchema,
@@ -338,15 +403,23 @@ export const impactRequestSchema = z.object({
 }).strict()
 export type ImpactRequest = z.infer<typeof impactRequestSchema>
 
-export const technicalDesignSchema = z.object({
-  id: planningIdSchema,
-  targetId: planningIdSchema,
-  status: technicalDesignStatusSchema,
-  revision: z.number().int().positive(),
+export const technicalDesignDraftSchema = z.object({
   summary: nonEmptyTextSchema,
+  target: projectTargetSchema.optional(),
   modules: z.array(technicalModuleSchema).min(1),
   dependencies: z.array(technicalDependencySchema),
   impactRequests: z.array(impactRequestSchema),
+}).strict()
+export type TechnicalDesignDraft = z.infer<typeof technicalDesignDraftSchema>
+
+export const technicalDesignSchema = technicalDesignDraftSchema.extend({
+  id: technicalDesignIdSchema,
+  targetId: planningIdSchema,
+  status: technicalDesignStatusSchema,
+  revision: z.number().int().positive(),
+  target: projectTargetSchema,
+  profile: projectProfileSchema,
+  resolution: z.array(resolvedTechnicalDependencySchema).optional(),
   feedback: nonEmptyTextSchema.optional(),
   scaffoldedPaths: z.array(technicalFilePathSchema).optional(),
 }).strict().superRefine((design, context) => {
@@ -357,12 +430,39 @@ export const technicalDesignSchema = z.object({
 })
 export type TechnicalDesign = z.infer<typeof technicalDesignSchema>
 
-export const technicalDesignCollectionSchema = z.object({
-  designs: z.array(technicalDesignSchema),
+export const bootstrapPlanSchema = z.object({
+  language: languageIdSchema,
+  framework: frameworkIdSchema,
+  cwd: z.string().trim(),
+  command: z.object({ executable: nonEmptyTextSchema, arguments: z.array(z.string()) }).strict(),
+  expectedManifests: z.array(z.string().trim().min(1)),
+  approvedByDesignId: technicalDesignIdSchema,
 }).strict()
+export type BootstrapPlan = z.infer<typeof bootstrapPlanSchema>
+
+export const scaffoldPlanSchema = z.object({
+  id: scaffoldRunIdSchema,
+  designId: technicalDesignIdSchema,
+  designRevision: z.number().int().positive(),
+  status: z.enum(["prepared", "finalized", "failed"]),
+  profile: projectProfileSchema,
+  bootstrap: bootstrapPlanSchema.optional(),
+  expectedFiles: z.array(technicalFileSchema),
+  existingFiles: z.array(z.object({ path: technicalFilePathSchema, hash: nonEmptyTextSchema }).strict()),
+  skillDiscovery: z.object({
+    query: nonEmptyTextSchema,
+    installed: z.array(z.object({ name: nonEmptyTextSchema, path: nonEmptyTextSchema }).strict()),
+    onlineSearch: z.object({
+      executable: z.literal("npx"),
+      arguments: z.array(nonEmptyTextSchema),
+    }).strict().optional(),
+  }).strict().optional(),
+}).strict()
+export type ScaffoldPlan = z.infer<typeof scaffoldPlanSchema>
 
 export interface ScaffoldResult {
-  designId: PlanningId
+  designId: TechnicalDesignId
+  scaffoldRunId: ScaffoldRunId
   createdPaths: string[]
   preservedPaths: string[]
   workspace: Workspace

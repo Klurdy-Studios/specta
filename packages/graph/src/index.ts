@@ -11,9 +11,11 @@ import {
   planningStageSchema,
   planningStateDataSchema,
   planningStateSchema,
+  projectProfileSchema,
   roadmapSchema,
   roadmapMilestoneSchema,
   storySchema,
+  scaffoldPlanSchema,
   taskSchema,
   technicalDesignSchema,
   technicalFileSchema,
@@ -28,6 +30,8 @@ import type { FileSystem } from "@specta/core/filesystem"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import { z } from "zod"
 
+export * from "./implementation.ts"
+
 export const VisionNode = defineNode("Vision", { schema: visionSchema.omit({ id: true }) })
 export const ConstitutionNode = defineNode("Constitution", { schema: constitutionSchema.omit({ id: true }) })
 export const ArchitectureNode = defineNode("Architecture", { schema: architectureSchema.omit({ id: true }) })
@@ -39,6 +43,8 @@ export const TaskNode = defineNode("Task", { schema: taskSchema.omit({ id: true 
 export const TechnicalDesignNode = defineNode("TechnicalDesign", {
   schema: z.object({
     targetId: technicalDesignSchema.shape.targetId,
+    target: technicalDesignSchema.shape.target,
+    profile: technicalDesignSchema.shape.profile,
     status: technicalDesignSchema.shape.status,
     revision: technicalDesignSchema.shape.revision,
     summary: technicalDesignSchema.shape.summary,
@@ -48,7 +54,7 @@ export const TechnicalDesignNode = defineNode("TechnicalDesign", {
   }).strict(),
 })
 export const ModuleNode = defineNode("Module", {
-  schema: technicalModuleSchema.omit({ files: true, dependencies: true }),
+  schema: technicalModuleSchema.omit({ files: true }),
 })
 export const FileNode = defineNode("File", {
   schema: z.object({
@@ -63,6 +69,10 @@ export const CodeSymbolNode = defineNode("CodeSymbol", {
     signature: technicalSymbolSchema.shape.signature,
     purpose: technicalSymbolSchema.shape.purpose,
   }).strict(),
+})
+export const ProjectProfileNode = defineNode("ProjectProfile", { schema: projectProfileSchema })
+export const ScaffoldRunNode = defineNode("ScaffoldRun", {
+  schema: scaffoldPlanSchema.omit({ id: true, expectedFiles: true, existingFiles: true }),
 })
 
 export const ContainsEdge = defineEdge("CONTAINS")
@@ -85,6 +95,8 @@ export const workspaceGraph = defineGraph({
     Module: { type: ModuleNode },
     File: { type: FileNode },
     CodeSymbol: { type: CodeSymbolNode },
+    ProjectProfile: { type: ProjectProfileNode },
+    ScaffoldRun: { type: ScaffoldRunNode },
   },
   edges: {
     CONTAINS: {
@@ -95,11 +107,11 @@ export const workspaceGraph = defineGraph({
     DEPENDS_ON: {
       type: DependsOnEdge,
       from: [ArchitectureNode, RoadmapNode, EpicNode, TechnicalDesignNode, ModuleNode],
-      to: [VisionNode, ConstitutionNode, ArchitectureNode, RoadmapNode, TechnicalDesignNode, ModuleNode],
+      to: [VisionNode, ConstitutionNode, ArchitectureNode, RoadmapNode, TechnicalDesignNode, ModuleNode, ProjectProfileNode],
     },
     IMPLEMENTS: {
       type: ImplementsEdge,
-      from: [EpicNode, TechnicalDesignNode, ModuleNode, FileNode],
+      from: [EpicNode, TechnicalDesignNode, ModuleNode, FileNode, ScaffoldRunNode],
       to: [ArchitectureNode, EpicNode, TechnicalDesignNode, ModuleNode],
     },
   },

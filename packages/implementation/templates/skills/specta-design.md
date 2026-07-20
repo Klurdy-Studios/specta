@@ -1,15 +1,15 @@
 ---
 name: "specta-design"
-description: "Create a reviewable technical design for one Epic."
+description: "Create a reviewable Technical Design for one Epic and target project."
 ---
 
 # specta-design — Specta Skill
 
 Workflow: design
-Description: Create a reviewable technical design for one Epic.
 Prompt template: .specta/workflows/prompts/design.md
-Validation: workflow-state
 
-This implementation Skill is the native command surface. Read the referenced prompt template, then invoke the Specta Workflow Engine.
-CLI helper arguments: design <epic-id> --draft <draft.json> [--feedback <changes>]
+Read the prompt template and follow its project-profile, language-adapter, and output contract.
+Write the draft to .specta/drafts/design.json.
+
+CLI helper arguments: design <epic-id> --draft .specta/drafts/design.json [--feedback <changes>]
 Read .specta/runtime.json and append these arguments to its cliCommand.

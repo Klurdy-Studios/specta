@@ -68,7 +68,9 @@ it("generates native stage commands from the workflow manifest", async () => {
   await expect(readFile(join(rootPath, ".specta", "workflows", "prompts", "plan-epics.md"), "utf8"))
     .resolves.toContain("Every Roadmap milestone must be covered")
   await expect(readFile(join(rootPath, ".specta", "skills", "codex", "specta-design", "SKILL.md"), "utf8"))
-    .resolves.toContain("CLI helper arguments: design <epic-id> --draft <draft.json> [--feedback <changes>]")
+    .resolves.toContain("CLI helper arguments: design <epic-id> --draft .specta/drafts/design.json [--feedback <changes>]")
+  await expect(readFile(join(rootPath, ".specta", "workflows", "prompts", "scaffold.md"), "utf8"))
+    .resolves.toContain("prepare, agent-apply, finalize")
 })
 
 it("accepts safe community skill targets only", () => {

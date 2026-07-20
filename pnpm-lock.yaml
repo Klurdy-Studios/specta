@@ -62,6 +62,9 @@ importers:
       '@specta/graph':
         specifier: workspace:*
         version: link:../graph
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
 
   packages/planner:
     dependencies:

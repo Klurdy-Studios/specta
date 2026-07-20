@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { resolve } from "node:path"
 import { readFile } from "node:fs/promises"
-import type { ArchitectureDraft, EpicsDraft, FoundationDraft, RoadmapDraft } from "@specta/core"
+import type { ArchitectureDraft, EpicsDraft, FoundationDraft, RoadmapDraft, ScaffoldRunId, TechnicalDesignId } from "@specta/core"
 import { createWorkspaceRepository } from "@specta/core/config"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import { createWorkspaceInitializer, type InitializeWorkspaceRequest } from "@specta/core/workspace"
@@ -51,16 +51,27 @@ if (command === "init") {
       const request = await parseDesignRequest(arguments_)
       const design = await createTechnicalDesignWorkflow().execute({ workspace, ...request })
       console.log("Created Technical Design " + design.id + " (draft).")
-    } else {
+    } else if (command === "approve-design") {
       const identifier = arguments_.at(0)
-      if (identifier === undefined || arguments_.length !== 1) throw new Error("Usage: specta " + command + " <design-id>")
-      if (command === "approve-design") {
-      const design = await createTechnicalDesignApprovalWorkflow().approve(workspace, identifier as never)
+      if (identifier === undefined || arguments_.length !== 1) throw new Error("Usage: specta approve-design <design-id>")
+      const design = await createTechnicalDesignApprovalWorkflow().approve(workspace, identifier as TechnicalDesignId)
       console.log("Approved Technical Design " + design.id + ".")
+    } else {
+      const [identifier, phase, runId] = arguments_
+      if (identifier === undefined || (phase !== "--prepare" && phase !== "--finalize")) {
+        throw new Error("Usage: specta scaffold <design-id> --prepare | specta scaffold <design-id> --finalize <scaffold-run-id>")
+      }
+      const workflow = createScaffoldWorkflow()
+      if (phase === "--prepare") {
+        if (runId !== undefined) throw new Error("The scaffold prepare phase does not accept a run ID.")
+        const plan = await workflow.prepare({ workspace, designId: identifier as TechnicalDesignId })
+        console.log("Prepared Scaffold Run " + plan.id + ".")
+        console.log(JSON.stringify(plan, null, 2))
       } else {
-      const result = await createScaffoldWorkflow().execute({ workspace, designId: identifier as never })
-      console.log("Created " + result.createdPaths.length + " scaffold file(s).")
-      if (result.preservedPaths.length > 0) console.log("Preserved existing files: " + result.preservedPaths.join(", "))
+        if (runId === undefined || arguments_.length !== 3) throw new Error("The scaffold finalize phase requires a scaffold-run-id.")
+        const result = await workflow.finalize({ workspace, scaffoldRunId: runId as ScaffoldRunId })
+        console.log("Created " + result.createdPaths.length + " scaffold file(s).")
+        if (result.preservedPaths.length > 0) console.log("Preserved existing files: " + result.preservedPaths.join(", "))
       }
     }
   } catch (error) {
@@ -68,7 +79,7 @@ if (command === "init") {
     process.exitCode = 1
   }
 } else {
-  console.error("Usage: specta init [path] [--skill-target <target>] | specta plan [foundation <brief> | architecture | roadmap | epics | <brief>] | specta design <epic-id> [--feedback <changes>] | specta approve-design <design-id> | specta scaffold <design-id>")
+  console.error("Usage: specta init [path] [--skill-target <target>] | specta plan [foundation <brief> | architecture | roadmap | epics | <brief>] | specta design <epic-id> --draft <draft.json> | specta approve-design <design-id> | specta scaffold <design-id> --prepare | --finalize <scaffold-run-id>")
   process.exitCode = 1
 }
 

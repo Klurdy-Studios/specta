@@ -1,15 +1,14 @@
 ---
 name: "specta-approve-design"
-description: "Approve a reviewed technical design."
+description: "Approve the latest reviewed Technical Design."
 ---
 
 # specta-approve-design — Specta Skill
 
 Workflow: approve-design
-Description: Approve a reviewed technical design.
 Prompt template: .specta/workflows/prompts/approve-design.md
-Validation: workflow-state
 
-This implementation Skill is the native command surface. Read the referenced prompt template, then invoke the Specta Workflow Engine.
+Read the prompt, show the developer the project/framework decision and dependency state, and obtain explicit approval.
+
 CLI helper arguments: approve-design <design-id>
 Read .specta/runtime.json and append these arguments to its cliCommand.

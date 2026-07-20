@@ -8,6 +8,16 @@ export interface SkillGenerator {
   generate(workspace: Workspace, targets: SkillTarget[]): Promise<string[]>
 }
 
+export interface FrameworkSkillDiscoveryResult {
+  query: string
+  installed: Array<{ name: string, path: string }>
+  onlineSearch?: { executable: "npx", arguments: string[] }
+}
+
+export interface FrameworkSkillDiscovery {
+  discover(workspace: Workspace, query: string): Promise<FrameworkSkillDiscoveryResult>
+}
+
 export function isValidSkillTarget(target: SkillTarget): boolean {
   return skillTargetSchema.safeParse(target).success
 }
@@ -37,6 +47,51 @@ export function createSkillGenerator(
       return artifacts.map((artifact) => artifact.path)
     },
   }
+}
+
+/** Finds relevant installed Skills and returns an explicit, non-executed online search command. */
+export function createFrameworkSkillDiscovery(
+  fileSystem: FileSystem = nodeFileSystem,
+): FrameworkSkillDiscovery {
+  return {
+    async discover(workspace, query) {
+      const normalized = query.toLowerCase()
+      const matches: FrameworkSkillDiscoveryResult["installed"] = []
+      for (const root of skillSearchRoots(workspace)) {
+        const absoluteRoot = join(workspace.rootPath, root)
+        if (!(await fileSystem.exists(absoluteRoot))) continue
+        for (const name of await fileSystem.listDirectories(absoluteRoot)) {
+          if (name.startsWith("specta-")) continue
+          const path = root + "/" + name + "/SKILL.md"
+          const absolutePath = join(workspace.rootPath, path)
+          if (!(await fileSystem.exists(absolutePath))) continue
+          const content = await fileSystem.readText(absolutePath)
+          if ((name + "\n" + content).toLowerCase().includes(normalized)) matches.push({ name, path })
+        }
+      }
+      const installed = [...new Map(matches.map((match) => [match.path, match])).values()]
+      return {
+        query,
+        installed,
+        ...(query === "none" ? {} : {
+          onlineSearch: { executable: "npx" as const, arguments: ["skills", "find", query + " project scaffolding"] },
+        }),
+      }
+    },
+  }
+}
+
+function skillSearchRoots(workspace: Workspace): string[] {
+  const nativeRoots: Partial<Record<SkillTarget, string>> = {
+    codex: ".codex/skills",
+    "claude-code": ".claude/skills",
+    cursor: ".cursor/skills",
+    vscode: ".github/skills",
+  }
+  return [...new Set(workspace.workflow.skillTargets.flatMap((target) => [
+    ".specta/skills/" + target,
+    ...(nativeRoots[target] === undefined ? [] : [nativeRoots[target]]),
+  ]))]
 }
 
 function skillName(workflow: WorkflowDefinition): string {
@@ -96,6 +151,6 @@ function cliInvocation(workflowName: string): string {
   if (workflowName === "plan-epics") return "plan epics --draft .specta/drafts/plan-epics.json"
   if (workflowName === "design") return "design <epic-id> --draft <draft.json> [--feedback <changes>]"
   if (workflowName === "approve-design") return "approve-design <design-id>"
-  if (workflowName === "scaffold") return "scaffold <design-id>"
+  if (workflowName === "scaffold") return "scaffold <design-id> --prepare; then scaffold <design-id> --finalize <scaffold-run-id>"
   return workflowName
 }

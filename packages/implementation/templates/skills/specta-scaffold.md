@@ -1,15 +1,17 @@
 ---
 name: "specta-scaffold"
-description: "Create folders and declaration-only code skeletons from an approved technical design."
+description: "Prepare and finalize declaration-only scaffolding from an approved Technical Design."
 ---
 
 # specta-scaffold — Specta Skill
 
 Workflow: scaffold
-Description: Create folders and declaration-only code skeletons from an approved technical design.
 Prompt template: .specta/workflows/prompts/scaffold.md
-Validation: workflow-state
 
-This implementation Skill is the native command surface. Read the referenced prompt template, then invoke the Specta Workflow Engine.
-CLI helper arguments: scaffold <design-id>
-Read .specta/runtime.json and append these arguments to its cliCommand.
+Read the prompt and orchestrate both phases. Frameworks are project metadata; TypeScript is the initial language adapter.
+
+CLI helper arguments:
+- scaffold <design-id> --prepare
+- scaffold <design-id> --finalize <scaffold-run-id>
+
+Read .specta/runtime.json and append each argument sequence to its cliCommand.

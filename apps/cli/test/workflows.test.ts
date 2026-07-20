@@ -312,25 +312,52 @@ it("requires an approved Epic technical design before creating declaration-only 
 
   expect(revised.revision).toBe(design.revision + 1)
   expect(revised.feedback).toContain("Split service")
-  await expect(createScaffoldWorkflow().execute({ workspace: planning.workspace, designId: revised.id }))
+  await expect(createTechnicalDesignApprovalWorkflow().approve(planning.workspace, design.id))
+    .rejects.toThrow("latest Technical Design revision")
+  await expect(createScaffoldWorkflow().prepare({ workspace: planning.workspace, designId: revised.id }))
     .rejects.toThrow("must be approved")
   await createTechnicalDesignApprovalWorkflow().approve(planning.workspace, revised.id)
-  await Promise.all(revised.modules.flatMap((module) => module.files).map((file) =>
-    nodeFileSystem.writeText(join(rootPath, file.path), "// agent-authored scaffold\n"),
+  const scaffold = createScaffoldWorkflow()
+  await nodeFileSystem.writeText(join(rootPath, "src/session/index.ts"), "export type ExistingSessionMarker = true\n")
+  const scaffoldPlan = await scaffold.prepare({ workspace: planning.workspace, designId: revised.id })
+  await nodeFileSystem.writeText(join(rootPath, "src/session/index.ts"), "export type ExistingSessionMarker = false\n")
+  await expect(scaffold.finalize({ workspace: planning.workspace, scaffoldRunId: scaffoldPlan.id }))
+    .rejects.toThrow("must preserve existing file")
+  await nodeFileSystem.writeText(join(rootPath, "src/session/index.ts"), "export type ExistingSessionMarker = true\n")
+  const declarations: Record<string, string> = {
+    "src/session/session.types.ts": "export interface SessionInput {}\n",
+    "src/session/session.service.ts": "export declare abstract class SessionService { abstract execute(input: SessionInput): SessionInput }\n",
+  }
+  await Promise.all(revised.modules.flatMap((module) => module.files).filter((file) => file.path in declarations).map((file) =>
+    nodeFileSystem.writeText(join(rootPath, file.path), declarations[file.path] as string),
   ))
-  const result = await createScaffoldWorkflow().execute({ workspace: planning.workspace, designId: revised.id })
+  const result = await scaffold.finalize({ workspace: planning.workspace, scaffoldRunId: scaffoldPlan.id })
 
-  expect(result.createdPaths).toHaveLength(3)
+  expect(result.createdPaths).toHaveLength(2)
+  expect(result.preservedPaths).toEqual(["src/session/index.ts"])
   await expect(readFile(join(rootPath, result.createdPaths[1]!), "utf8"))
     .resolves.not.toContain("Not implemented")
   await expect(readFile(join(rootPath, ".specta", "graph", "technical-designs.json"), "utf8"))
-    .resolves.toContain("scaffoldedPaths")
+    .resolves.toContain("\"relationships\"")
+  await expect(readFile(join(rootPath, ".specta", "graph", "technical-designs.json"), "utf8"))
+    .resolves.toContain("\"CODE_SYMBOL\"")
+  await expect(readFile(join(rootPath, ".specta", "graph", "project-profiles.json"), "utf8"))
+    .resolves.toContain("\"language\": \"typescript\"")
+  await expect(readFile(join(rootPath, ".specta", "graph", "scaffold-runs.json"), "utf8"))
+    .resolves.toContain("\"status\": \"finalized\"")
 })
 
 function draft() {
   return {
     summary: "Agent-authored technical design.",
-    modules: [{ name: "Session", path: "src/session", purpose: "Session boundary.", dependencies: [], files: [
+    target: {
+      kind: "new" as const,
+      name: "application",
+      rootPath: "",
+      projectKind: "application" as const,
+      framework: { language: "typescript", framework: "none", toolchain: "none" },
+    },
+    modules: [{ name: "Session", path: "src/session", purpose: "Session boundary.", files: [
       { path: "src/session/session.types.ts", kind: "source" as const, exports: [{ name: "SessionInput", kind: "interface" as const, purpose: "Input." }] },
       { path: "src/session/session.service.ts", kind: "source" as const, exports: [{ name: "SessionService", kind: "class" as const, purpose: "Service.", signature: "abstract execute(input: SessionInput): SessionInput" }] },
       { path: "src/session/index.ts", kind: "source" as const, exports: [] },

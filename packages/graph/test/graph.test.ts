@@ -27,6 +27,8 @@ describe("workspace graph ontology", () => {
       "Module",
       "File",
       "CodeSymbol",
+      "ProjectProfile",
+      "ScaffoldRun",
     ])
     expect(getEdgeKinds(workspaceGraph)).toEqual(["CONTAINS", "DEPENDS_ON", "IMPLEMENTS"])
   })
