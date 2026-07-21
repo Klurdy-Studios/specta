@@ -1,5 +1,7 @@
 # Epic — Storage-Neutral Event Catalog
 
+Epic ID: `plan_69546d6ed82d51f9`
+
 ## Goal
 
 Deliver a consistent public event catalog that supports discovery and details from JSON today while allowing the content source to change without affecting consumers.
@@ -50,4 +52,3 @@ As a maintainer, I need JSON content isolated behind the catalog boundary so tha
 - [ ] Define the Content Source Contract — Establish the source responsibilities needed to supply normalized records without leaking storage-specific details.
 - [ ] Deliver the JSON Source Adapter — Load the initial event content and translate it through the content-source and catalog contracts.
 - [ ] Verify Source Substitutability — Confirm catalog consumers retain identical operations and event meanings when a conforming alternate source is used.
-

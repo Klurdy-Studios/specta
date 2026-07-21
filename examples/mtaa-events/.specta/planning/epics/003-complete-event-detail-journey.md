@@ -1,5 +1,7 @@
 # Epic — Complete Event Detail Journey
 
+Epic ID: `plan_28d7c87019cdd321`
+
 ## Goal
 
 Enable visitors to evaluate an event using complete, readable details and return to their prior discovery context when finished.
@@ -50,4 +52,3 @@ As a visitor, I want helpful guidance when an event cannot be found or loaded so
 
 - [ ] Distinguish Detail Failure States — Map missing and unavailable catalog outcomes to separate visitor-facing states.
 - [ ] Deliver Detail Recovery Paths — Present accessible failure guidance and a dependable route back to discovery.
-

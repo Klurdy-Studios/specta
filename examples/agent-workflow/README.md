@@ -39,15 +39,16 @@ $specta-plan-epics
 Architecture guidance is optional. Invoke `$specta-plan-architecture` without
 additional text when the approved Foundation contains enough context.
 
-Inspect `.specta/planning/` and `.specta/graph/planning-relationships.json`
-after each command. The agent must preserve approved upstream artifacts in every
-later draft; Specta rejects drafts that replace them or advance more than one
-stage.
+Inspect `.specta/planning/` after each command and confirm
+`.specta/graph/workspace.sqlite` exists. The agent must preserve approved
+upstream artifacts in every later draft; Specta rejects drafts that replace
+them or advance more than one stage.
 
 ## Technical design and scaffold
 
-Choose an Epic ID from the planning graph. Ask the agent to create a technical
-design draft from that Epic, Architecture, existing files, and dependencies.
+Choose the Epic ID printed near the top of a generated file under
+`.specta/planning/epics/`. Ask the agent to create a technical design draft from
+that Epic, Architecture, existing files, and dependencies.
 
 ```text
 $specta-design <epic-id>
@@ -73,6 +74,6 @@ as the normal developer workflow:
 node /home/brian-wachanga/Projects/specta/apps/cli/bin/specta.mjs plan foundation "Build a task tracker" --draft .specta/drafts/plan-foundation.json
 ```
 
-Inspect `.specta/designs/` and `.specta/graph/technical-designs.json`. Confirm
-that existing files were preserved and generated skeletons contain declarations,
-not business logic.
+Inspect `.specta/designs/` and confirm that existing files were preserved and
+generated skeletons contain declarations, not business logic. The canonical
+design, profile, and scaffold state is stored in `.specta/graph/workspace.sqlite`.

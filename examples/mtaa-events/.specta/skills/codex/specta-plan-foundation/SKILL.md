@@ -25,4 +25,4 @@ plan foundation <brief> --draft .specta/drafts/plan-foundation.json
 Pass the brief as one quoted argument. The CLI helper is an internal implementation detail; do not ask the user to run it.
 
 7. If Specta rejects the JSON, correct only the reported draft problem and retry. Do not edit generated planning Markdown directly.
-8. On success, verify `.specta/planning/vision.md`, `.specta/planning/constitution.md`, and `.specta/graph/planning-relationships.json`. Report those paths and the completed `foundation` stage.
+8. On success, verify `.specta/planning/vision.md` and `.specta/planning/constitution.md`. Report those paths and the completed `foundation` stage.

@@ -34,8 +34,8 @@
         "compile-workspace",
         "generate-foundation",
         "persist-planning-stage",
-        "update-workspace-graph",
-        "persist-workspace"
+        "persist-workspace",
+        "update-workspace-graph"
       ],
       "promptTemplate": ".specta/workflows/prompts/plan-foundation.md",
       "artifactTemplates": [
@@ -71,8 +71,8 @@
         "compile-workspace",
         "generate-architecture",
         "persist-planning-stage",
-        "update-workspace-graph",
-        "persist-workspace"
+        "persist-workspace",
+        "update-workspace-graph"
       ],
       "promptTemplate": ".specta/workflows/prompts/plan-architecture.md",
       "artifactTemplates": [
@@ -101,8 +101,8 @@
         "compile-workspace",
         "generate-roadmap",
         "persist-planning-stage",
-        "update-workspace-graph",
-        "persist-workspace"
+        "persist-workspace",
+        "update-workspace-graph"
       ],
       "promptTemplate": ".specta/workflows/prompts/plan-roadmap.md",
       "artifactTemplates": [
@@ -132,8 +132,8 @@
         "compile-workspace",
         "generate-epics",
         "persist-planning-stage",
-        "update-workspace-graph",
-        "persist-workspace"
+        "persist-workspace",
+        "update-workspace-graph"
       ],
       "promptTemplate": ".specta/workflows/prompts/plan-epics.md",
       "artifactTemplates": [

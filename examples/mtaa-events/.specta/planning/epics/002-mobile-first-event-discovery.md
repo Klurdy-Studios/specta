@@ -1,5 +1,7 @@
 # Epic — Mobile-First Event Discovery
 
+Epic ID: `plan_50e6cd24a82e3e93`
+
 ## Goal
 
 Give visitors an accessible, responsive way to browse local events and narrow the collection by category and location with clear feedback.
@@ -54,4 +56,3 @@ As a visitor, I want clear feedback while events load or cannot be shown so that
 
 - [ ] Define Discovery State Messages — Specify clear visitor-facing feedback and recovery choices for each discovery state.
 - [ ] Deliver Discovery State Presentation — Present loading, empty, unavailable, and successful results accessibly across supported screen sizes.
-
