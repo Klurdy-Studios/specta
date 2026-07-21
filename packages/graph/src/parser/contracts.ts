@@ -1,9 +1,11 @@
 import type {
   ParsedSourceFile,
   ParsedSpecification,
-  ParseDiagnostic,
+  ParsedImport,
   ProjectId,
+  Workspace,
 } from "@specta/core"
+import type { FileSystem } from "@specta/core/filesystem"
 
 /** Source text and workspace-relative path supplied to a parser. */
 export interface ParserInput {
@@ -12,23 +14,34 @@ export interface ParserInput {
   projectId?: ProjectId
 }
 
-/** A parsed value together with non-fatal diagnostics. */
-export interface ParseResult<T> {
-  value: T
-  diagnostics: ParseDiagnostic[]
-}
-
 /** Parses one supported specification document. */
 export interface SpecificationParser {
   readonly extensions: readonly string[]
-  parse(input: ParserInput): ParseResult<ParsedSpecification>
+  parse(input: ParserInput): ParsedSpecification
 }
 
 /** Parses one supported programming-language source file. */
 export interface LanguageParser {
   readonly language: string
   readonly extensions: readonly string[]
-  parse(input: ParserInput): ParseResult<ParsedSourceFile>
+  parse(input: ParserInput): ParsedSourceFile
+  createModuleResolver?(context: ModuleResolverContext): Promise<ModuleResolver>
+}
+
+/** Workspace evidence available while preparing a language-specific resolver. */
+export interface ModuleResolverContext {
+  workspace: Workspace
+  fileSystem: FileSystem
+  knownPaths: ReadonlySet<string>
+}
+
+/** Resolves one parsed import without coupling graph orchestration to a language. */
+export interface ModuleResolver {
+  resolve(input: {
+    importingPath: string
+    specifier: string
+    projectId?: ProjectId
+  }): NonNullable<ParsedImport["resolution"]>
 }
 
 /** Selects parsers by normalized file extension. */

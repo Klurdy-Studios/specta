@@ -22,13 +22,15 @@ planning documents under `.specta/planning/`.
 ## Parser extension API
 
 `@specta/graph/parser` exports `SpecificationParser`, `LanguageParser`,
-`ParserInput`, `ParseResult`, `ParserRegistry`, and `createParserRegistry()`.
+`ModuleResolver`, `ParserInput`, `ParserRegistry`, and `createParserRegistry()`.
 It also exports the built-in `markdownSpecificationParser` and
 `typeScriptLanguageParser`. A parser returns canonical contracts from
 `@specta/core` and diagnostics with one-based lines and zero-based columns.
 
-Language adapters own syntax-specific behavior. Discovery, persistence,
-module resolution, IDs, and graph projection remain language-independent.
+Language adapters declare their extensions and own syntax-specific module
+resolution. Discovery, persistence, IDs, and graph projection remain
+language-independent. The TypeScript adapter resolves relative imports,
+workspace packages, `tsconfig.json` path aliases, and imported assets.
 
 TypeGraph reserves `id`, `kind`, and `meta`, so graph properties use
 `fileKind` and `symbolKind` when the corresponding domain model uses `kind`.

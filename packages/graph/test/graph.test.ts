@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { Workspace } from "@specta/core"
 import { afterEach, describe, expect, it } from "vitest"
-import { createPlanningGraphRepository, planningGraphSnapshotSchema, workspaceGraph } from "../src/index.js"
+import { analysisGraphNodeSchema, createPlanningGraphRepository, planningGraphSnapshotSchema, workspaceGraph } from "../src/index.js"
 
 const temporaryDirectories: string[] = []
 
@@ -30,12 +30,26 @@ describe("workspace graph ontology", () => {
       "ProjectProfile",
       "ScaffoldRun",
       "SpecificationDocument",
-      "Requirement",
-      "ArchitectureDecision",
+      "SpecificationEntity",
       "Test",
       "ExternalDependency",
     ])
     expect(getEdgeKinds(workspaceGraph)).toEqual(["CONTAINS", "DEPENDS_ON", "IMPLEMENTS", "IMPORTS", "EXPORTS", "TESTS", "REFERENCES"])
+  })
+
+  it("enforces properties for each analysis node kind", () => {
+    expect(analysisGraphNodeSchema.parse({
+      id: "file_source",
+      type: "FILE",
+      path: "src/index.ts",
+      fileKind: "source",
+    })).toMatchObject({ fileKind: "source" })
+    expect(() => analysisGraphNodeSchema.parse({
+      id: "file_invalid",
+      type: "FILE",
+      path: "src/index.ts",
+      symbolKind: "function",
+    })).toThrow()
   })
 
   it("validates graph snapshots with Zod", () => {

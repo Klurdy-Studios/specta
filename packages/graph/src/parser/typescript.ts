@@ -10,7 +10,8 @@ import type {
   SourceLocation,
   TechnicalSymbolKind,
 } from "@specta/core"
-import type { LanguageParser, ParserInput, ParseResult } from "./contracts.ts"
+import type { LanguageParser, ParserInput } from "./contracts.ts"
+import { createTypeScriptModuleResolver } from "./typescript-resolver.ts"
 
 const declarationKinds: Readonly<Record<string, TechnicalSymbolKind>> = {
   class_declaration: "class",
@@ -20,15 +21,16 @@ const declarationKinds: Readonly<Record<string, TechnicalSymbolKind>> = {
   type_alias_declaration: "type",
 }
 
+let typescriptParser: Parser | undefined
+let tsxParser: Parser | undefined
+
 /** Tree-sitter parser for TypeScript and TSX source files. */
 export const typeScriptLanguageParser: LanguageParser = {
   language: "typescript",
   extensions: [".ts", ".tsx", ".mts", ".cts"],
-  parse(input): ParseResult<ParsedSourceFile> {
-    const parser = new Parser()
-    parser.setLanguage((input.path.toLowerCase().endsWith(".tsx")
-      ? TypeScriptLanguages.tsx
-      : TypeScriptLanguages.typescript) as Parser.Language)
+  createModuleResolver: createTypeScriptModuleResolver,
+  parse(input): ParsedSourceFile {
+    const parser = parserFor(input.path)
     const tree = parser.parse(input.content)
     const root = tree.rootNode
     const imports: ParsedImport[] = []
@@ -41,12 +43,17 @@ export const typeScriptLanguageParser: LanguageParser = {
     for (const node of root.namedChildren) {
       if (node.type === "import_statement") imports.push(parseImport(node, input.path))
       if (node.type === "export_statement") {
+        const exportStart = exports.length
         parseExportStatement(node, input.path, symbols, exports)
         const source = node.childForFieldName("source")
         if (source) {
           imports.push({
             specifier: unquote(source.text),
-            bindings: [],
+            bindings: exports.slice(exportStart).map((item) => item.localName ?? item.name),
+            bindingMappings: exports.slice(exportStart).map((item) => ({
+              imported: item.localName ?? item.name,
+              local: item.localName ?? item.name,
+            })),
             typeOnly: /^export\s+type\b/.test(node.text),
             location: nodeLocation(input.path, node),
           })
@@ -56,7 +63,10 @@ export const typeScriptLanguageParser: LanguageParser = {
       }
     }
 
-    const symbolNames = new Set(symbols.map((symbol) => symbol.name))
+    const symbolNames = new Set([
+      ...symbols.map((symbol) => symbol.name),
+      ...imports.flatMap((imported) => imported.bindings),
+    ])
     walk(root, (node) => {
       if (node.type === "ERROR" || node.isMissing) {
         diagnostics.push({
@@ -67,6 +77,8 @@ export const typeScriptLanguageParser: LanguageParser = {
         })
       }
       if (node.type === "call_expression") {
+        const dynamicImport = parseDynamicImport(node, input.path)
+        if (dynamicImport) imports.push(dynamicImport)
         const parsedTest = parseTest(node, input.path, framework, symbolNames)
         if (parsedTest) tests.push(parsedTest)
       }
@@ -82,37 +94,55 @@ export const typeScriptLanguageParser: LanguageParser = {
       diagnostics,
     }
     if (input.projectId) value.projectId = input.projectId
-    return { value, diagnostics }
+    return value
   },
+}
+
+function parserFor(path: string): Parser {
+  if (path.toLowerCase().endsWith(".tsx")) {
+    if (!tsxParser) {
+      tsxParser = new Parser()
+      tsxParser.setLanguage(TypeScriptLanguages.tsx)
+    }
+    return tsxParser
+  }
+  if (!typescriptParser) {
+    typescriptParser = new Parser()
+    typescriptParser.setLanguage(TypeScriptLanguages.typescript)
+  }
+  return typescriptParser
 }
 
 function parseImport(node: Parser.SyntaxNode, path: string): ParsedImport {
   const source = node.childForFieldName("source")
   const clause = node.namedChildren.find((child) => child.type === "import_clause")
+  const bindingMappings = clause ? importBindingMappings(clause) : []
   return {
     specifier: unquote(source?.text ?? ""),
-    bindings: clause ? importBindings(clause) : [],
+    bindings: bindingMappings.map((binding) => binding.local),
+    bindingMappings,
     typeOnly: /^import\s+type\b/.test(node.text),
     location: nodeLocation(path, node),
   }
 }
 
-function importBindings(clause: Parser.SyntaxNode): string[] {
-  const bindings: string[] = []
+function importBindingMappings(clause: Parser.SyntaxNode): Array<{ imported: string; local: string }> {
+  const bindings: Array<{ imported: string; local: string }> = []
   for (const child of clause.namedChildren) {
-    if (child.type === "identifier") bindings.push(child.text)
+    if (child.type === "identifier") bindings.push({ imported: "default", local: child.text })
     if (child.type === "namespace_import") {
       const identifier = child.namedChildren.find((candidate) => candidate.type === "identifier")
-      if (identifier) bindings.push(identifier.text)
+      if (identifier) bindings.push({ imported: "*", local: identifier.text })
     }
     if (child.type === "named_imports") {
       for (const specifier of child.namedChildren.filter((candidate) => candidate.type === "import_specifier")) {
         const binding = specifier.childForFieldName("alias") ?? specifier.childForFieldName("name")
-        if (binding) bindings.push(binding.text)
+        const imported = specifier.childForFieldName("name")
+        if (binding && imported) bindings.push({ imported: imported.text, local: binding.text })
       }
     }
   }
-  return [...new Set(bindings)]
+  return [...new Map(bindings.map((binding) => [binding.imported + ":" + binding.local, binding])).values()]
 }
 
 function parseExportStatement(
@@ -121,28 +151,67 @@ function parseExportStatement(
   symbols: ParsedCodeSymbol[],
   exports: ParsedExport[],
 ): void {
+  const source = node.childForFieldName("source")
+  const sourceSpecifier = source ? unquote(source.text) : undefined
+  const defaultExport = /^export\s+default\b/.test(node.text)
   const declaration = node.childForFieldName("declaration")
   if (declaration) {
     const parsed = parseDeclaration(declaration, path, true)
     symbols.push(...parsed)
     for (const symbol of parsed) {
-      exports.push({ name: symbol.name, typeOnly: symbol.kind === "type" || symbol.kind === "interface", location: symbol.location })
+      exports.push({
+        name: defaultExport ? "default" : symbol.name,
+        ...(defaultExport ? { localName: symbol.name } : {}),
+        typeOnly: symbol.kind === "type" || symbol.kind === "interface",
+        location: symbol.location,
+      })
     }
   }
   const clause = node.namedChildren.find((child) => child.type === "export_clause")
   for (const specifier of clause?.namedChildren ?? []) {
     if (specifier.type !== "export_specifier") continue
     const exported = specifier.childForFieldName("alias") ?? specifier.childForFieldName("name")
+    const local = specifier.childForFieldName("name")
     if (exported) {
       exports.push({
         name: exported.text,
+        ...(local && local.text !== exported.text ? { localName: local.text } : {}),
+        ...(sourceSpecifier ? { source: sourceSpecifier } : {}),
         typeOnly: /^export\s+type\b/.test(node.text) || /^type\b/.test(specifier.text),
         location: nodeLocation(path, specifier),
       })
     }
   }
-  if (/^export\s+default\b/.test(node.text) && !declaration) {
+  if (defaultExport && !declaration) {
+    const value = node.childForFieldName("value")
+    if (value) {
+      const kind = value.type === "class" ? "class" as const
+        : value.type === "arrow_function" || value.type === "function_expression" ? "function" as const
+        : "constant" as const
+      const body = value.childForFieldName("body")
+      symbols.push({
+        name: "default",
+        kind,
+        exported: true,
+        signature: body ? "default " + textBefore(value.text, body.text) : "default",
+        hasBody: kind === "class" || kind === "function",
+        location: nodeLocation(path, value),
+      })
+    }
     exports.push({ name: "default", typeOnly: false, location: nodeLocation(path, node) })
+  }
+}
+
+function parseDynamicImport(node: Parser.SyntaxNode, path: string): ParsedImport | undefined {
+  const callable = node.childForFieldName("function")?.text
+  if (callable !== "import" && callable !== "require") return undefined
+  const argument = node.childForFieldName("arguments")?.namedChildren[0]
+  if (!argument || argument.type !== "string") return undefined
+  return {
+    specifier: unquote(argument.text),
+    bindings: [],
+    typeOnly: false,
+    location: nodeLocation(path, node),
   }
 }
 

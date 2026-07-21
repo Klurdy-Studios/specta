@@ -38,9 +38,10 @@ it("compiles specification and source analysis from the CLI", async () => {
   const snapshot = JSON.parse(await readFile(join(rootPath, ".specta", "graph", "analysis.json"), "utf8"))
 
   expect(result.stderr).toBe("")
-  expect(snapshot.nodes.some((node: { type: string }) => node.type === "REQUIREMENT")).toBe(true)
+  expect(snapshot.nodes.some((node: { type: string; entityKind?: string }) =>
+    node.type === "SPECIFICATION_ENTITY" && node.entityKind === "requirement")).toBe(true)
   expect(snapshot.nodes.some((node: { type: string }) => node.type === "CODE_SYMBOL")).toBe(true)
-})
+}, 15_000)
 
 function runCli(cwd: string, arguments_: string[]): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {

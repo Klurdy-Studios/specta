@@ -13,3 +13,7 @@ export function normalizePath(path: string): string {
   return normalized === "" ? "." : normalized.replace(/^\.\//, "")
 }
 
+/** Normalizes human-authored titles for deterministic semantic matching. */
+export function normalizeGraphTitle(title: string): string {
+  return title.trim().toLowerCase().replace(/\s+/g, " ")
+}

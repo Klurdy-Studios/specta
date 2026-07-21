@@ -18,9 +18,7 @@ import {
   scaffoldPlanSchema,
   taskSchema,
   technicalDesignSchema,
-  technicalFileSchema,
   technicalModuleSchema,
-  technicalSymbolSchema,
   visionSchema,
   type PlanningState,
   type PlanningRelationship,
@@ -29,6 +27,14 @@ import {
 import type { FileSystem } from "@specta/core/filesystem"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import { z } from "zod"
+import {
+  codeSymbolPropertiesSchema,
+  externalDependencyPropertiesSchema,
+  filePropertiesSchema,
+  specificationDocumentPropertiesSchema,
+  specificationEntityPropertiesSchema,
+  testPropertiesSchema,
+} from "./analysis/snapshot.ts"
 
 export * from "./implementation.ts"
 export * from "./analysis/index.ts"
@@ -59,37 +65,26 @@ export const ModuleNode = defineNode("Module", {
   schema: technicalModuleSchema.omit({ files: true }),
 })
 export const FileNode = defineNode("File", {
-  schema: z.object({
-    path: technicalFileSchema.shape.path,
-    fileKind: technicalFileSchema.shape.kind,
-  }).strict(),
+  schema: filePropertiesSchema,
 })
 export const CodeSymbolNode = defineNode("CodeSymbol", {
-  schema: z.object({
-    name: technicalSymbolSchema.shape.name,
-    symbolKind: technicalSymbolSchema.shape.kind,
-    signature: technicalSymbolSchema.shape.signature,
-    purpose: technicalSymbolSchema.shape.purpose,
-  }).strict(),
+  schema: codeSymbolPropertiesSchema,
 })
 export const ProjectProfileNode = defineNode("ProjectProfile", { schema: projectProfileSchema })
 export const ScaffoldRunNode = defineNode("ScaffoldRun", {
   schema: scaffoldPlanSchema.omit({ id: true, expectedFiles: true, existingFiles: true }),
 })
 export const SpecificationDocumentNode = defineNode("SpecificationDocument", {
-  schema: z.object({ path: z.string().min(1), title: z.string().min(1).optional() }).strict(),
+  schema: specificationDocumentPropertiesSchema,
 })
-export const RequirementNode = defineNode("Requirement", {
-  schema: z.object({ title: z.string().min(1), path: z.string().min(1) }).strict(),
-})
-export const ArchitectureDecisionNode = defineNode("ArchitectureDecision", {
-  schema: z.object({ title: z.string().min(1), path: z.string().min(1) }).strict(),
+export const SpecificationEntityNode = defineNode("SpecificationEntity", {
+  schema: specificationEntityPropertiesSchema,
 })
 export const TestNode = defineNode("Test", {
-  schema: z.object({ name: z.string().min(1), framework: z.string().min(1), path: z.string().min(1) }).strict(),
+  schema: testPropertiesSchema,
 })
 export const ExternalDependencyNode = defineNode("ExternalDependency", {
-  schema: z.object({ name: z.string().min(1) }).strict(),
+  schema: externalDependencyPropertiesSchema,
 })
 
 export const ContainsEdge = defineEdge("CONTAINS")
@@ -119,16 +114,15 @@ export const workspaceGraph = defineGraph({
     ProjectProfile: { type: ProjectProfileNode },
     ScaffoldRun: { type: ScaffoldRunNode },
     SpecificationDocument: { type: SpecificationDocumentNode },
-    Requirement: { type: RequirementNode },
-    ArchitectureDecision: { type: ArchitectureDecisionNode },
+    SpecificationEntity: { type: SpecificationEntityNode },
     Test: { type: TestNode },
     ExternalDependency: { type: ExternalDependencyNode },
   },
   edges: {
     CONTAINS: {
       type: ContainsEdge,
-      from: [EpicNode, StoryNode, TechnicalDesignNode, ModuleNode, FileNode, SpecificationDocumentNode],
-      to: [StoryNode, AcceptanceCriterionNode, TaskNode, ModuleNode, FileNode, CodeSymbolNode, RequirementNode, ArchitectureDecisionNode, EpicNode, TestNode],
+      from: [EpicNode, StoryNode, TechnicalDesignNode, ModuleNode, FileNode, SpecificationDocumentNode, SpecificationEntityNode],
+      to: [StoryNode, AcceptanceCriterionNode, TaskNode, ModuleNode, FileNode, CodeSymbolNode, SpecificationEntityNode, TestNode],
     },
     DEPENDS_ON: {
       type: DependsOnEdge,
@@ -157,8 +151,8 @@ export const workspaceGraph = defineGraph({
     },
     REFERENCES: {
       type: ReferencesEdge,
-      from: [SpecificationDocumentNode, RequirementNode, ArchitectureDecisionNode, EpicNode, StoryNode, FileNode, CodeSymbolNode],
-      to: [SpecificationDocumentNode, RequirementNode, ArchitectureDecisionNode, EpicNode, StoryNode, FileNode, CodeSymbolNode],
+      from: [SpecificationDocumentNode, SpecificationEntityNode, FileNode, CodeSymbolNode],
+      to: [VisionNode, ConstitutionNode, ArchitectureNode, RoadmapNode, EpicNode, StoryNode, AcceptanceCriterionNode, TaskNode, SpecificationDocumentNode, SpecificationEntityNode, FileNode, CodeSymbolNode],
     },
   },
 })

@@ -16,4 +16,6 @@ The root also exports the canonical, language-independent analysis contracts:
 `ParsedSpecification`, `ParsedSpecificationEntity`, `ParsedSourceFile`,
 `ParsedImport`, `ParsedExport`, `ParsedCodeSymbol`, `ParsedTest`,
 `ParseDiagnostic`, `SourceLocation`, and `WorkspaceAnalysis`, together with
-their Zod schemas.
+their Zod schemas. Parsed imports may carry their resolved workspace file,
+external package, or unresolved specifier so resolution is performed once and
+reused by graph projection and later workflows.

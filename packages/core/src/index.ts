@@ -526,13 +526,21 @@ export type ParsedSpecification = z.infer<typeof parsedSpecificationSchema>
 export const parsedImportSchema = z.object({
   specifier: nonEmptyTextSchema,
   bindings: z.array(nonEmptyTextSchema),
+  bindingMappings: z.array(z.object({ imported: nonEmptyTextSchema, local: nonEmptyTextSchema }).strict()).optional(),
   typeOnly: z.boolean(),
   location: sourceLocationSchema,
+  resolution: z.discriminatedUnion("kind", [
+    z.object({ kind: z.literal("workspace-file"), path: nonEmptyTextSchema }).strict(),
+    z.object({ kind: z.literal("external"), packageName: nonEmptyTextSchema }).strict(),
+    z.object({ kind: z.literal("unresolved"), specifier: nonEmptyTextSchema }).strict(),
+  ]).optional(),
 }).strict()
 export type ParsedImport = z.infer<typeof parsedImportSchema>
 
 export const parsedExportSchema = z.object({
   name: nonEmptyTextSchema,
+  localName: nonEmptyTextSchema.optional(),
+  source: nonEmptyTextSchema.optional(),
   typeOnly: z.boolean(),
   location: sourceLocationSchema,
 }).strict()

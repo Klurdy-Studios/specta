@@ -5,7 +5,7 @@ import type {
   SourceLocation,
   SpecificationEntityKind,
 } from "@specta/core"
-import type { ParserInput, ParseResult, SpecificationParser } from "./contracts.ts"
+import type { ParserInput, SpecificationParser } from "./contracts.ts"
 
 const headingPattern = /^(#{1,6})\s+(.+?)\s*$/
 const listItemPattern = /^\s*(?:[-*+] |\d+[.)] )(?:\[[ xX]\]\s*)?(.+?)\s*$/
@@ -13,11 +13,10 @@ const listItemPattern = /^\s*(?:[-*+] |\d+[.)] )(?:\[[ xX]\]\s*)?(.+?)\s*$/
 /** Deterministic Markdown parser for Specta planning and architecture documents. */
 export const markdownSpecificationParser: SpecificationParser = {
   extensions: [".md"],
-  parse(input): ParseResult<ParsedSpecification> {
+  parse(input): ParsedSpecification {
     const lines = input.content.split(/\r?\n/)
     const headings: ParsedHeading[] = []
     const entities: ParsedSpecificationEntity[] = []
-    const headingStack: ParsedHeading[] = []
     let activeSection: SpecificationEntityKind | undefined
     let activeEpic: string | undefined
     let activeStory: string | undefined
@@ -35,9 +34,6 @@ export const markdownSpecificationParser: SpecificationParser = {
           location: lineLocation(input.path, index, line),
         }
         headings.push(heading)
-        while ((headingStack.at(-1)?.depth ?? 0) >= heading.depth) headingStack.pop()
-        headingStack.push(heading)
-
         const explicit = classifyHeading(heading.title)
         if (explicit) {
           const parentTitle = explicit.kind === "story" ? activeEpic
@@ -74,7 +70,7 @@ export const markdownSpecificationParser: SpecificationParser = {
     }
     const title = headings.find((heading) => heading.depth === 1)?.title
     if (title) value.title = title
-    return { value, diagnostics: [] }
+    return value
   },
 }
 
@@ -118,4 +114,3 @@ function lineLocation(path: string, index: number, line: string): SourceLocation
     end: { line: index + 1, column: line.length },
   }
 }
-

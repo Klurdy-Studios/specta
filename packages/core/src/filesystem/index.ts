@@ -7,7 +7,7 @@ export interface FileSystem {
   exists(path: string): Promise<boolean>
   readText(path: string): Promise<string>
   writeText(path: string, content: string): Promise<void>
-  listFiles(path: string): Promise<string[]>
+  listEntries(path: string): Promise<Array<{ name: string; kind: "file" | "directory" }>>
   listDirectories(path: string): Promise<string[]>
   removePath(path: string): Promise<void>
 }
@@ -30,9 +30,14 @@ export const nodeFileSystem: FileSystem = {
     await rename(temporaryPath, path)
   },
   removePath: (path) => rm(path, { recursive: true, force: true }),
-  async listFiles(path) {
+  async listEntries(path) {
     const entries = await readdir(path, { withFileTypes: true })
-    return entries.filter((entry) => entry.isFile()).map((entry) => entry.name)
+    const result: Array<{ name: string; kind: "file" | "directory" }> = []
+    for (const entry of entries) {
+      if (entry.isFile()) result.push({ name: entry.name, kind: "file" })
+      else if (entry.isDirectory()) result.push({ name: entry.name, kind: "directory" })
+    }
+    return result
   },
   async listDirectories(path) {
     const entries = await readdir(path, { withFileTypes: true })
