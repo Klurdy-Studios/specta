@@ -5,7 +5,13 @@ import type { ArchitectureDraft, EpicsDraft, FoundationDraft, RoadmapDraft, Scaf
 import { createWorkspaceRepository } from "@specta/core/config"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import { createWorkspaceInitializer, type InitializeWorkspaceRequest } from "@specta/core/workspace"
-import { createWorkspaceAnalyzer, workspaceGraphDatabasePath } from "@specta/graph"
+import {
+  createContextEngine,
+  createContextPacketRepository,
+  createWorkspaceAnalyzer,
+  renderContextPacket,
+  workspaceGraphDatabasePath,
+} from "@specta/graph"
 import {
   createScaffoldWorkflow,
   createTechnicalDesignApprovalWorkflow,
@@ -44,6 +50,24 @@ if (command === "init") {
     }
   } catch (error) {
     console.error(error instanceof Error ? "specta: " + error.message : "specta: Unable to compile workspace analysis.")
+    process.exitCode = 1
+  }
+} else if (command === "context") {
+  try {
+    const { output, ...request } = parseContextRequest(arguments_)
+    const workspace = await createWorkspaceRepository(nodeFileSystem).load(resolve("."))
+    if (workspace === null) throw new Error("Initialize a Specta workspace before compiling context.")
+    const persisted = request.implementationRunId
+      ? await createContextPacketRepository().get(workspace, request.implementationRunId)
+      : null
+    if (persisted && persisted.epicId !== request.epicId) {
+      throw new Error("Implementation Run context targets a different Epic.")
+    }
+    if (!persisted) await createWorkspaceAnalyzer().compile(workspace)
+    const packet = persisted ?? await createContextEngine().compile(workspace, request)
+    console.log(output === "json" ? JSON.stringify(packet, null, 2) : renderContextPacket(packet))
+  } catch (error) {
+    console.error(error instanceof Error ? "specta: " + error.message : "specta: Unable to compile context.")
     process.exitCode = 1
   }
 } else if (command === "plan") {
@@ -95,8 +119,50 @@ if (command === "init") {
     process.exitCode = 1
   }
 } else {
-  console.error("Usage: specta init [path] [--skill-target <target>] | specta compile | specta plan [foundation <brief> | architecture | roadmap | epics | <brief>] | specta design <epic-id> --draft <draft.json> | specta approve-design <design-id> | specta scaffold <design-id> --prepare | --finalize <scaffold-run-id>")
+  console.error("Usage: specta init [path] [--skill-target <target>] | specta compile | specta context <epic-id> [--run <implementation-run-id>] [--max-tokens <count>] [--json] | specta plan [foundation <brief> | architecture | roadmap | epics | <brief>] | specta design <epic-id> --draft <draft.json> | specta approve-design <design-id> | specta scaffold <design-id> --prepare | --finalize <scaffold-run-id>")
   process.exitCode = 1
+}
+
+function parseContextRequest(arguments_: string[]): {
+  epicId: string
+  implementationRunId?: string
+  workflow: "implement"
+  maxTokens?: number
+  output: "markdown" | "json"
+} {
+  const epicId = arguments_[0]
+  if (!epicId || epicId.startsWith("-")) throw new Error("Usage: specta context <epic-id> [--run <implementation-run-id>] [--max-tokens <count>] [--json]")
+  let implementationRunId: string | undefined
+  let maxTokens: number | undefined
+  let output: "markdown" | "json" = "markdown"
+  for (let index = 1; index < arguments_.length; index += 1) {
+    const argument = arguments_[index]
+    if (argument === "--json") {
+      output = "json"
+      continue
+    }
+    if (argument === "--run") {
+      implementationRunId = arguments_[index + 1]
+      if (!implementationRunId || implementationRunId.startsWith("-")) throw new Error("--run requires an Implementation Run ID.")
+      index += 1
+      continue
+    }
+    if (argument === "--max-tokens") {
+      const value = arguments_[index + 1]
+      maxTokens = value === undefined ? Number.NaN : Number(value)
+      if (!Number.isInteger(maxTokens) || maxTokens <= 0) throw new Error("--max-tokens requires a positive integer.")
+      index += 1
+      continue
+    }
+    throw new Error("Unknown context option: " + argument + ".")
+  }
+  return {
+    epicId,
+    workflow: "implement",
+    output,
+    ...(implementationRunId ? { implementationRunId } : {}),
+    ...(maxTokens ? { maxTokens } : {}),
+  }
 }
 
 async function parseDesignRequest(arguments_: string[]): Promise<{ targetId: never, draft: never, feedback?: string }> {
