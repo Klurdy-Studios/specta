@@ -16,15 +16,16 @@ import { createFrameworkSkillDiscovery, type FrameworkSkillDiscovery } from "@sp
 import {
   createPlanningGraphRepository,
   createScaffoldRunRepository,
+  createSqliteWorkspaceGraphProvider,
   createTechnicalDesignGraphRepository,
   type PlanningGraphRepository,
   type ScaffoldRunRepository,
   type TechnicalDesignGraphRepository,
+  type WorkspaceGraphProvider,
 } from "@specta/graph"
 import { createTechnicalDependencyResolver, type TechnicalDependencyResolver } from "../dependencies/index.ts"
 import { createLanguageAdapterRegistry, type LanguageAdapterRegistry } from "../language/index.ts"
 import { createBootstrapPlan } from "../project-profile/index.ts"
-import { runAtomically } from "../transaction.ts"
 
 export interface PrepareScaffoldRequest {
   workspace: Workspace
@@ -49,13 +50,15 @@ export interface ScaffoldWorkflowOptions {
   languages?: LanguageAdapterRegistry
   skills?: FrameworkSkillDiscovery
   fileSystem?: FileSystem
+  graphProvider?: WorkspaceGraphProvider
 }
 
 export function createScaffoldWorkflow(options: ScaffoldWorkflowOptions = {}): ScaffoldWorkflow {
   const fileSystem = options.fileSystem ?? nodeFileSystem
-  const designs = options.designs ?? createTechnicalDesignGraphRepository(fileSystem)
-  const runs = options.runs ?? createScaffoldRunRepository(fileSystem)
-  const planning = options.planning ?? createPlanningGraphRepository(fileSystem)
+  const graphProvider = options.graphProvider ?? createSqliteWorkspaceGraphProvider({ fileSystem })
+  const designs = options.designs ?? createTechnicalDesignGraphRepository(fileSystem, graphProvider)
+  const runs = options.runs ?? createScaffoldRunRepository(fileSystem, graphProvider)
+  const planning = options.planning ?? createPlanningGraphRepository(fileSystem, graphProvider)
   const dependencies = options.dependencies ?? createTechnicalDependencyResolver()
   const languages = options.languages ?? createLanguageAdapterRegistry()
   const skills = options.skills ?? createFrameworkSkillDiscovery(fileSystem)
@@ -148,7 +151,6 @@ export function createScaffoldWorkflow(options: ScaffoldWorkflowOptions = {}): S
       [...preserved].filter((path) => expected.has(path)),
       designs,
       runs,
-      fileSystem,
     )
   }
 
@@ -204,16 +206,13 @@ async function complete(
   preservedDesignPaths: string[],
   designs: TechnicalDesignGraphRepository,
   runs: ScaffoldRunRepository,
-  fileSystem: FileSystem,
 ): Promise<ScaffoldResult> {
   const scaffoldedPaths = [...new Set([...(design.scaffoldedPaths ?? []), ...createdPaths, ...preservedDesignPaths])]
-  await runAtomically(fileSystem, [
-    join(workspace.rootPath, ".specta", "graph", "technical-designs.json"),
-    join(workspace.rootPath, ".specta", "graph", "scaffold-runs.json"),
-  ], async () => {
-    await designs.save(workspace, technicalDesignSchema.parse({ ...design, status: "scaffolded", scaffoldedPaths }))
-    await runs.save(workspace, { ...plan, status: "finalized" })
-  })
+  await runs.saveWithDesign(
+    workspace,
+    { ...plan, status: "finalized" },
+    technicalDesignSchema.parse({ ...design, status: "scaffolded", scaffoldedPaths }),
+  )
   return { designId: design.id, scaffoldRunId: plan.id, createdPaths, preservedPaths, workspace }
 }
 

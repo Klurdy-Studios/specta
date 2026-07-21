@@ -57,7 +57,7 @@ export function renderRoadmap(roadmap: Roadmap): string {
 }
 
 export function renderEpic(epic: Epic): string {
-  const lines = ["# Epic — " + epic.title, "", "## Goal", "", epic.goal, ""]
+  const lines = ["# Epic — " + epic.title, "", "Epic ID: `" + epic.id + "`", "", "## Goal", "", epic.goal, ""]
   for (const story of epic.stories) {
     lines.push("## Story — " + story.title, "", story.description, "", "### Acceptance Criteria", "")
     lines.push(...story.acceptanceCriteria.map((criterion) => "- " + criterion.description), "", "### Tasks", "")

@@ -5,6 +5,11 @@ import type { PlanningState, ProjectTarget, TechnicalFile, Workspace } from "@sp
 import type { FileSystem } from "@specta/core/filesystem"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import { createFrameworkSkillDiscovery } from "@specta/core/skills"
+import {
+  createPlanningGraphRepository,
+  createProjectProfileRepository,
+  createTechnicalDesignGraphRepository,
+} from "@specta/graph"
 import { afterEach, expect, it } from "vitest"
 import {
   createLanguageAdapterRegistry,
@@ -129,13 +134,8 @@ it("rolls back graph shards when Technical Design artifact persistence fails", a
       await nodeFileSystem.writeText(path, content)
     },
   }
-  const planning = {
-    loadPlanningState: async () => ({
-      architecture: { id: "architecture", overview: "TypeScript system.", components: ["API"] },
-      epics: [{ id: "epic_api", title: "API", goal: "Deliver API.", roadmapMilestone: "MVP", stories: [] }],
-    }) as unknown as PlanningState,
-    savePlanningState: async () => {},
-  }
+  const planning = createPlanningGraphRepository()
+  await planning.savePlanningState(workspace, implementationPlanningFixture())
   const workflow = createTechnicalDesignWorkflow({ fileSystem: failingFileSystem, planning })
 
   await expect(workflow.execute({
@@ -167,9 +167,43 @@ it("rolls back graph shards when Technical Design artifact persistence fails", a
     },
   })).rejects.toThrow("Injected artifact failure")
 
-  await expect(nodeFileSystem.exists(join(rootPath, ".specta", "graph", "technical-designs.json"))).resolves.toBe(false)
-  await expect(nodeFileSystem.exists(join(rootPath, ".specta", "graph", "project-profiles.json"))).resolves.toBe(false)
+  await expect(createTechnicalDesignGraphRepository().list(workspace)).resolves.toEqual([])
+  await expect(createProjectProfileRepository().list(workspace)).resolves.toEqual([])
 })
+
+function implementationPlanningFixture(): PlanningState {
+  return {
+    brief: "Build an API.",
+    completedStages: ["foundation", "architecture", "roadmap", "epics"],
+    vision: { id: "vision", title: "API", problem: "No API.", audience: "Teams.", outcome: "An API." },
+    constitution: { id: "constitution", principles: ["Keep boundaries explicit."] },
+    architecture: { id: "architecture", overview: "TypeScript system.", components: ["API"] },
+    roadmap: { id: "roadmap", milestones: [{ title: "MVP", objective: "Deliver API.", outcomes: ["API works."] }] },
+    epics: [{
+      id: "epic_api",
+      title: "API",
+      goal: "Deliver API.",
+      roadmapMilestone: "MVP",
+      stories: [{
+        id: "story_api",
+        title: "Use API",
+        description: "A user calls the API.",
+        acceptanceCriteria: [{ id: "criterion_api", description: "The API responds." }],
+        tasks: [{ id: "task_api", title: "Define API", description: "Define its contract." }],
+      }],
+    }],
+    relationships: [
+      { type: "DEPENDS_ON", sourceId: "architecture", targetId: "vision" },
+      { type: "DEPENDS_ON", sourceId: "architecture", targetId: "constitution" },
+      { type: "DEPENDS_ON", sourceId: "roadmap", targetId: "architecture" },
+      { type: "DEPENDS_ON", sourceId: "epic_api", targetId: "roadmap" },
+      { type: "IMPLEMENTS", sourceId: "epic_api", targetId: "architecture" },
+      { type: "CONTAINS", sourceId: "epic_api", targetId: "story_api" },
+      { type: "CONTAINS", sourceId: "story_api", targetId: "criterion_api" },
+      { type: "CONTAINS", sourceId: "story_api", targetId: "task_api" },
+    ],
+  } as PlanningState
+}
 
 function existingWorkspace(rootPath: string): Workspace {
   return {

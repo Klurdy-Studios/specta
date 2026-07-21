@@ -10,20 +10,18 @@ import {
   type TechnicalDesignId,
   type Workspace,
 } from "@specta/core"
-import type { FileSystem } from "@specta/core/filesystem"
-import { nodeFileSystem } from "@specta/core/filesystem"
+import { nodeFileSystem, runFileTransaction, type FileSystem } from "@specta/core/filesystem"
 import {
   createPlanningGraphRepository,
-  createProjectProfileRepository,
+  createSqliteWorkspaceGraphProvider,
   createTechnicalDesignGraphRepository,
   type PlanningGraphRepository,
-  type ProjectProfileRepository,
   type TechnicalDesignGraphRepository,
+  type WorkspaceGraphProvider,
 } from "@specta/graph"
 import { createTechnicalDependencyResolver, type TechnicalDependencyResolver } from "../dependencies/index.ts"
 import { createLanguageAdapterRegistry, type LanguageAdapterRegistry } from "../language/index.ts"
 import { createProjectProfileResolver, validateFrameworkConventions, type ProjectProfileResolver } from "../project-profile/index.ts"
-import { runAtomically } from "../transaction.ts"
 
 export interface TechnicalDesignRequest {
   workspace: Workspace
@@ -44,10 +42,10 @@ export interface TechnicalDesignWorkflowOptions {
   repository?: TechnicalDesignGraphRepository
   planning?: PlanningGraphRepository
   profiles?: ProjectProfileResolver
-  profileRepository?: ProjectProfileRepository
   languages?: LanguageAdapterRegistry
   dependencies?: TechnicalDependencyResolver
   fileSystem?: FileSystem
+  graphProvider?: WorkspaceGraphProvider
 }
 
 /** Creates immutable, Epic-scoped Technical Design revisions without writing source files. */
@@ -55,10 +53,10 @@ export function createTechnicalDesignWorkflow(
   options: TechnicalDesignWorkflowOptions = {},
 ): TechnicalDesignWorkflow {
   const fileSystem = options.fileSystem ?? nodeFileSystem
-  const repository = options.repository ?? createTechnicalDesignGraphRepository(fileSystem)
-  const planning = options.planning ?? createPlanningGraphRepository(fileSystem)
+  const graphProvider = options.graphProvider ?? createSqliteWorkspaceGraphProvider({ fileSystem })
+  const repository = options.repository ?? createTechnicalDesignGraphRepository(fileSystem, graphProvider)
+  const planning = options.planning ?? createPlanningGraphRepository(fileSystem, graphProvider)
   const profiles = options.profiles ?? createProjectProfileResolver(fileSystem)
-  const profileRepository = options.profileRepository ?? createProjectProfileRepository(fileSystem)
   const languages = options.languages ?? createLanguageAdapterRegistry()
   return {
     async execute({ workspace, targetId, draft: unvalidatedDraft, feedback }) {
@@ -91,14 +89,11 @@ export function createTechnicalDesignWorkflow(
       const superseded = existing
         .filter((candidate) => candidate.status === "draft" || candidate.status === "approved")
         .map((candidate) => technicalDesignSchema.parse({ ...candidate, status: "superseded" }))
-      await runAtomically(fileSystem, [
-        join(workspace.rootPath, ".specta", "graph", "technical-designs.json"),
-        join(workspace.rootPath, ".specta", "graph", "project-profiles.json"),
+      await runFileTransaction(fileSystem, [
         artifactPath(workspace, design),
       ], async () => {
-        await profileRepository.save(workspace, profile)
-        await repository.saveMany(workspace, [...superseded, design])
         await writeArtifact(workspace, design, fileSystem)
+        await repository.saveDesignsAndProfiles(workspace, [...superseded, design], [profile])
       })
       return design
     },
@@ -110,8 +105,9 @@ export function createTechnicalDesignApprovalWorkflow(
   options: TechnicalDesignWorkflowOptions = {},
 ): TechnicalDesignApprovalWorkflow {
   const fileSystem = options.fileSystem ?? nodeFileSystem
-  const repository = options.repository ?? createTechnicalDesignGraphRepository(fileSystem)
-  const planning = options.planning ?? createPlanningGraphRepository(fileSystem)
+  const graphProvider = options.graphProvider ?? createSqliteWorkspaceGraphProvider({ fileSystem })
+  const repository = options.repository ?? createTechnicalDesignGraphRepository(fileSystem, graphProvider)
+  const planning = options.planning ?? createPlanningGraphRepository(fileSystem, graphProvider)
   const languages = options.languages ?? createLanguageAdapterRegistry()
   const dependencies = options.dependencies ?? createTechnicalDependencyResolver()
   return {
@@ -135,12 +131,11 @@ export function createTechnicalDesignApprovalWorkflow(
           resolution.filter((item) => item.status === "blocked").map((item) => item.reason).join(" "))
       }
       const approved = technicalDesignSchema.parse({ ...design, status: "approved", resolution })
-      await runAtomically(fileSystem, [
-        join(workspace.rootPath, ".specta", "graph", "technical-designs.json"),
+      await runFileTransaction(fileSystem, [
         artifactPath(workspace, approved),
       ], async () => {
-        await repository.save(workspace, approved)
         await writeArtifact(workspace, approved, fileSystem)
+        await repository.save(workspace, approved)
       })
       return approved
     },

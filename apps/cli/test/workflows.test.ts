@@ -19,6 +19,12 @@ import {
 } from "@specta/core/workflow"
 import { implementationWorkflowModule } from "@specta/implementation"
 import { planningWorkflowModule } from "@specta/planner"
+import {
+  createPlanningGraphRepository,
+  createProjectProfileRepository,
+  createScaffoldRunRepository,
+  createTechnicalDesignGraphRepository,
+} from "@specta/graph"
 
 const workflowModules = [planningWorkflowModule, implementationWorkflowModule]
 const workflowManifest = () => createWorkflowManifestRepository(workflowModules)
@@ -77,8 +83,7 @@ it("progressively updates workspace planning artifacts and graph state", async (
   expect(result.state.completedStages).toEqual(["foundation", "architecture", "roadmap", "epics"])
   expect(result.plan?.epics).toHaveLength(roadmap.state.roadmap?.milestones.length)
   expect(persisted?.artifacts.planningPath).toBe(".specta/planning")
-  await expect(readFile(join(rootPath, ".specta", "graph", "planning-relationships.json"), "utf8"))
-    .resolves.toContain("\"planning\"")
+  await expect(createPlanningGraphRepository().loadPlanningState(result.workspace)).resolves.toEqual(result.state)
   await expect(readFile(join(rootPath, ".specta", "planning", "roadmap.md"), "utf8"))
     .resolves.toContain("# Roadmap")
 })
@@ -175,9 +180,8 @@ it("rolls back planning artifacts and graph state when a stage commit fails", as
       components: ["Commit boundary — applies or rolls back a planning stage"],
     },
   })
-  const graphPath = join(rootPath, ".specta", "graph", "planning-relationships.json")
   const workspacePath = join(rootPath, ".specta", "workspace.json")
-  const graphBefore = await readFile(graphPath, "utf8")
+  const graphBefore = await createPlanningGraphRepository().loadPlanningState(architecture.workspace)
   const workspaceBefore = await readFile(workspacePath, "utf8")
   let failWorkspaceWrite = true
   const failingFileSystem: FileSystem = {
@@ -211,7 +215,7 @@ it("rolls back planning artifacts and graph state when a stage commit fails", as
   })).rejects.toThrow("Injected workspace write failure")
 
   await expect(readFile(join(rootPath, ".specta", "planning", "roadmap.md"), "utf8")).rejects.toThrow()
-  await expect(readFile(graphPath, "utf8")).resolves.toBe(graphBefore)
+  await expect(createPlanningGraphRepository().loadPlanningState(architecture.workspace)).resolves.toEqual(graphBefore)
   await expect(readFile(workspacePath, "utf8")).resolves.toBe(workspaceBefore)
 })
 
@@ -234,9 +238,8 @@ it("rolls back every Epic document when the Epics stage commit fails", async () 
   const foundation = await submitStage(plan, workspace, "foundation", null, "Build atomic Epic planning.")
   const architecture = await submitStage(plan, foundation.workspace, "architecture", foundation.state)
   const roadmap = await submitStage(plan, architecture.workspace, "roadmap", architecture.state)
-  const graphPath = join(rootPath, ".specta", "graph", "planning-relationships.json")
   const workspacePath = join(rootPath, ".specta", "workspace.json")
-  const graphBefore = await readFile(graphPath, "utf8")
+  const graphBefore = await createPlanningGraphRepository().loadPlanningState(roadmap.workspace)
   const workspaceBefore = await readFile(workspacePath, "utf8")
   let failWorkspaceWrite = true
   const failingFileSystem: FileSystem = {
@@ -275,7 +278,7 @@ it("rolls back every Epic document when the Epics stage commit fails", async () 
 
   await expect(readFile(join(rootPath, ".specta", "planning", "epics", "001-deliver-workspace-graph-epic.md"), "utf8"))
     .rejects.toThrow()
-  await expect(readFile(graphPath, "utf8")).resolves.toBe(graphBefore)
+  await expect(createPlanningGraphRepository().loadPlanningState(roadmap.workspace)).resolves.toEqual(graphBefore)
   await expect(readFile(workspacePath, "utf8")).resolves.toBe(workspaceBefore)
 })
 
@@ -337,14 +340,12 @@ it("requires an approved Epic technical design before creating declaration-only 
   expect(result.preservedPaths).toEqual(["src/session/index.ts"])
   await expect(readFile(join(rootPath, result.createdPaths[1]!), "utf8"))
     .resolves.not.toContain("Not implemented")
-  await expect(readFile(join(rootPath, ".specta", "graph", "technical-designs.json"), "utf8"))
-    .resolves.toContain("\"relationships\"")
-  await expect(readFile(join(rootPath, ".specta", "graph", "technical-designs.json"), "utf8"))
-    .resolves.toContain("\"CODE_SYMBOL\"")
-  await expect(readFile(join(rootPath, ".specta", "graph", "project-profiles.json"), "utf8"))
-    .resolves.toContain("\"language\": \"typescript\"")
-  await expect(readFile(join(rootPath, ".specta", "graph", "scaffold-runs.json"), "utf8"))
-    .resolves.toContain("\"status\": \"finalized\"")
+  await expect(createTechnicalDesignGraphRepository().get(planning.workspace, revised.id))
+    .resolves.toMatchObject({ status: "scaffolded", scaffoldedPaths: expect.any(Array) })
+  await expect(createProjectProfileRepository().list(planning.workspace))
+    .resolves.toEqual([expect.objectContaining({ language: "typescript" })])
+  await expect(createScaffoldRunRepository().get(planning.workspace, scaffoldPlan.id))
+    .resolves.toMatchObject({ status: "finalized" })
 })
 
 function draft() {

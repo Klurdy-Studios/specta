@@ -5,7 +5,7 @@ import type { ArchitectureDraft, EpicsDraft, FoundationDraft, RoadmapDraft, Scaf
 import { createWorkspaceRepository } from "@specta/core/config"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import { createWorkspaceInitializer, type InitializeWorkspaceRequest } from "@specta/core/workspace"
-import { createWorkspaceAnalyzer } from "@specta/graph"
+import { createWorkspaceAnalyzer, workspaceGraphDatabasePath } from "@specta/graph"
 import {
   createScaffoldWorkflow,
   createTechnicalDesignApprovalWorkflow,
@@ -38,7 +38,7 @@ if (command === "init") {
     if (workspace === null) throw new Error("Initialize a Specta workspace before compiling it.")
     const snapshot = await createWorkspaceAnalyzer().compile(workspace)
     console.log("Compiled " + snapshot.analysis.specifications.length + " specification(s) and " + snapshot.analysis.sourceFiles.length + " source file(s).")
-    console.log("Workspace Graph: " + resolve(workspace.rootPath, ".specta", "graph", "analysis.json"))
+    console.log("Workspace Graph: " + workspaceGraphDatabasePath(workspace))
     if (snapshot.analysis.diagnostics.length > 0) {
       console.log("Diagnostics: " + snapshot.analysis.diagnostics.length + ".")
     }

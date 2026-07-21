@@ -4,6 +4,9 @@ import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { afterEach, expect, it } from "vitest"
+import { createWorkspaceRepository } from "@specta/core/config"
+import { nodeFileSystem } from "@specta/core/filesystem"
+import { createPlanningGraphRepository } from "@specta/graph"
 
 const cliPath = join(dirname(fileURLToPath(import.meta.url)), "../bin/specta.mjs")
 const temporaryDirectories: string[] = []
@@ -42,9 +45,13 @@ it("submits agent-authored planning stages through the CLI", async () => {
     .resolves.toContain("## Task Atlas")
   await expect(readFile(join(rootPath, ".specta", "planning", "constitution.md"), "utf8"))
     .resolves.toContain("Prefer simple team workflows.")
-  const graph = JSON.parse(await readFile(join(rootPath, ".specta", "graph", "planning-relationships.json"), "utf8"))
-  expect(graph.completedStages).toEqual(["foundation"])
-  expect(graph.nodes.map((node: { type: string }) => node.type)).toEqual(["VISION", "CONSTITUTION"])
+  const workspace = await createWorkspaceRepository(nodeFileSystem).load(rootPath)
+  if (workspace === null) throw new Error("Expected initialized workspace.")
+  const graph = createPlanningGraphRepository()
+  const foundationState = await graph.loadPlanningState(workspace)
+  expect(foundationState?.completedStages).toEqual(["foundation"])
+  expect(foundationState?.vision).toBeDefined()
+  expect(foundationState?.constitution).toBeDefined()
 
   await writeFile(join(rootPath, ".specta", "drafts", "plan-architecture.json"), JSON.stringify({
     overview: "A workflow-centered system keeps task planning and delivery traceable.",
@@ -67,15 +74,10 @@ it("submits agent-authored planning stages through the CLI", async () => {
     .resolves.toContain("Workflow boundary — coordinates task lifecycle")
   await expect(readFile(join(rootPath, ".specta", "planning", "architecture.md"), "utf8"))
     .resolves.toContain("Use a local-first TypeScript architecture with SQLite.")
-  const architectureGraph = JSON.parse(await readFile(join(rootPath, ".specta", "graph", "planning-relationships.json"), "utf8"))
-  expect(architectureGraph.completedStages).toEqual(["foundation", "architecture"])
-  expect(architectureGraph.nodes.map((node: { type: string }) => node.type)).toEqual([
-    "VISION",
-    "CONSTITUTION",
-    "ARCHITECTURE",
-  ])
-  expect(architectureGraph.relationships).toHaveLength(2)
-  expect(architectureGraph.planning.architecture.guidance)
+  const architectureGraph = await graph.loadPlanningState(workspace)
+  expect(architectureGraph?.completedStages).toEqual(["foundation", "architecture"])
+  expect(architectureGraph?.relationships).toHaveLength(2)
+  expect(architectureGraph?.architecture?.guidance)
     .toBe("Use a local-first TypeScript architecture with SQLite.")
 
   await writeFile(join(rootPath, ".specta", "drafts", "plan-roadmap.json"), JSON.stringify({
@@ -104,13 +106,12 @@ it("submits agent-authored planning stages through the CLI", async () => {
   expect(roadmapMarkdown).toContain("## 1. Traceable planning")
   expect(roadmapMarkdown).toContain("**Objective:** Give product teams an approved, graph-backed plan.")
   expect(roadmapMarkdown).toContain("- Delivery work remains linked to its planning intent.")
-  const roadmapGraph = JSON.parse(await readFile(join(rootPath, ".specta", "graph", "planning-relationships.json"), "utf8"))
-  expect(roadmapGraph.completedStages).toEqual(["foundation", "architecture", "roadmap"])
-  expect(roadmapGraph.nodes.at(-1).type).toBe("ROADMAP")
-  expect(roadmapGraph.relationships.at(-1)).toEqual({
+  const roadmapGraph = await graph.loadPlanningState(workspace)
+  expect(roadmapGraph?.completedStages).toEqual(["foundation", "architecture", "roadmap"])
+  expect(roadmapGraph?.relationships.at(-1)).toEqual({
     type: "DEPENDS_ON",
-    sourceId: roadmapGraph.planning.roadmap.id,
-    targetId: roadmapGraph.planning.architecture.id,
+    sourceId: roadmapGraph?.roadmap?.id,
+    targetId: roadmapGraph?.architecture?.id,
   })
 
   await writeFile(join(rootPath, ".specta", "drafts", "plan-epics.json"), JSON.stringify({
@@ -151,11 +152,11 @@ it("submits agent-authored planning stages through the CLI", async () => {
     .resolves.toContain("A completed plan is represented in the Workspace Graph.")
   await expect(readFile(join(rootPath, ".specta", "planning", "epics", "002-validated-delivery-experience.md"), "utf8"))
     .resolves.toContain("Delivery work references its approved planning artifacts.")
-  const epicsGraph = JSON.parse(await readFile(join(rootPath, ".specta", "graph", "planning-relationships.json"), "utf8"))
-  expect(epicsGraph.completedStages).toEqual(["foundation", "architecture", "roadmap", "epics"])
-  expect(epicsGraph.nodes.filter((node: { type: string }) => node.type === "EPIC")).toHaveLength(2)
-  expect(epicsGraph.nodes.filter((node: { type: string }) => node.type === "ACCEPTANCE_CRITERION")).toHaveLength(2)
-  expect(epicsGraph.planning.epics[0].roadmapMilestone).toBe("Traceable planning")
+  const epicsGraph = await graph.loadPlanningState(workspace)
+  expect(epicsGraph?.completedStages).toEqual(["foundation", "architecture", "roadmap", "epics"])
+  expect(epicsGraph?.epics).toHaveLength(2)
+  expect(epicsGraph?.epics?.flatMap((epic) => epic.stories.flatMap((story) => story.acceptanceCriteria))).toHaveLength(2)
+  expect(epicsGraph?.epics?.[0]?.roadmapMilestone).toBe("Traceable planning")
 }, 20_000)
 
 function runCli(arguments_: string[], cwd: string): Promise<{ stdout: string, stderr: string }> {

@@ -45,6 +45,27 @@ export const nodeFileSystem: FileSystem = {
   },
 }
 
+/** Restores every declared text path when a multi-file operation fails. */
+export async function runFileTransaction(
+  fileSystem: FileSystem,
+  paths: string[],
+  operation: () => Promise<void>,
+): Promise<void> {
+  const backups = await Promise.all([...new Set(paths)].map(async (path) => {
+    const existed = await fileSystem.exists(path)
+    return { path, existed, content: existed ? await fileSystem.readText(path) : undefined }
+  }))
+  try {
+    await operation()
+  } catch (error) {
+    await Promise.all(backups.map(async (backup) => {
+      if (backup.existed && backup.content !== undefined) await fileSystem.writeText(backup.path, backup.content)
+      else await fileSystem.removePath(backup.path)
+    }))
+    throw error
+  }
+}
+
 function isNodeError(error: unknown, code: string): error is NodeJS.ErrnoException {
   return typeof error === "object" && error !== null && "code" in error && error.code === code
 }

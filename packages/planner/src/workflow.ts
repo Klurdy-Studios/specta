@@ -3,8 +3,7 @@ import { join } from "node:path"
 import { isDeepStrictEqual } from "node:util"
 import { createWorkspaceRepository, workspaceManifestPath, type WorkspaceRepository } from "@specta/core/config"
 import type { ArchitectureDraft, EpicsDraft, FoundationDraft, PlanningArtifactSet, PlanningStage, PlanningState, ProjectPlan, RoadmapDraft, WorkflowDefinition, Workspace } from "@specta/core"
-import type { FileSystem } from "@specta/core/filesystem"
-import { nodeFileSystem } from "@specta/core/filesystem"
+import { nodeFileSystem, runFileTransaction, type FileSystem } from "@specta/core/filesystem"
 import { createWorkflowManifestRepository, type WorkflowManifestRepository, type WorkflowModule } from "@specta/core/workflow"
 import {
   createArchitecturePlanningState,
@@ -100,10 +99,9 @@ export function createPlanWorkflow(
       const committedState = state
       const commitPaths = [
         ...planningStageArtifactPaths(committedState, stage).map((path) => join(request.workspace.rootPath, path)),
-        join(request.workspace.rootPath, ".specta", "graph", "planning-relationships.json"),
         workspaceManifestPath(request.workspace.rootPath),
       ]
-      await runAtomically(fileSystem, commitPaths, async () => {
+      await runFileTransaction(fileSystem, commitPaths, async () => {
         for (const step of definition.executionSteps) {
           if (step === "persist-planning-stage") {
             artifactSet = await stateRepository.save(request.workspace, committedState, stage, templates)
@@ -126,33 +124,13 @@ export function createPlanWorkflow(
   }
 }
 
-async function runAtomically(
-  fileSystem: FileSystem,
-  paths: string[],
-  operation: () => Promise<void>,
-): Promise<void> {
-  const backups = await Promise.all([...new Set(paths)].map(async (path) => {
-    const existed = await fileSystem.exists(path)
-    return { path, existed, content: existed ? await fileSystem.readText(path) : undefined }
-  }))
-  try {
-    await operation()
-  } catch (error) {
-    await Promise.all(backups.map(async (backup) => {
-      if (backup.existed && backup.content !== undefined) await fileSystem.writeText(backup.path, backup.content)
-      else await fileSystem.removePath(backup.path)
-    }))
-    throw error
-  }
-}
-
 function planningWorkflowDefinitions(): WorkflowDefinition[] {
   return [
     planningWorkflow("plan", "Execute the next eligible planning stage.", [], [], ["select-next-planning-stage"], [], []),
-    planningWorkflow("plan-foundation", "Generate Vision and Constitution from a planning brief.", [], ["vision", "constitution"], ["compile-workspace", "generate-foundation", "persist-planning-stage", "update-workspace-graph", "persist-workspace"], ["vision", "constitution"], ["planning-stage"]),
-    planningWorkflow("plan-architecture", "Generate Architecture from Vision and Constitution.", ["vision", "constitution"], ["architecture"], ["compile-workspace", "generate-architecture", "persist-planning-stage", "update-workspace-graph", "persist-workspace"], ["architecture"], ["planning-stage"]),
-    planningWorkflow("plan-roadmap", "Generate Roadmap from approved planning artifacts.", ["vision", "constitution", "architecture"], ["roadmap"], ["compile-workspace", "generate-roadmap", "persist-planning-stage", "update-workspace-graph", "persist-workspace"], ["roadmap"], ["planning-stage"]),
-    planningWorkflow("plan-epics", "Generate Epics with nested Stories, acceptance criteria and Tasks.", ["vision", "constitution", "architecture", "roadmap"], ["epics"], ["compile-workspace", "generate-epics", "persist-planning-stage", "update-workspace-graph", "persist-workspace"], ["epic"], ["planning-stage"]),
+    planningWorkflow("plan-foundation", "Generate Vision and Constitution from a planning brief.", [], ["vision", "constitution"], ["compile-workspace", "generate-foundation", "persist-planning-stage", "persist-workspace", "update-workspace-graph"], ["vision", "constitution"], ["planning-stage"]),
+    planningWorkflow("plan-architecture", "Generate Architecture from Vision and Constitution.", ["vision", "constitution"], ["architecture"], ["compile-workspace", "generate-architecture", "persist-planning-stage", "persist-workspace", "update-workspace-graph"], ["architecture"], ["planning-stage"]),
+    planningWorkflow("plan-roadmap", "Generate Roadmap from approved planning artifacts.", ["vision", "constitution", "architecture"], ["roadmap"], ["compile-workspace", "generate-roadmap", "persist-planning-stage", "persist-workspace", "update-workspace-graph"], ["roadmap"], ["planning-stage"]),
+    planningWorkflow("plan-epics", "Generate Epics with nested Stories, acceptance criteria and Tasks.", ["vision", "constitution", "architecture", "roadmap"], ["epics"], ["compile-workspace", "generate-epics", "persist-planning-stage", "persist-workspace", "update-workspace-graph"], ["epic"], ["planning-stage"]),
   ]
 }
 

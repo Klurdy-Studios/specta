@@ -1,11 +1,12 @@
 import { execFile } from "node:child_process"
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises"
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import type { Workspace } from "@specta/core"
 import { createWorkspaceRepository, defaultWorkflowConfiguration } from "@specta/core/config"
 import { nodeFileSystem } from "@specta/core/filesystem"
+import { createAnalysisGraphRepository } from "@specta/graph"
 import { afterEach, expect, it } from "vitest"
 
 const cliPath = join(dirname(fileURLToPath(import.meta.url)), "../bin/specta.mjs")
@@ -35,12 +36,12 @@ it("compiles specification and source analysis from the CLI", async () => {
   await createWorkspaceRepository(nodeFileSystem).save(workspace)
 
   const result = await runCli(rootPath, ["compile"])
-  const snapshot = JSON.parse(await readFile(join(rootPath, ".specta", "graph", "analysis.json"), "utf8"))
+  const snapshot = await createAnalysisGraphRepository().load(workspace)
 
   expect(result.stderr).toBe("")
-  expect(snapshot.nodes.some((node: { type: string; entityKind?: string }) =>
+  expect(snapshot?.nodes.some((node: { type: string; entityKind?: string }) =>
     node.type === "SPECIFICATION_ENTITY" && node.entityKind === "requirement")).toBe(true)
-  expect(snapshot.nodes.some((node: { type: string }) => node.type === "CODE_SYMBOL")).toBe(true)
+  expect(snapshot?.nodes.some((node: { type: string }) => node.type === "CODE_SYMBOL")).toBe(true)
 }, 15_000)
 
 function runCli(cwd: string, arguments_: string[]): Promise<{ stdout: string; stderr: string }> {
