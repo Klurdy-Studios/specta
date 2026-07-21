@@ -9,7 +9,8 @@
     "./config": "./src/config/index.ts",
     "./workspace": "./src/workspace/index.ts",
     "./workflow": "./src/workflow/index.ts",
-    "./skills": "./src/skills/index.ts"
+    "./skills": "./src/skills/index.ts",
+    "./validation": "./src/validation/index.ts"
   },
   "dependencies": {
     "zod": "^4.4.3"

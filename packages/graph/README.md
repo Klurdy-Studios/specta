@@ -36,6 +36,20 @@ once, then left unchanged.
   in-progress, blocked, or completed Epic.
 - `createWorkflowStateRepository()` reads and atomically checkpoints
   `WorkflowRun` and `EpicImplementationState` nodes and their relationships.
+  Complete and validation-failed implementation checkpoints require an aligned
+  Validation Report and persist all three states in one transaction. A passing
+  checkpoint must come from an `implement` run and cover its Epic, every Story
+  and acceptance criterion, every Architecture component, an approved Technical
+  Design, verified tests, and implemented files.
+
+## Validation reports
+
+- `createValidationReportRepository()` stores exact reports and projects a
+  compact `ValidationReport` node with `VALIDATES` provenance to the Epic and
+  checked graph entities.
+- `validationReportProjection()` is public for transactional composition by
+  workflow repositories. Reports associated with an Implementation Run must
+  target the same Epic.
 
 ## Context Engine
 

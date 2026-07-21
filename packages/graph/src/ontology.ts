@@ -18,6 +18,7 @@ import {
   workflowRunSchema,
 } from "@specta/core"
 import { z } from "zod"
+import { validationReportSchema } from "@specta/core/validation"
 import {
   codeSymbolPropertiesSchema,
   externalDependencyPropertiesSchema,
@@ -80,6 +81,17 @@ export const ContextPacketNode = defineNode("ContextPacket", {
     overBudget: z.boolean(),
   }).strict(),
 })
+export const ValidationReportNode = defineNode("ValidationReport", {
+  schema: z.object({
+    epicId: validationReportSchema.shape.epicId,
+    implementationRunId: validationReportSchema.shape.implementationRunId,
+    mode: validationReportSchema.shape.mode,
+    contextFingerprint: validationReportSchema.shape.contextFingerprint,
+    sourceFingerprint: validationReportSchema.shape.sourceFingerprint,
+    status: validationReportSchema.shape.status,
+    summary: validationReportSchema.shape.summary,
+  }).strict(),
+})
 
 export const ContainsEdge = defineEdge("CONTAINS")
 export const DependsOnEdge = defineEdge("DEPENDS_ON")
@@ -92,6 +104,7 @@ export const TargetsEdge = defineEdge("TARGETS")
 export const HasStateEdge = defineEdge("HAS_STATE")
 export const ProducesEdge = defineEdge("PRODUCES")
 export const IncludesEdge = defineEdge("INCLUDES")
+export const ValidatesEdge = defineEdge("VALIDATES")
 
 /** TypeGraph ontology for Specta's unified planning and implementation graph. */
 export const workspaceGraph = defineGraph({
@@ -107,6 +120,7 @@ export const workspaceGraph = defineGraph({
     SpecificationEntity: { type: SpecificationEntityNode }, Test: { type: TestNode },
     ExternalDependency: { type: ExternalDependencyNode },
     ContextPacket: { type: ContextPacketNode },
+    ValidationReport: { type: ValidationReportNode },
   },
   edges: {
     CONTAINS: {
@@ -137,12 +151,17 @@ export const workspaceGraph = defineGraph({
     PRODUCES: {
       type: ProducesEdge,
       from: [WorkflowRunNode],
-      to: [VisionNode, ConstitutionNode, ArchitectureNode, RoadmapNode, EpicNode, StoryNode, AcceptanceCriterionNode, TaskNode, TechnicalDesignNode, ModuleNode, FileNode, CodeSymbolNode, TestNode, ContextPacketNode],
+      to: [VisionNode, ConstitutionNode, ArchitectureNode, RoadmapNode, EpicNode, StoryNode, AcceptanceCriterionNode, TaskNode, TechnicalDesignNode, ModuleNode, FileNode, CodeSymbolNode, TestNode, ContextPacketNode, ValidationReportNode],
     },
     INCLUDES: {
       type: IncludesEdge,
       from: [ContextPacketNode],
       to: [VisionNode, ConstitutionNode, ArchitectureNode, RoadmapNode, EpicNode, StoryNode, AcceptanceCriterionNode, TaskNode, TechnicalDesignNode, ModuleNode, FileNode, CodeSymbolNode, SpecificationDocumentNode, SpecificationEntityNode, TestNode, ExternalDependencyNode],
+    },
+    VALIDATES: {
+      type: ValidatesEdge,
+      from: [ValidationReportNode],
+      to: [ProjectNode, ArchitectureNode, EpicNode, StoryNode, AcceptanceCriterionNode, TechnicalDesignNode, ModuleNode, FileNode, CodeSymbolNode, TestNode, ExternalDependencyNode],
     },
   },
 })

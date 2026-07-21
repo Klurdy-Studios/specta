@@ -11,6 +11,7 @@ import {
   createContextEngine,
   createPlanningGraphRepository,
   createTechnicalDesignGraphRepository,
+  createValidationReportRepository,
   createWorkflowStateRepository,
 } from "@specta/graph"
 import { afterEach, expect, it } from "vitest"
@@ -70,6 +71,68 @@ it("resumes persisted run context without recompiling workspace analysis", async
   expect(JSON.parse(result.stdout)).toEqual(packet)
   await expect(createAnalysisGraphRepository().load(workspace)).resolves.toBeNull()
 }, 15_000)
+
+it("runs independent Epic validation and persists a failed report", async () => {
+  const workspace = await createCliWorkspace()
+  const result = await runCliResult(workspace.rootPath, ["validate", "epic_cli_context", "--json"])
+  const report = JSON.parse(result.stdout) as { id: string, epicId: string, status: string }
+
+  expect(result.code).toBe(1)
+  expect(result.stderr).toBe("")
+  expect(report).toMatchObject({ epicId: "epic_cli_context", status: "failed" })
+  await expect(createValidationReportRepository().get(workspace, report.id))
+    .resolves.toMatchObject(report)
+}, 15_000)
+
+it("passes CLI validation with directly executed acceptance evidence", async () => {
+  const workspace = await createCliWorkspace()
+  workspace.packageManager = "npm"
+  await createWorkspaceRepository(nodeFileSystem).save(workspace)
+  await nodeFileSystem.writeText(join(workspace.rootPath, "package.json"), JSON.stringify({
+    name: "context-app",
+    type: "module",
+    scripts: { test: "node --test src/context.test.ts" },
+  }))
+  await nodeFileSystem.writeText(
+    join(workspace.rootPath, "src/context.ts"),
+    "export interface ContextEngine { compile(): string }\n",
+  )
+  await nodeFileSystem.writeText(
+    join(workspace.rootPath, "src/context.test.ts"),
+    "import test from 'node:test'\nimport assert from 'node:assert/strict'\ntest('compiles required context', () => assert.equal(1, 1))\n",
+  )
+  const latest = designFixture(workspace)
+  await createTechnicalDesignGraphRepository().save(workspace, {
+    ...latest,
+    id: "design_cli_validation" as TechnicalDesign["id"],
+    revision: 2,
+    summary: "Validated context compiler API.",
+    modules: [{ ...latest.modules[0]!, purpose: "Context Engine" }],
+  })
+  await nodeFileSystem.writeText(join(workspace.rootPath, "evidence.json"), JSON.stringify({
+    epicId: "epic_cli_context",
+    criteria: [{
+      criterionId: "criterion_cli_context",
+      tests: [{ path: "src/context.test.ts", name: "compiles required context" }],
+    }],
+  }))
+
+  const result = await runCliResult(workspace.rootPath, [
+    "validate", "epic_cli_context", "--evidence", "evidence.json", "--json",
+  ])
+  const report = JSON.parse(result.stdout) as {
+    status: string
+    checks: Array<{ status: string, severity: string, message: string }>
+    commands: Array<{ command: { testPaths?: string[] } }>
+  }
+
+  expect(report.checks.filter((check) => check.status !== "passed" && check.severity === "error")).toEqual([])
+  expect(report.status).toBe("passed")
+  expect(result).toMatchObject({ code: 0, stderr: "" })
+  expect(report.commands).toContainEqual(expect.objectContaining({
+    command: expect.objectContaining({ testPaths: ["src/context.test.ts"] }),
+  }))
+}, 20_000)
 
 async function createCliWorkspace(): Promise<Workspace> {
   const rootPath = await mkdtemp(join(tmpdir(), "specta-cli-context-"))
@@ -170,6 +233,15 @@ function designFixture(workspace: Workspace): TechnicalDesign {
 }
 
 async function runCli(cwd: string, arguments_: string[]): Promise<{ stdout: string, stderr: string }> {
+  const result = await runCliResult(cwd, arguments_)
+  if (result.code !== 0) throw new Error(result.stderr || result.stdout)
+  return result
+}
+
+async function runCliResult(
+  cwd: string,
+  arguments_: string[],
+): Promise<{ code: number, stdout: string, stderr: string }> {
   const stdoutPath = join(cwd, ".context-stdout")
   const stderrPath = join(cwd, ".context-stderr")
   const stdoutFile = await open(stdoutPath, "w")
@@ -186,6 +258,5 @@ async function runCli(cwd: string, arguments_: string[]): Promise<{ stdout: stri
   await stderrFile.close()
   const stdout = await readFile(stdoutPath, "utf8")
   const stderr = await readFile(stderrPath, "utf8")
-  if (code !== 0) throw new Error(stderr || stdout)
-  return { stdout, stderr }
+  return { code, stdout, stderr }
 }

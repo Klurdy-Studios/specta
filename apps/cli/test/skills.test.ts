@@ -71,6 +71,10 @@ it("generates native stage commands from the workflow manifest", async () => {
     .resolves.toContain("CLI helper arguments: design <epic-id> --draft .specta/drafts/design.json [--feedback <changes>]")
   await expect(readFile(join(rootPath, ".specta", "workflows", "prompts", "scaffold.md"), "utf8"))
     .resolves.toContain("prepare, agent-apply, finalize")
+  await expect(readFile(join(rootPath, ".specta", "skills", "codex", "specta-validate", "SKILL.md"), "utf8"))
+    .resolves.toContain("build explicit acceptance-criterion test evidence")
+  await expect(readFile(join(rootPath, ".specta", "workflows", "prompts", "validate.md"), "utf8"))
+    .resolves.toContain("standalone validation report never changes implementation status")
 })
 
 it("accepts safe community skill targets only", () => {

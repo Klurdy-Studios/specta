@@ -6,6 +6,7 @@ import {
   technicalDesignSchema,
   workspaceSchema,
 } from "../src/index.js"
+import { validationEvidenceSchema, validationReportSchema } from "../src/validation/index.js"
 
 describe("canonical schemas", () => {
   it("rejects incomplete Foundation drafts", () => {
@@ -127,5 +128,62 @@ describe("canonical schemas", () => {
       dependencies: [],
       impactRequests: [],
     })).toThrow("Technical Design file paths must be unique")
+  })
+
+  it("enforces validation evidence and report outcome invariants", () => {
+    expect(() => validationEvidenceSchema.parse({
+      epicId: "epic",
+      criteria: [
+        { criterionId: "criterion", tests: [{ path: "src/a.test.ts" }] },
+        { criterionId: "criterion", tests: [{ path: "src/b.test.ts" }] },
+      ],
+    })).toThrow("Criterion evidence IDs must be unique")
+    expect(() => validationEvidenceSchema.parse({
+      epicId: "epic",
+      criteria: [{
+        criterionId: "criterion",
+        tests: [{ path: "src/a.test.ts" }, { path: "src/a.test.ts" }],
+      }],
+    })).toThrow("Criterion test evidence must be unique")
+    expect(() => validationReportSchema.parse({
+      schemaVersion: 1,
+      id: "report",
+      epicId: "epic",
+      mode: "full",
+      contextFingerprint: "c".repeat(64),
+      sourceFingerprint: "a".repeat(64),
+      status: "passed",
+      checks: [{
+        id: "check",
+        category: "test",
+        subject: { kind: "test" },
+        status: "failed",
+        severity: "error",
+        message: "Test failed.",
+        evidenceNodeIds: [],
+      }],
+      commands: [],
+      summary: { passed: 0, failed: 1, skipped: 0, warnings: 0 },
+    })).toThrow("Validation report status does not match blocking checks")
+    expect(() => validationReportSchema.parse({
+      schemaVersion: 1,
+      id: "empty-report",
+      epicId: "epic",
+      mode: "full",
+      contextFingerprint: "c".repeat(64),
+      sourceFingerprint: "b".repeat(64),
+      status: "passed",
+      checks: [{
+        id: "check",
+        category: "requirement",
+        subject: { kind: "epic", id: "epic" },
+        status: "passed",
+        severity: "error",
+        message: "Epic passed.",
+        evidenceNodeIds: ["epic"],
+      }],
+      commands: [],
+      summary: { passed: 1, failed: 0, skipped: 0, warnings: 0 },
+    })).toThrow("A passing report requires a successful test command")
   })
 })

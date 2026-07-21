@@ -2,6 +2,7 @@
 import { resolve } from "node:path"
 import { readFile } from "node:fs/promises"
 import type { ArchitectureDraft, EpicsDraft, FoundationDraft, RoadmapDraft, ScaffoldRunId, TechnicalDesignId } from "@specta/core"
+import type { ValidationEvidence } from "@specta/core/validation"
 import { createWorkspaceRepository } from "@specta/core/config"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import { createWorkspaceInitializer, type InitializeWorkspaceRequest } from "@specta/core/workspace"
@@ -14,9 +15,11 @@ import {
 } from "@specta/graph"
 import {
   createScaffoldWorkflow,
+  createImplementationValidationEngine,
   createTechnicalDesignApprovalWorkflow,
   createTechnicalDesignWorkflow,
   implementationWorkflowModule,
+  renderValidationReport,
 } from "@specta/implementation"
 import { createPlanWorkflow, planningWorkflowModule, type PlanWorkflowInput } from "@specta/planner"
 
@@ -70,6 +73,19 @@ if (command === "init") {
     console.error(error instanceof Error ? "specta: " + error.message : "specta: Unable to compile context.")
     process.exitCode = 1
   }
+} else if (command === "validate") {
+  try {
+    const { output, ...request } = await parseValidationRequest(arguments_)
+    const workspace = await createWorkspaceRepository(nodeFileSystem).load(resolve("."))
+    if (workspace === null) throw new Error("Initialize a Specta workspace before validating implementation.")
+    await createWorkspaceAnalyzer().compile(workspace)
+    const report = await createImplementationValidationEngine().validate({ workspace, ...request })
+    console.log(output === "json" ? JSON.stringify(report, null, 2) : renderValidationReport(report))
+    if (report.status === "failed") process.exitCode = 1
+  } catch (error) {
+    console.error(error instanceof Error ? "specta: " + error.message : "specta: Unable to validate implementation.")
+    process.exitCode = 1
+  }
 } else if (command === "plan") {
   try {
     const request = await parsePlanRequest(arguments_)
@@ -119,8 +135,56 @@ if (command === "init") {
     process.exitCode = 1
   }
 } else {
-  console.error("Usage: specta init [path] [--skill-target <target>] | specta compile | specta context <epic-id> [--run <implementation-run-id>] [--max-tokens <count>] [--json] | specta plan [foundation <brief> | architecture | roadmap | epics | <brief>] | specta design <epic-id> --draft <draft.json> | specta approve-design <design-id> | specta scaffold <design-id> --prepare | --finalize <scaffold-run-id>")
+  console.error("Usage: specta init [path] [--skill-target <target>] | specta compile | specta context <epic-id> [--run <implementation-run-id>] [--max-tokens <count>] [--json] | specta validate <epic-id> [--run <implementation-run-id>] [--evidence <evidence.json>] [--json] | specta plan [foundation <brief> | architecture | roadmap | epics | <brief>] | specta design <epic-id> --draft <draft.json> | specta approve-design <design-id> | specta scaffold <design-id> --prepare | --finalize <scaffold-run-id>")
   process.exitCode = 1
+}
+
+async function parseValidationRequest(arguments_: string[]): Promise<{
+  epicId: string
+  implementationRunId?: string
+  evidence?: ValidationEvidence
+  mode: "full"
+  output: "markdown" | "json"
+}> {
+  const epicId = arguments_[0]
+  if (!epicId || epicId.startsWith("-")) {
+    throw new Error("Usage: specta validate <epic-id> [--run <implementation-run-id>] [--evidence <evidence.json>] [--json]")
+  }
+  let implementationRunId: string | undefined
+  let evidence: ValidationEvidence | undefined
+  let output: "markdown" | "json" = "markdown"
+  for (let index = 1; index < arguments_.length; index += 1) {
+    const argument = arguments_[index]
+    if (argument === "--json") {
+      output = "json"
+      continue
+    }
+    if (argument === "--run") {
+      implementationRunId = arguments_[index + 1]
+      if (!implementationRunId || implementationRunId.startsWith("-")) throw new Error("--run requires an Implementation Run ID.")
+      index += 1
+      continue
+    }
+    if (argument === "--evidence") {
+      const path = arguments_[index + 1]
+      if (!path || path.startsWith("-")) throw new Error("--evidence requires a JSON file path.")
+      try {
+        evidence = JSON.parse(await readFile(resolve(path), "utf8")) as ValidationEvidence
+      } catch {
+        throw new Error("Unable to read validation evidence: " + path + ".")
+      }
+      index += 1
+      continue
+    }
+    throw new Error("Unknown validate option: " + argument + ".")
+  }
+  return {
+    epicId,
+    mode: "full",
+    output,
+    ...(implementationRunId ? { implementationRunId } : {}),
+    ...(evidence ? { evidence } : {}),
+  }
 }
 
 function parseContextRequest(arguments_: string[]): {
