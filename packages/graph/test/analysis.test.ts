@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises"
+import { mkdtemp, mkdir, rm, stat, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { Workspace } from "@specta/core"
@@ -36,12 +36,10 @@ describe("workspace analyzer", () => {
 
     const analyzer = createWorkspaceAnalyzer()
     const first = await analyzer.compile(workspace)
-    const firstContent = await readFile(join(rootPath, ".specta", "graph", "analysis.json"), "utf8")
     const second = await analyzer.compile(workspace)
-    const secondContent = await readFile(join(rootPath, ".specta", "graph", "analysis.json"), "utf8")
 
     expect(second).toEqual(first)
-    expect(secondContent).toBe(firstContent)
+    await expect(stat(join(rootPath, ".specta", "graph", "workspace.sqlite"))).resolves.toMatchObject({ size: expect.any(Number) })
     expect(first.analysis.specifications.map((specification) => specification.path)).toEqual([
       ".spec/epic.md",
       ".specta/planning/architecture.md",

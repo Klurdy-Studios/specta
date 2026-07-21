@@ -1,5 +1,5 @@
 import { getEdgeKinds, getNodeKinds } from "@nicia-ai/typegraph"
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { Workspace } from "@specta/core"
@@ -15,6 +15,8 @@ afterEach(async () => {
 describe("workspace graph ontology", () => {
   it("defines typed planning nodes and relationships", () => {
     expect(getNodeKinds(workspaceGraph)).toEqual([
+      "Workspace",
+      "Project",
       "Vision",
       "Constitution",
       "Architecture",
@@ -29,12 +31,17 @@ describe("workspace graph ontology", () => {
       "CodeSymbol",
       "ProjectProfile",
       "ScaffoldRun",
+      "WorkflowRun",
+      "EpicImplementationState",
       "SpecificationDocument",
       "SpecificationEntity",
       "Test",
       "ExternalDependency",
     ])
-    expect(getEdgeKinds(workspaceGraph)).toEqual(["CONTAINS", "DEPENDS_ON", "IMPLEMENTS", "IMPORTS", "EXPORTS", "TESTS", "REFERENCES"])
+    expect(getEdgeKinds(workspaceGraph)).toEqual([
+      "CONTAINS", "DEPENDS_ON", "IMPLEMENTS", "IMPORTS", "EXPORTS", "TESTS",
+      "REFERENCES", "TARGETS", "HAS_STATE", "PRODUCES",
+    ])
   })
 
   it("enforces properties for each analysis node kind", () => {
@@ -121,8 +128,7 @@ describe("workspace graph ontology", () => {
     await repository.savePlanningState(workspace, planning)
 
     await expect(repository.loadPlanningState(workspace)).resolves.toEqual(planning)
-    await expect(readFile(join(rootPath, ".specta", "graph", "planning-relationships.json"), "utf8"))
-      .resolves.toContain('"schemaVersion": 3')
+    await expect(stat(join(rootPath, ".specta", "graph", "workspace.sqlite"))).resolves.toMatchObject({ size: expect.any(Number) })
   })
 
   it("migrates unversioned Roadmaps with string milestones", async () => {
@@ -252,16 +258,10 @@ describe("workspace graph ontology", () => {
       targetId: planning?.epics?.[0]?.stories[0]?.acceptanceCriteria[0]?.id,
     })
     await repository.savePlanningState(workspace, planning!)
-    const migrated = JSON.parse(await readFile(path, "utf8"))
-    expect(migrated.schemaVersion).toBe(3)
-    expect(migrated.nodes.some((node: { type: string }) => node.type === "ACCEPTANCE_CRITERION")).toBe(true)
-
-    migrated.planning.epics[0].stories[0].acceptanceCriteria = ["Legacy criterion in v3"]
-    await writeFile(path, JSON.stringify(migrated), "utf8")
-    await expect(repository.loadPlanningState(workspace)).rejects.toThrow("Unable to read planning state")
-
-    migrated.schemaVersion = 99
-    await writeFile(path, JSON.stringify(migrated), "utf8")
-    await expect(repository.loadPlanningState(workspace)).rejects.toThrow("Unable to read planning state")
+    const legacy = JSON.parse(await readFile(path, "utf8"))
+    expect(legacy.schemaVersion).toBe(2)
+    legacy.schemaVersion = 99
+    await writeFile(path, JSON.stringify(legacy), "utf8")
+    await expect(repository.loadPlanningState(workspace)).resolves.toEqual(planning)
   })
 })

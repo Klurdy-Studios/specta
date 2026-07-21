@@ -24,6 +24,48 @@ export const skillTargetSchema = z.string().regex(/^[a-z][a-z0-9-]*$/)
 export type SkillTarget = z.infer<typeof skillTargetSchema>
 export type WorkflowTemplateId = "plan" | "design" | "scaffold" | "implement" | "review" | "validate" | "context"
 
+export const workflowRunStatusSchema = z.enum([
+  "prepared",
+  "in-progress",
+  "blocked",
+  "validation-failed",
+  "complete",
+])
+export type WorkflowRunStatus = z.infer<typeof workflowRunStatusSchema>
+
+/** Durable execution checkpoint shared by graph-backed workflows. */
+export const workflowRunSchema = z.object({
+  workflow: skillTargetSchema,
+  targetId: nonEmptyTextSchema,
+  targetKind: z.enum(["workspace", "epic", "technical-design"]),
+  status: workflowRunStatusSchema,
+  phase: nonEmptyTextSchema,
+  revision: z.number().int().positive(),
+  createdAt: z.iso.datetime(),
+  completedAt: z.iso.datetime().optional(),
+}).strict()
+export type WorkflowRun = z.infer<typeof workflowRunSchema>
+
+export const epicImplementationStatusSchema = z.enum([
+  "planned",
+  "ready",
+  "in-progress",
+  "blocked",
+  "validation-failed",
+  "complete",
+])
+export type EpicImplementationStatus = z.infer<typeof epicImplementationStatusSchema>
+
+/** Delivery lifecycle kept separate from immutable Epic planning intent. */
+export const epicImplementationStateSchema = z.object({
+  epicId: planningIdSchema,
+  status: epicImplementationStatusSchema,
+  activeRunId: nonEmptyTextSchema.optional(),
+  revision: z.number().int().nonnegative(),
+  validationSummary: nonEmptyTextSchema.optional(),
+}).strict()
+export type EpicImplementationState = z.infer<typeof epicImplementationStateSchema>
+
 const identifierSchema = skillTargetSchema
 export const workflowParameterSchema = z.object({
   name: identifierSchema,

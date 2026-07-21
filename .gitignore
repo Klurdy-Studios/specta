@@ -3,3 +3,6 @@ dist/
 coverage/
 .turbo/
 .specta/cache/
+**/.specta/graph/*.sqlite
+**/.specta/graph/*.sqlite-shm
+**/.specta/graph/*.sqlite-wal

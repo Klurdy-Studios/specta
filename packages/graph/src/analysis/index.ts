@@ -1,7 +1,5 @@
-import { join } from "node:path"
 import {
   workspaceAnalysisSchema,
-  isRecord,
   planningStateSchema,
   type ParseDiagnostic,
   type Workspace,
@@ -21,6 +19,9 @@ import { discoverAnalysisFiles } from "./discovery.ts"
 import { projectWorkspaceAnalysis } from "./projector.ts"
 import { analysisGraphSnapshotSchema, type AnalysisGraphSnapshot } from "./snapshot.ts"
 import { normalizeGraphTitle } from "./identifiers.ts"
+import { createSqliteWorkspaceGraphProvider } from "../persistence/sqlite.ts"
+import type { WorkspaceGraphProvider } from "../repository/contracts.ts"
+import { analysisProjection } from "../updates/domain-projections.ts"
 
 export * from "./discovery.ts"
 export * from "./identifiers.ts"
@@ -33,7 +34,7 @@ export interface AnalysisGraphRepository {
 }
 
 export interface WorkspaceAnalyzer {
-  /** Performs a full deterministic rebuild and persists the analysis graph shard. */
+  /** Recompiles deterministic analysis and incrementally updates its graph projection. */
   compile(workspace: Workspace): Promise<AnalysisGraphSnapshot>
 }
 
@@ -41,27 +42,28 @@ export interface WorkspaceAnalyzerOptions {
   fileSystem?: FileSystem
   parsers?: ParserRegistry
   repository?: AnalysisGraphRepository
+  graphProvider?: WorkspaceGraphProvider
 }
 
-/** Creates the repository for `.specta/graph/analysis.json`. */
-export function createAnalysisGraphRepository(fileSystem: FileSystem = nodeFileSystem): AnalysisGraphRepository {
-  const pathFor = (workspace: Workspace): string => join(workspace.rootPath, ".specta", "graph", "analysis.json")
+/** Creates validated read/write access to the analysis projection in the Workspace Graph. */
+export function createAnalysisGraphRepository(
+  fileSystem: FileSystem = nodeFileSystem,
+  provider: WorkspaceGraphProvider = createSqliteWorkspaceGraphProvider({ fileSystem }),
+): AnalysisGraphRepository {
   return {
     async load(workspace) {
-      const path = pathFor(workspace)
-      if (!(await fileSystem.exists(path))) return null
       try {
-        return analysisGraphSnapshotSchema.parse(JSON.parse(await fileSystem.readText(path)))
+        return await provider.withGraph(workspace, async (graph) => {
+          const value = await graph.readDocument<unknown>("analysis")
+          return value === null ? null : analysisGraphSnapshotSchema.parse(value)
+        })
       } catch (error) {
         throw new Error("Unable to read source analysis from the Workspace Graph.", { cause: error })
       }
     },
     async save(workspace, snapshot) {
-      const path = pathFor(workspace)
-      const content = JSON.stringify(analysisGraphSnapshotSchema.parse(snapshot)) + "\n"
-      if (!(await fileSystem.exists(path)) || await fileSystem.readText(path) !== content) {
-        await fileSystem.writeText(path, content)
-      }
+      const validated = analysisGraphSnapshotSchema.parse(snapshot)
+      await provider.withGraph(workspace, async (graph) => graph.projections.apply(analysisProjection(validated)))
     },
   }
 }
@@ -73,7 +75,8 @@ export function createWorkspaceAnalyzer(options: WorkspaceAnalyzerOptions = {}):
     specificationParsers: [markdownSpecificationParser],
     languageParsers: [typeScriptLanguageParser],
   })
-  const repository = options.repository ?? createAnalysisGraphRepository(fileSystem)
+  const graphProvider = options.graphProvider ?? createSqliteWorkspaceGraphProvider({ fileSystem })
+  const repository = options.repository ?? createAnalysisGraphRepository(fileSystem, graphProvider)
   return {
     async compile(workspace) {
       const discovered = await discoverAnalysisFiles(workspace, fileSystem, parsers)
@@ -141,7 +144,7 @@ export function createWorkspaceAnalyzer(options: WorkspaceAnalyzerOptions = {}):
         diagnostics: diagnostics.sort(compareDiagnostics),
       })
       const projectRoots = new Map(workspace.projects.map((project) => [project.id, project.rootPath]))
-      const canonicalPlanningIds = await loadCanonicalPlanningIds(workspace, fileSystem)
+      const canonicalPlanningIds = await loadCanonicalPlanningIds(workspace, graphProvider)
       const snapshot = projectWorkspaceAnalysis(analysis, projectRoots, canonicalPlanningIds)
       await repository.save(workspace, snapshot)
       return snapshot
@@ -158,13 +161,11 @@ async function readFiles(paths: string[], fileSystem: FileSystem): Promise<strin
   return contents
 }
 
-async function loadCanonicalPlanningIds(workspace: Workspace, fileSystem: FileSystem): Promise<Map<string, string>> {
-  const path = join(workspace.rootPath, ".specta", "graph", "planning-relationships.json")
-  if (!(await fileSystem.exists(path))) return new Map()
+async function loadCanonicalPlanningIds(workspace: Workspace, provider: WorkspaceGraphProvider): Promise<Map<string, string>> {
   try {
-    const value: unknown = JSON.parse(await fileSystem.readText(path))
-    const state = isRecord(value) ? planningStateSchema.safeParse(value.planning) : undefined
-    if (!state?.success) return new Map()
+    const value = await provider.withGraph(workspace, (graph) => graph.readDocument<unknown>("planning-state"))
+    const state = planningStateSchema.safeParse(value)
+    if (!state.success) return new Map()
     const result = new Map<string, string>()
     for (const epic of state.data.epics ?? []) {
       result.set(planningEntityKey("epic", epic.title), epic.id)
