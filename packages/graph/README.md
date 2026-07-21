@@ -27,12 +27,48 @@ once, then left unchanged.
 - `WorkspaceGraphQueries` provides node lookup, kind-filtered listing, bounded
   neighborhood traversal, dependency/dependent traversal, and
   `nextEligibleEpic()`.
+- `searchNeighbors()` delegates bounded neighborhood discovery to TypeGraph's
+  native set-based breadth-first graph algorithm and returns minimum traversal
+  depth with each node.
 - `nextEligibleEpic()` uses Roadmap order, explicit Epic dependencies, latest
   approved or scaffolded Technical Designs, and graph-backed implementation
   status directly from graph nodes and relationships. It never returns an
   in-progress, blocked, or completed Epic.
 - `createWorkflowStateRepository()` reads and atomically checkpoints
   `WorkflowRun` and `EpicImplementationState` nodes and their relationships.
+
+## Context Engine
+
+- `createContextEngine()` compiles the smallest sufficient implementation
+  packet for one Epic. Required Stories, Tasks, acceptance criteria,
+  architecture constraints, and the latest approved Technical Design are never
+  removed to satisfy a token budget.
+- Relevant source files, symbols, imports, dependencies, and tests are selected
+  through TypeGraph's bounded neighborhood search with deterministic domain
+  ranking. Required predecessor interfaces are resolved to their canonical
+  graph file and symbol IDs. Packets reference source paths and signatures
+  instead of embedding complete source files.
+- Supplying `implementationRunId` persists an immutable Context Packet through
+  `createContextPacketRepository()`. Repeated compilation returns the exact
+  packet associated with that run, allowing a native coding-agent workflow to
+  resume deterministically.
+- `renderContextPacket()` renders the structured packet as concise Markdown for
+  a coding agent. `estimateContextTokens()` exposes Specta's deterministic
+  dependency-free token approximation. Context budgets measure this rendered
+  agent packet and remove lowest-ranked optional items until it fits; required
+  specifications remain present and produce an explicit over-budget diagnostic
+  when they cannot fit.
+- Every packet includes a blast-radius summary. TypeGraph incoming neighborhood
+  searches find direct consumers, two-hop transitive consumers, affected tests,
+  and dependent Epics. Impacted entities remain summaries rather than being
+  promoted into editable source context. Each section reports its total count
+  and retains the first 50 deterministic results, with `truncated` indicating
+  that additional impacts exist.
+
+Run `specta context <epic-id>` to inspect Markdown context, or add `--json` for
+the structured packet. `--max-tokens <count>` changes the optional-context
+budget. `--run <implementation-run-id>` is intended for the graph-backed
+prepare/resume protocol implemented by an agent-oriented workflow.
 
 ## Domain repositories
 
