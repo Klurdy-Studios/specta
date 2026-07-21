@@ -152,6 +152,13 @@ describe("SQLite Workspace Graph", () => {
       expect(dependencies.nodes.map((node) => node.id)).toContain("epic_first")
       const dependents = await graph.queries.dependents("epic_first")
       expect(dependents.nodes.map((node) => node.id)).toContain("epic_second")
+      const searched = await graph.queries.searchNeighbors({
+        nodeId: "epic_second",
+        direction: "outgoing",
+        edgeKinds: ["DEPENDS_ON"],
+        depth: 2,
+      })
+      expect(searched).toContainEqual(expect.objectContaining({ id: "epic_first", depth: 1 }))
       const rootOnly = await graph.queries.neighbors({ nodeId: "epic_first", depth: 0 })
       expect(rootOnly.nodes.map((node) => node.id)).toEqual(["epic_first"])
       expect(rootOnly.edges).toEqual([])

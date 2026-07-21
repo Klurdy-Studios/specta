@@ -37,10 +37,11 @@ describe("workspace graph ontology", () => {
       "SpecificationEntity",
       "Test",
       "ExternalDependency",
+      "ContextPacket",
     ])
     expect(getEdgeKinds(workspaceGraph)).toEqual([
       "CONTAINS", "DEPENDS_ON", "IMPLEMENTS", "IMPORTS", "EXPORTS", "TESTS",
-      "REFERENCES", "TARGETS", "HAS_STATE", "PRODUCES",
+      "REFERENCES", "TARGETS", "HAS_STATE", "PRODUCES", "INCLUDES",
     ])
   })
 
