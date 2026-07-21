@@ -66,8 +66,8 @@ Demonstrate that structured project knowledge produces higher-quality AI coding 
 - Load agent-agnostic Prompt Templates
 - Coordinate graph compilation, context generation and validation
 
-Initial workflows include plan, scaffold and validate. They coordinate services;
-they do not make Specta a coding agent.
+Initial workflows include plan, scaffold, implement and validate. They coordinate
+services; they do not make Specta a coding agent.
 
 ### Native Agent Surfaces
 
@@ -96,6 +96,16 @@ Project Structure
 
 - Markdown parser
 - TypeScript parser
+
+### Epic Implementation
+
+- Resolve an explicit or next eligible Epic from the Workspace Graph
+- Require an approved Technical Design and completed graph prerequisites
+- Compile optimized implementation context automatically
+- Prepare graph-backed Implementation Runs for the active coding agent
+- Let the coding agent reason about and author source changes
+- Recompile and validate before marking an Epic complete
+- Unlock dependent Epics only after successful validation
 
 ### Workspace Graph
 

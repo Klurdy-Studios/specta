@@ -1,4 +1,4 @@
-# Epic 009 — Skills & Native Agent Surfaces
+# Epic 010 — Skills & Native Agent Surfaces
 
 ## Goal
 
@@ -40,3 +40,4 @@ Engine. MCP is a platform API, not the primary interface.
   local or published CLI helper internally.
 - Skills do not duplicate business logic or workflow orchestration.
 - MCP capabilities remain available where supported.
+

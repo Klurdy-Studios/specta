@@ -913,4 +913,4 @@ Focus entirely on developer workflows.
 TypeGraph owns the graph ontology and uses the canonical Zod entity schemas.
 The ontology and validation layer may be introduced before a database adapter.
 SQLite-backed persistence is delivered with the Workspace Graph in Epic 005;
-Epic 010 adds caching and performance optimizations on top of that persisted graph.
+Epic 011 adds caching and performance optimizations on top of that persisted graph.

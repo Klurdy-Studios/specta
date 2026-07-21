@@ -140,7 +140,7 @@ Responsibilities:
 - Typed nodes and relationships.
 - Graph updates, traversal, queries and impact analysis.
 - Serialization and SQLite persistence introduced in Epic 005.
-- Graph caching added in Epic 010.
+- Graph caching added in Epic 011.
 
 TypeGraph, Drizzle and SQLite dependencies remain isolated here. Planning and
 implementation logic do not live in this package.

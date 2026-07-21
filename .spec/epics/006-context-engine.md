@@ -20,6 +20,8 @@ generation automatically.
 - As a coding agent, I receive only the information required for the current workflow.
 - As a developer, I want implementation workflows to minimize unnecessary context.
 - As a developer, I want context generation to be automatic.
+- Compile an implementation packet for one graph-selected Epic and its ordered
+  Stories and Tasks.
 
 ## Deliverables
 
@@ -31,3 +33,8 @@ generation automatically.
 - Token usage reduced.
 - Required specifications included.
 - Workflow commands automatically include the required optimized context.
+- Epic implementation context includes acceptance criteria, architecture
+  constraints, approved Technical Design, dependencies, relevant source files,
+  and tests.
+- Context requests are keyed by the selected Epic and Implementation Run so an
+  interrupted native-agent workflow can be resumed deterministically.

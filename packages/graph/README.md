@@ -37,5 +37,5 @@ TypeGraph reserves `id`, `kind`, and `meta`, so graph properties use
 
 The graph package owns ontology, graph validation, traversal and persistence
 adapters. This version intentionally performs a complete deterministic rebuild;
-Epic 005 owns the unified graph database and Epic 010 owns incremental caching
+Epic 005 owns the unified graph database and Epic 011 owns incremental caching
 and performance.

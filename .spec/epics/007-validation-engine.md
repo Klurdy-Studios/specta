@@ -17,6 +17,7 @@ completion.
 - Validate acceptance criteria.
 - Validate tests.
 - Reuse validation through Workflow Engine or MCP.
+- Validate one Epic Implementation Run against its graph-backed intent.
 
 ## Deliverables
 
@@ -29,3 +30,9 @@ completion.
 - Missing tests reported.
 - Implementation workflows validate outcomes automatically.
 - Validation remains available independently through Workflow Engine or MCP.
+- Validation reports identify the Epic, Stories, acceptance criteria,
+  architecture constraints, files, and tests that passed or failed.
+- A failed Implementation Run cannot mark its Epic complete or unlock dependent
+  Epics.
+- A successful report can be committed atomically with implementation status by
+  the Epic Implementation Workflow.
