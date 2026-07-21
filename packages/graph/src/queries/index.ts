@@ -6,6 +6,7 @@ import type {
   EligibleEpic,
   GraphEdgeRecord,
   GraphNeighborQuery,
+  GraphNeighborRecord,
   GraphNodeRecord,
   GraphSubgraph,
   WorkspaceGraphEdgeKind,
@@ -43,6 +44,24 @@ export function createWorkspaceGraphQueries(
     (await store.getNodeCollectionOrThrow(kind).find())
       .map((value) => nodeRecord(value, kind)).sort((a, b) => a.id.localeCompare(b.id))
 
+  const searchNeighbors = async (request: GraphNeighborQuery): Promise<GraphNeighborRecord[]> => {
+    const depth = Math.max(0, Math.min(request.depth ?? 1, 10))
+    if (depth === 0) return []
+    const discovered = await store.algorithms.neighbors(request.nodeId, {
+      edges: request.edgeKinds ?? workspaceGraphEdgeKinds,
+      depth,
+      direction: request.direction === "incoming" ? "in" : request.direction === "both" ? "both" : "out",
+    })
+    const records = await Promise.all(discovered.map(async (item): Promise<GraphNeighborRecord | null> => {
+      if (!workspaceGraphNodeKinds.includes(item.kind as WorkspaceGraphNodeKind)) return null
+      const kind = item.kind as WorkspaceGraphNodeKind
+      const value = await store.getNodeCollectionOrThrow(kind).getById(item.id)
+      return value ? { ...nodeRecord(value, kind), depth: item.depth } : null
+    }))
+    return records.filter((node): node is GraphNeighborRecord => node !== null)
+      .sort((left, right) => left.depth - right.depth || left.id.localeCompare(right.id))
+  }
+
   const neighbors = async (request: GraphNeighborQuery): Promise<GraphSubgraph> => {
     const depth = Math.max(0, Math.min(request.depth ?? 1, 10))
     const requestedKinds = request.edgeKinds ?? workspaceGraphEdgeKinds
@@ -79,6 +98,7 @@ export function createWorkspaceGraphQueries(
   return {
     getNode,
     listNodes,
+    searchNeighbors,
     neighbors,
     dependencies: (nodeId, depth = 1) => neighbors({
       nodeId,

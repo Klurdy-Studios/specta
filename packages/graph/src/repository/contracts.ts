@@ -71,6 +71,11 @@ export interface GraphNeighborQuery {
   depth?: number
 }
 
+/** One node discovered by TypeGraph's set-based neighborhood search. */
+export interface GraphNeighborRecord extends GraphNodeRecord {
+  depth: number
+}
+
 /** Next implementation candidate selected from planning, design, and workflow state. */
 export interface EligibleEpic {
   epicId: string
@@ -84,6 +89,8 @@ export interface WorkspaceGraphQueries {
   getNode(id: string): Promise<GraphNodeRecord | null>
   listNodes(kind: WorkspaceGraphNodeKind): Promise<GraphNodeRecord[]>
   neighbors(request: GraphNeighborQuery): Promise<GraphSubgraph>
+  /** Uses TypeGraph's native breadth-first algorithm and returns discovered nodes with minimum depth. */
+  searchNeighbors(request: GraphNeighborQuery): Promise<GraphNeighborRecord[]>
   dependencies(nodeId: string, depth?: number): Promise<GraphSubgraph>
   dependents(nodeId: string, depth?: number): Promise<GraphSubgraph>
   nextEligibleEpic(): Promise<EligibleEpic | null>

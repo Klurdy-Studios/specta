@@ -2,7 +2,7 @@ import { posix } from "node:path"
 import type { ProjectId, WorkspaceAnalysis } from "@specta/core"
 import type { AnalysisGraphNode, AnalysisGraphRelationship, AnalysisGraphSnapshot } from "./snapshot.ts"
 import { analysisGraphSnapshotSchema } from "./snapshot.ts"
-import { createStableGraphId, normalizeGraphTitle } from "./identifiers.ts"
+import { createFileGraphId, createStableGraphId, createSymbolGraphId, normalizeGraphTitle } from "./identifiers.ts"
 
 /** Projects parser output into a deterministic, serializable Workspace Graph shard. */
 export function projectWorkspaceAnalysis(
@@ -44,7 +44,7 @@ export function projectWorkspaceAnalysis(
   for (const file of analysis.sourceFiles) {
     const projectRoot = file.projectId ? projectRoots.get(file.projectId) ?? "." : "."
     const projectPath = projectRelativePath(projectRoot, file.path)
-    const fileId = createStableGraphId("file", projectRoot, projectPath)
+    const fileId = createFileGraphId(projectRoot, projectPath)
     fileIds.set(file.path, fileId)
     nodes.push({
       id: fileId,
@@ -56,7 +56,7 @@ export function projectWorkspaceAnalysis(
     const symbolIds = new Map<string, string>()
     symbolsByFile.set(file.path, symbolIds)
     for (const symbol of file.symbols) {
-      const symbolId = createStableGraphId("symbol", projectRoot, projectPath + "#" + symbol.name)
+      const symbolId = createSymbolGraphId(projectRoot, projectPath, symbol.name)
       symbolIds.set(symbol.name, symbolId)
       nodes.push({
         id: symbolId,
@@ -172,7 +172,7 @@ function ensureAssetNode(
     .sort((left, right) => right[1].length - left[1].length)[0]
   const projectId = owner?.[0]
   const projectRoot = owner?.[1] ?? "."
-  const id = createStableGraphId("file", projectRoot, projectRelativePath(projectRoot, path))
+  const id = createFileGraphId(projectRoot, projectRelativePath(projectRoot, path))
   assetIds.set(path, id)
   nodes.push({ id, type: "FILE", path, fileKind: "asset", ...(projectId ? { projectId } : {}) })
   return id

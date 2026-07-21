@@ -17,7 +17,7 @@ import {
   type Workspace,
 } from "@specta/core"
 import type { AnalysisGraphSnapshot, AnalysisGraphNode } from "../analysis/snapshot.ts"
-import { createStableGraphId } from "../analysis/identifiers.ts"
+import { createFileGraphId, createModuleGraphId, createStableGraphId, createSymbolGraphId } from "../analysis/identifiers.ts"
 import type {
   GraphEdgeUpsert,
   GraphNodeUpsert,
@@ -25,7 +25,7 @@ import type {
   WorkspaceGraphEdgeKind,
   WorkspaceGraphNodeKind,
 } from "../repository/contracts.ts"
-import { createGraphEdgeId } from "./apply-projection.ts"
+import { createGraphEdge } from "./apply-projection.ts"
 
 /** Converts canonical planning state into its owned graph projection. */
 export function planningStateProjection(state: PlanningState): GraphProjection {
@@ -81,11 +81,11 @@ export function technicalDesignsProjection(designs: TechnicalDesign[]): GraphPro
     edges.push(edge("IMPLEMENTS", design.id, design.targetId, "TechnicalDesign", "Epic"))
     const root = design.profile.rootPath
     for (const module of design.modules) {
-      const moduleId = createStableGraphId("module", root, module.path)
+      const moduleId = createModuleGraphId(root, module.path)
       nodes.push({ id: moduleId, kind: "Module", props: { name: module.name, path: module.path, purpose: module.purpose } })
       edges.push(edge("CONTAINS", design.id, moduleId, "TechnicalDesign", "Module"))
       for (const file of module.files) {
-        const fileId = createStableGraphId("file", root, file.path)
+        const fileId = createFileGraphId(root, file.path)
         nodes.push({
           id: fileId,
           kind: "File",
@@ -93,7 +93,7 @@ export function technicalDesignsProjection(designs: TechnicalDesign[]): GraphPro
         })
         edges.push(edge("CONTAINS", moduleId, fileId, "Module", "File"))
         for (const symbol of file.exports) {
-          const symbolId = createStableGraphId("symbol", root, file.path + "#" + symbol.name)
+          const symbolId = createSymbolGraphId(root, file.path, symbol.name)
           nodes.push({
             id: symbolId,
             kind: "CodeSymbol",
@@ -121,7 +121,7 @@ export function technicalDesignsProjection(designs: TechnicalDesign[]): GraphPro
         if (!targetDesign.modules.some((module) => module.files.some((file) => file.path === dependency.filePath))) {
           throw new Error("Technical Design dependency file is missing: " + dependency.filePath + ".")
         }
-        targetId = createStableGraphId("file", targetDesign.profile.rootPath, dependency.filePath)
+        targetId = createFileGraphId(targetDesign.profile.rootPath, dependency.filePath)
         targetKind = "File"
       } else if (dependency.kind === "symbol") {
         if (!targetDesign.modules.some((module) => module.files.some((file) =>
@@ -129,7 +129,7 @@ export function technicalDesignsProjection(designs: TechnicalDesign[]): GraphPro
         ))) {
           throw new Error("Technical Design dependency symbol is missing: " + dependency.symbolName + ".")
         }
-        targetId = createStableGraphId("symbol", targetDesign.profile.rootPath, dependency.filePath + "#" + dependency.symbolName)
+        targetId = createSymbolGraphId(targetDesign.profile.rootPath, dependency.filePath, dependency.symbolName)
         targetKind = "CodeSymbol"
       }
       edges.push(edge("DEPENDS_ON", design.id, targetId, "TechnicalDesign", targetKind))
@@ -206,13 +206,13 @@ function edge(
   sourceKind?: WorkspaceGraphNodeKind,
   targetKind?: WorkspaceGraphNodeKind,
 ): GraphEdgeUpsert {
-  const identity = { kind, sourceId, targetId }
-  return {
-    ...identity,
-    id: createGraphEdgeId(identity),
+  return createGraphEdge({
+    kind,
+    sourceId,
+    targetId,
     ...(sourceKind ? { sourceKind } : {}),
     ...(targetKind ? { targetKind } : {}),
-  }
+  })
 }
 
 function projectProfileNodeId(profile: ProjectProfile): string {

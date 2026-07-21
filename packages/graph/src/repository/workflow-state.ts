@@ -9,7 +9,7 @@ import type { FileSystem } from "@specta/core/filesystem"
 import { nodeFileSystem } from "@specta/core/filesystem"
 import { createStableGraphId } from "../analysis/identifiers.ts"
 import { createSqliteWorkspaceGraphProvider } from "../persistence/sqlite.ts"
-import { createGraphEdgeId } from "../updates/apply-projection.ts"
+import { createGraphEdge } from "../updates/apply-projection.ts"
 import type {
   GraphEdgeUpsert,
   GraphNodeUpsert,
@@ -117,11 +117,11 @@ function relationship(
   sourceKind?: WorkspaceGraphNodeKind,
   targetKind?: WorkspaceGraphNodeKind,
 ): GraphEdgeUpsert {
-  const identity = { kind, sourceId, targetId }
-  return {
-    ...identity,
-    id: createGraphEdgeId(identity),
+  return createGraphEdge({
+    kind,
+    sourceId,
+    targetId,
     ...(sourceKind ? { sourceKind } : {}),
     ...(targetKind ? { targetKind } : {}),
-  }
+  })
 }

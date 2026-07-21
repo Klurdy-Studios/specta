@@ -70,6 +70,16 @@ export const SpecificationDocumentNode = defineNode("SpecificationDocument", { s
 export const SpecificationEntityNode = defineNode("SpecificationEntity", { schema: specificationEntityPropertiesSchema })
 export const TestNode = defineNode("Test", { schema: testPropertiesSchema })
 export const ExternalDependencyNode = defineNode("ExternalDependency", { schema: externalDependencyPropertiesSchema })
+export const ContextPacketNode = defineNode("ContextPacket", {
+  schema: z.object({
+    epicId: z.string().min(1),
+    implementationRunId: z.string().min(1),
+    sourceFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+    estimatedTokens: z.number().int().nonnegative(),
+    maxTokens: z.number().int().positive(),
+    overBudget: z.boolean(),
+  }).strict(),
+})
 
 export const ContainsEdge = defineEdge("CONTAINS")
 export const DependsOnEdge = defineEdge("DEPENDS_ON")
@@ -81,6 +91,7 @@ export const ReferencesEdge = defineEdge("REFERENCES")
 export const TargetsEdge = defineEdge("TARGETS")
 export const HasStateEdge = defineEdge("HAS_STATE")
 export const ProducesEdge = defineEdge("PRODUCES")
+export const IncludesEdge = defineEdge("INCLUDES")
 
 /** TypeGraph ontology for Specta's unified planning and implementation graph. */
 export const workspaceGraph = defineGraph({
@@ -95,6 +106,7 @@ export const workspaceGraph = defineGraph({
     EpicImplementationState: { type: EpicImplementationStateNode }, SpecificationDocument: { type: SpecificationDocumentNode },
     SpecificationEntity: { type: SpecificationEntityNode }, Test: { type: TestNode },
     ExternalDependency: { type: ExternalDependencyNode },
+    ContextPacket: { type: ContextPacketNode },
   },
   edges: {
     CONTAINS: {
@@ -125,7 +137,12 @@ export const workspaceGraph = defineGraph({
     PRODUCES: {
       type: ProducesEdge,
       from: [WorkflowRunNode],
-      to: [VisionNode, ConstitutionNode, ArchitectureNode, RoadmapNode, EpicNode, StoryNode, AcceptanceCriterionNode, TaskNode, TechnicalDesignNode, ModuleNode, FileNode, CodeSymbolNode, TestNode],
+      to: [VisionNode, ConstitutionNode, ArchitectureNode, RoadmapNode, EpicNode, StoryNode, AcceptanceCriterionNode, TaskNode, TechnicalDesignNode, ModuleNode, FileNode, CodeSymbolNode, TestNode, ContextPacketNode],
+    },
+    INCLUDES: {
+      type: IncludesEdge,
+      from: [ContextPacketNode],
+      to: [VisionNode, ConstitutionNode, ArchitectureNode, RoadmapNode, EpicNode, StoryNode, AcceptanceCriterionNode, TaskNode, TechnicalDesignNode, ModuleNode, FileNode, CodeSymbolNode, SpecificationDocumentNode, SpecificationEntityNode, TestNode, ExternalDependencyNode],
     },
   },
 })

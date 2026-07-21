@@ -381,3 +381,8 @@ export function createGraphEdgeId(edge: Pick<GraphEdgeUpsert, "kind" | "sourceId
     .update(edge.kind + ":" + edge.sourceId + ":" + edge.targetId)
     .digest("hex").slice(0, 16)
 }
+
+/** Adds the canonical stable ID to a graph relationship upsert. */
+export function createGraphEdge(edge: Omit<GraphEdgeUpsert, "id">): GraphEdgeUpsert {
+  return { ...edge, id: createGraphEdgeId(edge) }
+}
