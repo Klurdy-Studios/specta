@@ -1,0 +1,18 @@
+{
+  "vision": {
+    "title": "Help Dock Complaint Management",
+    "problem": "Customer complaints can be lost, handled inconsistently, or difficult to retrieve when there is no simple central record of each issue and its progress. A lightweight complaint management system is needed to capture complaints, preserve their current status and relevant details, and make them easy for customer care staff to find and follow through to resolution.",
+    "audience": "Customer care staff who record, review, update, and resolve customer complaints, and the customers whose concerns need accountable handling.",
+    "outcome": "Customer care staff can reliably record and retrieve complaints, understand their current status, and manage them through resolution using a simple application backed by JSON data and server-side information access."
+  },
+  "constitution": {
+    "principles": [
+      "Keep complaint workflows simple and focused on capture, retrieval, status tracking, and resolution.",
+      "Treat the JSON data store as the authoritative record and preserve valid, consistent complaint data on every change.",
+      "Retrieve and mutate complaint information through server-side actions so data access rules remain centralized.",
+      "Protect customer and complaint information by exposing only the data required for each user interaction.",
+      "Make complaint states and outcomes clear enough that staff can understand what requires attention and what has been resolved.",
+      "Prefer straightforward, maintainable solutions appropriate to a small file-backed application over unnecessary complexity."
+    ]
+  }
+}

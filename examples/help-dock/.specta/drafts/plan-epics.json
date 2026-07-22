@@ -1,0 +1,237 @@
+{
+  "epics": [
+    {
+      "title": "Reliable Complaint Data Access",
+      "goal": "Provide a trustworthy complaint record and centralized operations that preserve valid data while exposing only the information required by staff workflows.",
+      "roadmapMilestone": "Trusted Complaint Records",
+      "stories": [
+        {
+          "title": "Maintain Valid Complaint Records",
+          "description": "As customer care staff, I need every complaint to contain clear required information and a recognized status so that records remain understandable and actionable.",
+          "acceptanceCriteria": [
+            "A complaint with all required information is accepted and has one unambiguous current status.",
+            "A complaint with missing or invalid required information is rejected with a clear validation result.",
+            "Invalid status values are rejected without changing an existing complaint record."
+          ],
+          "tasks": [
+            {
+              "title": "Define the Complaint Information Contract",
+              "description": "Specify the complaint information, required values, status values, and validation rules needed by the approved workflows."
+            },
+            {
+              "title": "Implement Complaint Validation",
+              "description": "Create the domain behavior that accepts valid complaint records and produces clear results for invalid input."
+            },
+            {
+              "title": "Verify Record Invariants",
+              "description": "Cover valid records, missing information, invalid values, and preservation of existing state when validation fails."
+            }
+          ]
+        },
+        {
+          "title": "Persist Complaints Reliably",
+          "description": "As customer care staff, I need complaint changes to remain available after later retrievals so that the JSON record can be trusted as the source of truth.",
+          "acceptanceCriteria": [
+            "A valid new complaint is present when records are retrieved after it is saved.",
+            "A valid change to an existing complaint is present on the next retrieval without losing unrelated records.",
+            "A failed write does not leave the authoritative complaint data partially updated or malformed.",
+            "Retrieval reports missing or malformed stored data as a controlled failure rather than returning misleading complaint information."
+          ],
+          "tasks": [
+            {
+              "title": "Build JSON Complaint Retrieval",
+              "description": "Provide repository behavior that reads authoritative complaint records and returns controlled results for unavailable or malformed data."
+            },
+            {
+              "title": "Build Consistent JSON Persistence",
+              "description": "Provide repository behavior that preserves all valid complaint records when creating or updating a complaint."
+            },
+            {
+              "title": "Exercise Persistence Failure Cases",
+              "description": "Verify durable retrieval, isolated updates, malformed input handling, and safe behavior when persistence cannot complete."
+            }
+          ]
+        },
+        {
+          "title": "Centralize Complaint Operations",
+          "description": "As customer care staff, I need complaint information to pass through controlled server-side operations so that each interaction returns or changes only what it is permitted to use.",
+          "acceptanceCriteria": [
+            "Complaint retrieval requested through an approved server-side operation returns only the information defined for that interaction.",
+            "Complaint changes requested through an approved server-side operation are validated before authoritative data is updated.",
+            "Invalid or unsuccessful operations return a controlled result without exposing storage details or unrelated customer information."
+          ],
+          "tasks": [
+            {
+              "title": "Define Server Operation Contracts",
+              "description": "Specify the inputs, permitted outputs, validation results, and failure results for complaint retrieval and change operations."
+            },
+            {
+              "title": "Coordinate Domain and Repository Behavior",
+              "description": "Implement server-side complaint operations that apply workflow rules before reading from or writing to the authoritative repository."
+            },
+            {
+              "title": "Verify Information Boundaries",
+              "description": "Confirm that successful and failed operations disclose only the complaint information required for their intended staff interaction."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Staff Complaint Intake and Visibility",
+      "goal": "Give customer care staff a focused workspace for recording complaints, seeing what has been reported, and retrieving the details needed for follow-up.",
+      "roadmapMilestone": "Complaint Intake and Visibility",
+      "stories": [
+        {
+          "title": "Capture a Customer Complaint",
+          "description": "As customer care staff, I want to record a customer concern through a simple intake experience so that it enters the accountable complaint workflow.",
+          "acceptanceCriteria": [
+            "Staff can submit all information required to create a complaint.",
+            "A successful submission confirms that the complaint was recorded and makes the new record available for retrieval.",
+            "An invalid submission identifies the information that needs correction and does not create a partial complaint.",
+            "The intake interaction does not display unrelated complaint or customer information."
+          ],
+          "tasks": [
+            {
+              "title": "Create the Complaint Intake Experience",
+              "description": "Provide a focused staff interaction for entering the information required by a complaint record."
+            },
+            {
+              "title": "Connect Intake to Complaint Creation",
+              "description": "Submit intake information through the approved server operation and handle success and validation results."
+            },
+            {
+              "title": "Verify Intake Outcomes",
+              "description": "Confirm successful creation, correction of invalid input, prevention of partial records, and limited information exposure."
+            }
+          ]
+        },
+        {
+          "title": "Review the Complaint Register",
+          "description": "As customer care staff, I want to see existing complaints and their current statuses so that I can identify records that need follow-up.",
+          "acceptanceCriteria": [
+            "Staff can retrieve a complaint register without opening or reading the JSON store directly.",
+            "Each register entry presents enough identifying information and the current status to support selection and follow-up.",
+            "The register omits complaint details and customer information that are not needed to identify and assess entries.",
+            "An empty complaint store produces a clear empty state rather than an error or misleading entry."
+          ],
+          "tasks": [
+            {
+              "title": "Define the Complaint Summary",
+              "description": "Determine the minimum identifying and status information needed for staff to review the complaint register."
+            },
+            {
+              "title": "Build the Complaint Register Experience",
+              "description": "Present complaint summaries retrieved through the approved server operation, including a clear empty state."
+            },
+            {
+              "title": "Verify Register Privacy and States",
+              "description": "Confirm populated, empty, and failed retrieval states while ensuring summaries exclude unnecessary complaint information."
+            }
+          ]
+        },
+        {
+          "title": "Inspect a Complaint",
+          "description": "As customer care staff, I want to retrieve one complaint's relevant details so that I can understand the concern and decide the next action.",
+          "acceptanceCriteria": [
+            "Selecting an existing complaint returns its relevant concern, status, and resolution information when available.",
+            "Requesting a complaint that does not exist produces a clear not-found result without exposing other records.",
+            "The detail interaction omits customer information that is not needed to understand or progress the complaint."
+          ],
+          "tasks": [
+            {
+              "title": "Define the Complaint Detail View",
+              "description": "Determine the complaint information staff require for follow-up while excluding unrelated customer data."
+            },
+            {
+              "title": "Build Complaint Detail Retrieval",
+              "description": "Retrieve and present a selected complaint through the approved server operation with clear missing-record behavior."
+            },
+            {
+              "title": "Verify Detail Access Outcomes",
+              "description": "Confirm existing, missing, and failed retrieval behavior and validate that only permitted detail information is shown."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Complaint Progress and Resolution",
+      "goal": "Enable staff to identify complaints needing attention, apply only valid status changes, and preserve a clear resolution outcome for completed complaints.",
+      "roadmapMilestone": "Complaint Follow-through and Resolution",
+      "stories": [
+        {
+          "title": "Identify Complaints Requiring Attention",
+          "description": "As customer care staff, I want resolved and unresolved complaints to be clearly distinguishable so that I can focus on work that still needs action.",
+          "acceptanceCriteria": [
+            "The complaint workspace clearly distinguishes complaints that require attention from those marked resolved.",
+            "The displayed attention state agrees with each complaint's authoritative current status.",
+            "When no complaints require attention, staff see a clear completed state rather than an ambiguous empty result."
+          ],
+          "tasks": [
+            {
+              "title": "Define Attention Classification",
+              "description": "Specify how approved complaint statuses determine whether staff attention is still required."
+            },
+            {
+              "title": "Present Actionable Complaint States",
+              "description": "Make unresolved and resolved records clearly distinguishable in the staff workspace."
+            },
+            {
+              "title": "Verify Attention Indicators",
+              "description": "Confirm indicators match authoritative statuses across mixed, unresolved-only, and fully resolved complaint sets."
+            }
+          ]
+        },
+        {
+          "title": "Progress a Complaint Safely",
+          "description": "As customer care staff, I want to update a complaint's status through allowed transitions so that its record accurately reflects the handling progress.",
+          "acceptanceCriteria": [
+            "Staff can select an allowed next status for an existing complaint and see the updated status after retrieval.",
+            "A disallowed status transition is rejected with a clear result and leaves the existing complaint unchanged.",
+            "A status change for a missing complaint returns a clear not-found result without changing another record.",
+            "Status changes are performed through the centralized server-side operation rather than direct JSON access."
+          ],
+          "tasks": [
+            {
+              "title": "Define Allowed Status Transitions",
+              "description": "Specify the simple progression rules that determine valid and invalid complaint status changes."
+            },
+            {
+              "title": "Build the Status Update Interaction",
+              "description": "Allow staff to request an available next status and receive clear success, invalid-transition, or missing-record results."
+            },
+            {
+              "title": "Verify Safe Status Progression",
+              "description": "Confirm valid persistence, invalid-transition rejection, missing-record handling, and isolation from unrelated complaints."
+            }
+          ]
+        },
+        {
+          "title": "Record the Complaint Resolution",
+          "description": "As customer care staff, I want to document how a complaint was resolved so that the completed outcome remains clear for later reference.",
+          "acceptanceCriteria": [
+            "Staff can provide the required resolution information when completing an eligible complaint.",
+            "A successfully resolved complaint is marked resolved and retains its resolution information on later retrieval.",
+            "An attempt to resolve a complaint without required resolution information is rejected and leaves the complaint unresolved.",
+            "An attempt to resolve an ineligible or missing complaint returns a clear result without changing stored records."
+          ],
+          "tasks": [
+            {
+              "title": "Define Resolution Requirements",
+              "description": "Specify the information and complaint state required for a clear, valid resolution outcome."
+            },
+            {
+              "title": "Build the Resolution Interaction",
+              "description": "Allow staff to record a resolution through the approved server operation and receive clear completion or correction feedback."
+            },
+            {
+              "title": "Verify Durable Resolution Outcomes",
+              "description": "Confirm valid completion, required-information checks, eligibility rules, missing-record behavior, and later retrieval of the outcome."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

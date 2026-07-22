@@ -1,3 +1,3 @@
 {
-  "cliCommand": "node ../../apps/cli/bin/specta.mjs"
+  "cliCommand": "\"/home/brian-wachanga/.nvm/versions/node/v24.16.0/bin/node\" \"/home/brian-wachanga/Projects/specta/apps/cli/bin/specta.mjs\""
 }

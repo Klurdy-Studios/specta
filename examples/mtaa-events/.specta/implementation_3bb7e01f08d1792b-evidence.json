@@ -1,0 +1,45 @@
+{
+  "epicId": "plan_69546d6ed82d51f9",
+  "criteria": [
+    {
+      "criterionId": "plan_e34de04d2755c7a2",
+      "tests": [{ "path": "src/domain/event.test.ts", "name": "represents every visitor-facing field with storage-neutral values" }]
+    },
+    {
+      "criterionId": "plan_7f9a2defde996804",
+      "tests": [{ "path": "src/data/json-event-source.test.ts", "name": "normalizes valid JSON into the canonical event representation" }]
+    },
+    {
+      "criterionId": "plan_005f0d8d1b3d1723",
+      "tests": [{ "path": "src/data/json-event-source.test.ts", "name": "reports incomplete and malformed records without presenting them" }]
+    },
+    {
+      "criterionId": "plan_21353b6701970eb2",
+      "tests": [{ "path": "src/catalog/event-catalog.test.ts", "name": "lists available events through the source boundary" }]
+    },
+    {
+      "criterionId": "plan_0a8ecb3558215ab7",
+      "tests": [{ "path": "src/catalog/event-catalog.test.ts", "name": "filters by category, location, or both without case sensitivity" }]
+    },
+    {
+      "criterionId": "plan_d4c07661da419a7b",
+      "tests": [{ "path": "src/catalog/event-catalog.test.ts", "name": "finds an event by stable identifier and returns null when missing" }]
+    },
+    {
+      "criterionId": "plan_5290a7fe4bbaf2b6",
+      "tests": [{ "path": "src/catalog/event-catalog.test.ts", "name": "lists available events through the source boundary" }]
+    },
+    {
+      "criterionId": "plan_7cbc8f32b015b5dd",
+      "tests": [{ "path": "src/data/json-event-source.test.ts", "name": "normalizes valid JSON into the canonical event representation" }]
+    },
+    {
+      "criterionId": "plan_c2661763c0dd6d93",
+      "tests": [{ "path": "src/catalog/event-catalog.test.ts", "name": "lists available events through the source boundary" }]
+    },
+    {
+      "criterionId": "plan_1b8150b30a1f2913",
+      "tests": [{ "path": "src/catalog/event-catalog.test.ts", "name": "keeps operation signatures and event meanings when the source is replaced" }]
+    }
+  ]
+}
