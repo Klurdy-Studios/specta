@@ -13,7 +13,13 @@
       "manifestPath": "package.json"
     }
   ],
-  "artifacts": {},
+  "artifacts": {
+    "visionPath": ".specta/planning/vision.md",
+    "constitutionPath": ".specta/planning/constitution.md",
+    "architecturePath": ".specta/planning/architecture.md",
+    "roadmapPath": ".specta/planning/roadmap.md",
+    "planningPath": ".specta/planning"
+  },
   "workflow": {
     "skillTargets": [
       "codex"

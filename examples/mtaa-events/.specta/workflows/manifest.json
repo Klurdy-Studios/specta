@@ -239,6 +239,75 @@
       "validationRequirements": [
         "workflow-state"
       ]
+    },
+    {
+      "name": "validate",
+      "description": "Validate one Epic implementation against graph-backed intent and executable project checks.",
+      "parameters": [
+        {
+          "name": "epic-id",
+          "description": "The implemented Epic to validate.",
+          "required": true
+        }
+      ],
+      "requires": [
+        "approved-technical-design",
+        "source-analysis"
+      ],
+      "produces": [
+        "validation-report"
+      ],
+      "executionSteps": [
+        "resolve-epic",
+        "compile-context",
+        "validate-structure",
+        "run-project-checks",
+        "persist-validation-report"
+      ],
+      "promptTemplate": ".specta/workflows/prompts/validate.md",
+      "artifactTemplates": [],
+      "completionCriteria": [
+        "validation-report is generated and linked to the Workspace Graph."
+      ],
+      "validationRequirements": [
+        "workflow-state"
+      ]
+    },
+    {
+      "name": "implement",
+      "description": "Implement one eligible Epic through the active coding agent and finalize it with authoritative validation.",
+      "parameters": [
+        {
+          "name": "epic-id",
+          "description": "The Epic to implement, or next for deterministic selection.",
+          "required": true
+        }
+      ],
+      "requires": [
+        "scaffolded-structure",
+        "source-analysis"
+      ],
+      "produces": [
+        "implementation-run",
+        "validation-report",
+        "implementation-relationships"
+      ],
+      "executionSteps": [
+        "resolve-eligible-epic",
+        "prepare-implementation",
+        "agent-implement",
+        "finalize-implementation"
+      ],
+      "promptTemplate": ".specta/workflows/prompts/implement.md",
+      "artifactTemplates": [],
+      "completionCriteria": [
+        "implementation-run is generated and linked to the Workspace Graph.",
+        "validation-report is generated and linked to the Workspace Graph.",
+        "implementation-relationships is generated and linked to the Workspace Graph."
+      ],
+      "validationRequirements": [
+        "workflow-state"
+      ]
     }
   ]
 }

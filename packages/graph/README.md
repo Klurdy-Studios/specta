@@ -26,16 +26,40 @@ once, then left unchanged.
 
 - `WorkspaceGraphQueries` provides node lookup, kind-filtered listing, bounded
   neighborhood traversal, dependency/dependent traversal, and
-  `nextEligibleEpic()`.
+  `eligibleEpic()` and `nextEligibleEpic()`.
 - `searchNeighbors()` delegates bounded neighborhood discovery to TypeGraph's
   native set-based breadth-first graph algorithm and returns minimum traversal
   depth with each node.
-- `nextEligibleEpic()` uses Roadmap order, explicit Epic dependencies, latest
-  approved or scaffolded Technical Designs, and graph-backed implementation
-  status directly from graph nodes and relationships. It never returns an
-  in-progress, blocked, or completed Epic.
+- `nextEligibleEpic()` uses Roadmap order, explicit Epic dependencies, the
+  latest finalized/scaffolded Technical Design, and graph-backed implementation
+  status directly from graph nodes and relationships. It returns an active or
+  validation-failed Epic so interrupted runs resume before new work, and never
+  returns a blocked or completed Epic. `eligibleEpic()` applies the same rules
+  to an explicit ID. `createImplementationEligibilityResolver()` exposes both
+  selection forms with actionable errors.
+- Authored Epic order is persisted as graph metadata, so Epics sharing a
+  milestone are selected in planning order rather than graph-ID order.
+- A transactionally updated workspace lease permits only one active Epic while
+  still allowing interrupted runs to resume. Each run remains bound to the
+  scaffolded Technical Design that created its immutable Context Packet.
 - `createWorkflowStateRepository()` reads and atomically checkpoints
   `WorkflowRun` and `EpicImplementationState` nodes and their relationships.
+  Complete and validation-failed implementation checkpoints require an aligned
+  Validation Report and persist all three states in one transaction. A passing
+  checkpoint must come from an `implement` run and cover its Epic, every Story
+  and acceptance criterion, every Architecture component, an approved Technical
+  Design, verified tests, and implemented files.
+- Successful checkpoints can atomically add file/symbol `IMPLEMENTS` and test
+  `VALIDATES` relationships alongside the terminal report and status.
+
+## Validation reports
+
+- `createValidationReportRepository()` stores exact reports and projects a
+  compact `ValidationReport` node with `VALIDATES` provenance to the Epic and
+  checked graph entities.
+- `validationReportProjection()` is public for transactional composition by
+  workflow repositories. Reports associated with an Implementation Run must
+  target the same Epic.
 
 ## Context Engine
 

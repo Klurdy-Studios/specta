@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { PlanningId, PlanningState, TechnicalDesign, Workspace } from "@specta/core"
+import type { ValidationReport } from "@specta/core/validation"
 import { afterEach, describe, expect, it } from "vitest"
 import {
   createPlanningGraphRepository,
@@ -10,6 +11,7 @@ import {
   createScaffoldRunRepository,
   createSqliteWorkspaceGraphProvider,
   createTechnicalDesignGraphRepository,
+  createValidationReportRepository,
   createWorkflowStateRepository,
   type GraphProjection,
 } from "../src/index.js"
@@ -131,8 +133,8 @@ describe("SQLite Workspace Graph", () => {
     const provider = createSqliteWorkspaceGraphProvider()
     const planning = planningFixture()
     await createPlanningGraphRepository(undefined, provider).savePlanningState(workspace, planning)
-    const firstDesign = designFixture("design_first", "epic_first")
-    const secondDesign = designFixture("design_second", "epic_second")
+    const firstDesign = designFixture("design_first", "epic_first", "scaffolded")
+    const secondDesign = designFixture("design_second", "epic_second", "scaffolded")
     secondDesign.dependencies = [{ kind: "file", targetDesignId: firstDesign.id, filePath: "src/index.ts" }]
     const designs = createTechnicalDesignGraphRepository(undefined, provider)
     await designs.saveMany(workspace, [firstDesign, secondDesign])
@@ -148,6 +150,11 @@ describe("SQLite Workspace Graph", () => {
         epicId: "epic_first",
         designId: "design_first",
       })
+      await expect(graph.queries.eligibleEpic("epic_first")).resolves.toMatchObject({
+        epicId: "epic_first",
+        designId: "design_first",
+      })
+      await expect(graph.queries.eligibleEpic("epic_second")).resolves.toBeNull()
       const dependencies = await graph.queries.dependencies("epic_second")
       expect(dependencies.nodes.map((node) => node.id)).toContain("epic_first")
       const dependents = await graph.queries.dependents("epic_first")
@@ -184,6 +191,8 @@ describe("SQLite Workspace Graph", () => {
     await designs.save(workspace, designFixture("design_first_v2", "epic_first", "draft", 2))
     await expect(provider.withGraph(workspace, (graph) => graph.queries.nextEligibleEpic())).resolves.toBeNull()
     await designs.save(workspace, designFixture("design_first_v2", "epic_first", "approved", 2))
+    await expect(provider.withGraph(workspace, (graph) => graph.queries.nextEligibleEpic())).resolves.toBeNull()
+    await designs.save(workspace, designFixture("design_first_v2", "epic_first", "scaffolded", 2))
     await expect(provider.withGraph(workspace, (graph) => graph.queries.nextEligibleEpic()))
       .resolves.toMatchObject({ epicId: "epic_first", designId: "design_first_v2" })
 
@@ -192,6 +201,7 @@ describe("SQLite Workspace Graph", () => {
       runId: "run_first",
       run: workflowRun("epic_first", "complete"),
       state: { epicId: "epic_first" as PlanningId, status: "complete", revision: 1 },
+      validationReport: validationReportFixture("epic_first", "run_first", "passed"),
     })
     await expect(provider.withGraph(workspace, (graph) => graph.queries.nextEligibleEpic()))
       .resolves.toMatchObject({ epicId: "epic_second", designId: "design_second" })
@@ -204,10 +214,55 @@ describe("SQLite Workspace Graph", () => {
     await expect(provider.withGraph(workspace, (graph) => graph.queries.nextEligibleEpic())).resolves.toBeNull()
   })
 
+  it("uses authored Epic order and resumes the workspace-wide active Epic first", async () => {
+    const workspace = await temporaryWorkspace()
+    const provider = createSqliteWorkspaceGraphProvider()
+    const planning = planningFixture()
+    planning.epics = [planning.epics![1]!, planning.epics![0]!]
+    planning.relationships = planning.relationships.filter((relationship) =>
+      !(relationship.type === "DEPENDS_ON"
+        && relationship.sourceId === "epic_second"
+        && relationship.targetId === "epic_first"),
+    )
+    await createPlanningGraphRepository(undefined, provider).savePlanningState(workspace, planning)
+    await createTechnicalDesignGraphRepository(undefined, provider).saveMany(workspace, [
+      designFixture("design_first", "epic_first", "scaffolded"),
+      designFixture("design_second", "epic_second", "scaffolded"),
+    ])
+    await expect(provider.withGraph(workspace, (graph) => graph.queries.nextEligibleEpic()))
+      .resolves.toMatchObject({ epicId: "epic_second" })
+
+    const workflow = createWorkflowStateRepository(undefined, provider)
+    const competing = await Promise.allSettled([
+      workflow.saveImplementationCheckpoint(workspace, {
+        runId: "run_first_active",
+        run: { ...workflowRun("epic_first", "in-progress"), technicalDesignId: "design_first" },
+        state: { epicId: "epic_first" as PlanningId, status: "in-progress", activeRunId: "run_first_active", revision: 1 },
+      }),
+      workflow.saveImplementationCheckpoint(workspace, {
+        runId: "run_second_active",
+        run: { ...workflowRun("epic_second", "in-progress"), technicalDesignId: "design_second" },
+        state: { epicId: "epic_second" as PlanningId, status: "in-progress", activeRunId: "run_second_active", revision: 1 },
+      }),
+    ])
+    expect(competing.filter((result) => result.status === "fulfilled")).toHaveLength(1)
+    const activeEpicId = (await workflow.getRun(
+      workspace,
+      competing[0]!.status === "fulfilled" ? "run_first_active" : "run_second_active",
+    ))!.targetId
+    await expect(provider.withGraph(workspace, (graph) => graph.queries.nextEligibleEpic()))
+      .resolves.toMatchObject({ epicId: activeEpicId })
+    const inactiveEpicId = activeEpicId === "epic_first" ? "epic_second" : "epic_first"
+    await expect(provider.withGraph(workspace, (graph) => graph.queries.eligibleEpic(inactiveEpicId)))
+      .resolves.toBeNull()
+  })
+
   it("commits implementation run checkpoints and Epic state together", async () => {
     const workspace = await temporaryWorkspace()
     const provider = createSqliteWorkspaceGraphProvider()
     await createPlanningGraphRepository(undefined, provider).savePlanningState(workspace, planningFixture())
+    await createTechnicalDesignGraphRepository(undefined, provider)
+      .save(workspace, designFixture("design_first", "epic_first", "scaffolded"))
     const repository = createWorkflowStateRepository(undefined, provider)
 
     await repository.saveImplementationCheckpoint(workspace, {
@@ -241,6 +296,23 @@ describe("SQLite Workspace Graph", () => {
     await expect(repository.getEpicState(workspace, "epic_first")).resolves.toMatchObject({
       status: "blocked",
       revision: 2,
+    })
+
+    await expect(repository.saveImplementationCheckpoint(workspace, {
+      runId: "run_second_prepared",
+      run: {
+        ...workflowRun("epic_second", "in-progress"),
+        status: "prepared",
+        phase: "prepared",
+      },
+      state: { epicId: "epic_second" as PlanningId, status: "ready", activeRunId: "run_second_prepared", revision: 1 },
+    })).rejects.toThrow("Another Epic already has an active Implementation Run")
+
+    await repository.saveImplementationCheckpoint(workspace, {
+      runId: "run_blocked",
+      run: { ...workflowRun("epic_first", "complete"), revision: 2 },
+      state: { epicId: "epic_first" as PlanningId, status: "complete", revision: 3 },
+      validationReport: validationReportFixture("epic_first", "run_blocked", "passed"),
     })
 
     await expect(repository.saveImplementationCheckpoint(workspace, {
@@ -292,6 +364,75 @@ describe("SQLite Workspace Graph", () => {
     expect(competing.filter((result) => result.status === "rejected")).toHaveLength(1)
   })
 
+  it("commits validation provenance with terminal implementation state", async () => {
+    const workspace = await temporaryWorkspace()
+    const provider = createSqliteWorkspaceGraphProvider()
+    await createPlanningGraphRepository(undefined, provider).savePlanningState(workspace, planningFixture())
+    await createTechnicalDesignGraphRepository(undefined, provider)
+      .save(workspace, designFixture("design_first", "epic_first"))
+    const workflow = createWorkflowStateRepository(undefined, provider)
+    const report = validationReportFixture("epic_first", "run_validated", "passed")
+
+    await expect(workflow.saveImplementationCheckpoint(workspace, {
+      runId: "run_without_report",
+      run: workflowRun("epic_first", "complete"),
+      state: { epicId: "epic_first" as PlanningId, status: "complete", revision: 1 },
+    })).rejects.toThrow("require a Validation Report")
+
+    const incompleteBase = validationReportFixture("epic_first", "run_incomplete", "passed")
+    const incompleteChecks = incompleteBase.checks.filter((check) => check.subject.id !== "story_first")
+    await expect(workflow.saveImplementationCheckpoint(workspace, {
+      runId: "run_incomplete",
+      run: workflowRun("epic_first", "complete"),
+      state: { epicId: "epic_first" as PlanningId, status: "complete", revision: 1 },
+      validationReport: {
+        ...incompleteBase,
+        checks: incompleteChecks,
+        summary: { passed: incompleteChecks.length, failed: 0, skipped: 0, warnings: 0 },
+      },
+    })).rejects.toThrow("missing passing Story coverage")
+
+    const wrongWorkflowReport = validationReportFixture("epic_first", "run_validate", "passed")
+    await expect(workflow.saveImplementationCheckpoint(workspace, {
+      runId: "run_validate",
+      run: { ...workflowRun("epic_first", "complete"), workflow: "validate" },
+      state: { epicId: "epic_first" as PlanningId, status: "complete", revision: 1 },
+      validationReport: wrongWorkflowReport,
+    })).rejects.toThrow("require an implement Workflow Run")
+
+    await workflow.saveImplementationCheckpoint(workspace, {
+      runId: "run_validated",
+      run: workflowRun("epic_first", "complete"),
+      state: { epicId: "epic_first" as PlanningId, status: "complete", revision: 1 },
+      validationReport: report,
+    })
+
+    await expect(createValidationReportRepository(undefined, provider).get(workspace, report.id))
+      .resolves.toEqual(report)
+    await provider.withGraph(workspace, async (graph) => {
+      const validated = await graph.queries.neighbors({
+        nodeId: report.id,
+        direction: "outgoing",
+        edgeKinds: ["VALIDATES"],
+      })
+      expect(validated.nodes.map((node) => node.id)).toContain("epic_first")
+      const produced = await graph.queries.neighbors({
+        nodeId: "run_validated",
+        direction: "outgoing",
+        edgeKinds: ["PRODUCES"],
+      })
+      expect(produced.nodes.map((node) => node.id)).toContain(report.id)
+    })
+
+    await expect(workflow.saveImplementationCheckpoint(workspace, {
+      runId: "run_misaligned",
+      run: workflowRun("epic_second", "complete"),
+      state: { epicId: "epic_second" as PlanningId, status: "complete", revision: 1 },
+      validationReport: report,
+    })).rejects.toThrow("must target the checkpoint")
+    await expect(workflow.getRun(workspace, "run_misaligned")).resolves.toBeNull()
+  })
+
   it("serializes concurrent collection updates without losing entries", async () => {
     const workspace = await temporaryWorkspace()
     const repository = createProjectProfileRepository()
@@ -317,6 +458,47 @@ describe("SQLite Workspace Graph", () => {
       expect.objectContaining({ name: "web" }),
       expect.objectContaining({ name: "admin" }),
     ]))
+  })
+
+  it("stores an existing-project profile as a distinct node linked to its Project", async () => {
+    const workspace = await temporaryWorkspace()
+    workspace.projects = [{
+      id: "project_existing" as Workspace["projects"][number]["id"],
+      name: "existing",
+      rootPath: ".",
+      kind: "application",
+      manifestPath: "package.json",
+    }]
+    const provider = createSqliteWorkspaceGraphProvider()
+    const repository = createProjectProfileRepository(undefined, provider)
+    await repository.save(workspace, {
+      projectId: workspace.projects[0]!.id,
+      name: "existing",
+      rootPath: ".",
+      state: "existing",
+      language: "typescript",
+      framework: "nextjs",
+      toolchain: "next",
+      packageManager: "pnpm",
+      sourceRoots: ["app", "src"],
+      evidence: [],
+      source: "detected",
+    })
+
+    await provider.withGraph(workspace, async (graph) => {
+      const profiles = await graph.queries.listNodes("ProjectProfile")
+      expect(profiles).toHaveLength(1)
+      expect(profiles[0]!.id).not.toBe(workspace.projects[0]!.id)
+      const ownership = await graph.queries.neighbors({
+        nodeId: workspace.projects[0]!.id,
+        direction: "outgoing",
+        edgeKinds: ["CONTAINS"],
+      })
+      expect(ownership.nodes).toContainEqual(expect.objectContaining({
+        id: profiles[0]!.id,
+        kind: "ProjectProfile",
+      }))
+    })
   })
 
   it("imports every legacy graph shard once without rewriting source files", async () => {
@@ -490,6 +672,111 @@ function designFixture(
     }],
     dependencies: [],
     impactRequests: [],
+  }
+}
+
+function validationReportFixture(
+  epicId: string,
+  runId: string,
+  status: ValidationReport["status"],
+): ValidationReport {
+  const checkStatus = status === "passed" ? "passed" : "failed"
+  const suffix = epicId === "epic_first" ? "first" : "second"
+  const successfulChecks: ValidationReport["checks"] = [{
+    id: "check_epic_" + runId,
+    category: "requirement",
+    subject: { kind: "epic", id: epicId },
+    status: "passed",
+    severity: "error",
+    message: "Epic passed.",
+    evidenceNodeIds: [epicId],
+  }, {
+    id: "check_story_" + runId,
+    category: "requirement",
+    subject: { kind: "story", id: "story_" + suffix },
+    status: "passed",
+    severity: "error",
+    message: "Story passed.",
+    evidenceNodeIds: ["story_" + suffix],
+  }, {
+    id: "check_criterion_" + runId,
+    category: "acceptance-criterion",
+    subject: { kind: "acceptance-criterion", id: "criterion_" + suffix },
+    status: "passed",
+    severity: "error",
+    message: "Criterion passed.",
+    evidenceNodeIds: ["criterion_" + suffix],
+  }, {
+    id: "check_test_" + runId,
+    category: "test",
+    subject: { kind: "test", id: "criterion_" + suffix },
+    status: "passed",
+    severity: "error",
+    message: "Test passed.",
+    evidenceNodeIds: ["criterion_" + suffix],
+  }, {
+    id: "check_architecture_" + runId,
+    category: "architecture",
+    subject: { kind: "architecture-component", id: "architecture", name: "Graph" },
+    status: "passed",
+    severity: "error",
+    message: "Architecture passed.",
+    evidenceNodeIds: ["architecture"],
+  }, {
+    id: "check_design_" + runId,
+    category: "architecture",
+    subject: { kind: "technical-design", id: "design_" + suffix },
+    status: "passed",
+    severity: "error",
+    message: "Design passed.",
+    evidenceNodeIds: ["design_" + suffix],
+  }, {
+    id: "check_file_" + runId,
+    category: "file",
+    subject: { kind: "source", path: "src/app.ts" },
+    status: "passed",
+    severity: "error",
+    message: "File passed.",
+    evidenceNodeIds: [],
+  }]
+  return {
+    schemaVersion: 1,
+    id: "validation_" + runId,
+    epicId,
+    implementationRunId: runId,
+    mode: "full",
+    contextFingerprint: "c".repeat(64),
+    sourceFingerprint: "a".repeat(64),
+    status,
+    checks: status === "passed" ? successfulChecks : [{
+      id: "check_" + runId,
+      category: "requirement",
+      subject: { kind: "epic", id: epicId },
+      status: checkStatus,
+      severity: "error",
+      message: "Epic failed.",
+      evidenceNodeIds: [epicId],
+    }],
+    commands: status === "passed" ? [{
+      command: {
+        kind: "test",
+        executable: "pnpm",
+        arguments: ["run", "test"],
+        cwd: "/workspace",
+        timeoutMs: 120_000,
+      },
+      status: "passed",
+      exitCode: 0,
+      timedOut: false,
+      stdout: "",
+      stderr: "",
+    }] : [],
+    summary: {
+      passed: status === "passed" ? successfulChecks.length : 0,
+      failed: status === "failed" ? 1 : 0,
+      skipped: 0,
+      warnings: 0,
+    },
   }
 }
 

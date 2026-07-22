@@ -9,8 +9,17 @@ subpaths:
 - `@specta/core/workspace`
 - `@specta/core/workflow`
 - `@specta/core/skills`
+- `@specta/core/validation`
 
 The root entry point does not re-export Node adapters or concrete workflows.
+
+`@specta/core/validation` exports the language-independent `ValidationCheck`,
+`ValidationCommand`, `ValidationCommandResult`, `ValidationEvidence`, and
+`ValidationReport` schemas and types. `ValidationCommandRunner` is the
+injectable shell-free execution boundary used by validation engines. Test
+commands carry the exact workspace-relative `testPaths` they are expected to
+execute, and reports retain both their immutable Context Packet fingerprint and
+their complete validation-input fingerprint.
 
 The root also exports the canonical, language-independent analysis contracts:
 `ParsedSpecification`, `ParsedSpecificationEntity`, `ParsedSourceFile`,
@@ -19,3 +28,9 @@ The root also exports the canonical, language-independent analysis contracts:
 their Zod schemas. Parsed imports may carry their resolved workspace file,
 external package, or unresolved specifier so resolution is performed once and
 reused by graph projection and later workflows.
+
+`CodingAgentTokenUsage` validates measured or host-reported input, cached
+input, output, reasoning, and total token counters, or records that the host
+does not expose telemetry. `WorkflowTokenUsage` persists only the coding-agent
+observation; the Context Packet remains authoritative for its own deterministic
+estimate. Implementation finalization never invents unavailable counters.

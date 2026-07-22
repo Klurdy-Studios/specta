@@ -34,9 +34,13 @@ export function planningStateProjection(state: PlanningState): GraphProjection {
   if (state.constitution) nodes.push({ id: state.constitution.id, kind: "Constitution", props: constitutionSchema.omit({ id: true }).parse(omitId(state.constitution)) })
   if (state.architecture) nodes.push({ id: state.architecture.id, kind: "Architecture", props: architectureSchema.omit({ id: true }).parse(omitId(state.architecture)) })
   if (state.roadmap) nodes.push({ id: state.roadmap.id, kind: "Roadmap", props: roadmapSchema.omit({ id: true }).parse(omitId(state.roadmap)) })
-  for (const epic of state.epics ?? []) {
+  for (const [planningOrder, epic] of (state.epics ?? []).entries()) {
     const { id: _epicId, stories, ...epicProps } = epic
-    nodes.push({ id: epic.id, kind: "Epic", props: epicSchema.omit({ id: true, stories: true }).parse(epicProps) })
+    nodes.push({
+      id: epic.id,
+      kind: "Epic",
+      props: { ...epicSchema.omit({ id: true, stories: true }).parse(epicProps), planningOrder },
+    })
     for (const story of stories) {
       const { id: _storyId, acceptanceCriteria, tasks, ...storyProps } = story
       nodes.push({ id: story.id, kind: "Story", props: storySchema.omit({ id: true, acceptanceCriteria: true, tasks: true }).parse(storyProps) })
@@ -82,7 +86,16 @@ export function technicalDesignsProjection(designs: TechnicalDesign[]): GraphPro
     const root = design.profile.rootPath
     for (const module of design.modules) {
       const moduleId = createModuleGraphId(root, module.path)
-      nodes.push({ id: moduleId, kind: "Module", props: { name: module.name, path: module.path, purpose: module.purpose } })
+      nodes.push({
+        id: moduleId,
+        kind: "Module",
+        props: {
+          name: module.name,
+          path: module.path,
+          purpose: module.purpose,
+          ...(module.architectureComponents ? { architectureComponents: module.architectureComponents } : {}),
+        },
+      })
       edges.push(edge("CONTAINS", design.id, moduleId, "TechnicalDesign", "Module"))
       for (const file of module.files) {
         const fileId = createFileGraphId(root, file.path)
@@ -149,7 +162,9 @@ export function projectProfilesProjection(profiles: ProjectProfile[]): GraphProj
   return {
     key: "project-profiles",
     nodes: validated.map((profile) => ({ id: projectProfileNodeId(profile), kind: "ProjectProfile", props: profile })),
-    edges: [],
+    edges: validated.flatMap((profile) => profile.projectId === undefined ? [] : [
+      edge("CONTAINS", profile.projectId, projectProfileNodeId(profile), "Project", "ProjectProfile"),
+    ]),
     documents: [{ key: "project-profiles", value: validated }],
   }
 }
@@ -216,7 +231,7 @@ function edge(
 }
 
 function projectProfileNodeId(profile: ProjectProfile): string {
-  return profile.projectId ?? createStableGraphId("profile", profile.rootPath, profile.name)
+  return createStableGraphId("profile", profile.rootPath, profile.projectId ?? profile.name)
 }
 
 function omitId<T extends { id: unknown }>(value: T): Omit<T, "id"> {

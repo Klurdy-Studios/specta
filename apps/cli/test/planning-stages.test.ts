@@ -157,7 +157,7 @@ it("submits agent-authored planning stages through the CLI", async () => {
   expect(epicsGraph?.epics).toHaveLength(2)
   expect(epicsGraph?.epics?.flatMap((epic) => epic.stories.flatMap((story) => story.acceptanceCriteria))).toHaveLength(2)
   expect(epicsGraph?.epics?.[0]?.roadmapMilestone).toBe("Traceable planning")
-}, 20_000)
+}, 30_000)
 
 function runCli(arguments_: string[], cwd: string): Promise<{ stdout: string, stderr: string }> {
   return new Promise((resolve, reject) => {

@@ -33,6 +33,38 @@ export const workflowRunStatusSchema = z.enum([
 ])
 export type WorkflowRunStatus = z.infer<typeof workflowRunStatusSchema>
 
+const availableCodingAgentTokenUsageSchema = z.object({
+  source: z.enum(["measured", "reported"]),
+  inputTokens: z.number().int().nonnegative(),
+  cachedInputTokens: z.number().int().nonnegative(),
+  outputTokens: z.number().int().nonnegative(),
+  reasoningTokens: z.number().int().nonnegative(),
+  totalTokens: z.number().int().nonnegative(),
+}).strict().superRefine((usage, context) => {
+  if (usage.cachedInputTokens > usage.inputTokens) {
+    context.addIssue({ code: "custom", message: "Cached input tokens cannot exceed input tokens.", path: ["cachedInputTokens"] })
+  }
+  if (usage.reasoningTokens > usage.outputTokens) {
+    context.addIssue({ code: "custom", message: "Reasoning tokens cannot exceed output tokens.", path: ["reasoningTokens"] })
+  }
+  if (usage.totalTokens !== usage.inputTokens + usage.outputTokens) {
+    context.addIssue({ code: "custom", message: "Total tokens must equal input plus output tokens.", path: ["totalTokens"] })
+  }
+})
+export const codingAgentTokenUsageSchema = z.discriminatedUnion("source", [
+  availableCodingAgentTokenUsageSchema,
+  z.object({
+    source: z.literal("unavailable"),
+    reason: nonEmptyTextSchema,
+  }).strict(),
+])
+export type CodingAgentTokenUsage = z.infer<typeof codingAgentTokenUsageSchema>
+
+export const workflowTokenUsageSchema = z.object({
+  codingAgent: codingAgentTokenUsageSchema,
+}).strict()
+export type WorkflowTokenUsage = z.infer<typeof workflowTokenUsageSchema>
+
 /** Durable execution checkpoint shared by graph-backed workflows. */
 export const workflowRunSchema = z.object({
   workflow: skillTargetSchema,
@@ -43,6 +75,9 @@ export const workflowRunSchema = z.object({
   revision: z.number().int().positive(),
   createdAt: z.iso.datetime(),
   completedAt: z.iso.datetime().optional(),
+  technicalDesignId: nonEmptyTextSchema.optional(),
+  validationReportId: nonEmptyTextSchema.optional(),
+  tokenUsage: workflowTokenUsageSchema.optional(),
 }).strict()
 export type WorkflowRun = z.infer<typeof workflowRunSchema>
 
@@ -420,6 +455,10 @@ export const technicalModuleSchema = z.object({
   name: nonEmptyTextSchema,
   path: nonEmptyTextSchema,
   purpose: nonEmptyTextSchema,
+  /** Exact Architecture component labels implemented by this Epic-scoped module. */
+  architectureComponents: z.array(nonEmptyTextSchema)
+    .superRefine(uniqueStrings("Module architecture components"))
+    .optional(),
   files: z.array(technicalFileSchema).min(1),
 }).strict()
 export type TechnicalModule = z.infer<typeof technicalModuleSchema>

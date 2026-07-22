@@ -1,0 +1,31 @@
+# Roadmap
+
+## 1. Trusted Complaint Records
+
+**Objective:** Establish a reliable complaint record that can be safely accessed through the application before staff workflows depend on it.
+
+### Outcomes
+
+- Complaints have clear, validated information and an unambiguous current status.
+- Complaint records remain consistent and durable in the authoritative JSON store across retrievals and changes.
+- Complaint information is retrieved and changed only through centralized server-side operations that limit each interaction to required data.
+
+## 2. Complaint Intake and Visibility
+
+**Objective:** Enable customer care staff to capture customer concerns and reliably find the complaint information needed for follow-up.
+
+### Outcomes
+
+- Staff can record a new customer complaint with the information required for accountable handling.
+- Staff can view existing complaints and identify their current status without inspecting the underlying JSON data.
+- Staff can retrieve the details of a specific complaint while unnecessary customer information remains undisclosed.
+
+## 3. Complaint Follow-through and Resolution
+
+**Objective:** Give customer care staff a clear, consistent path for progressing complaints from intake to a recorded resolution.
+
+### Outcomes
+
+- Staff can distinguish complaints that require attention from complaints that have been resolved.
+- Staff can move a complaint through allowed statuses while invalid or inconsistent changes are rejected.
+- Staff can record a clear resolution outcome that remains available with the complaint for later reference.

@@ -1,0 +1,284 @@
+{
+  "summary": "Implement the Reliable Complaint Data Access Epic in the existing Next.js 16 TypeScript application using four explicit boundaries. A pure complaint domain defines the record, allowed status values, creation input, and validation results. A JSON repository owns all file access, validates stored records on read, serializes writes, and commits a complete versioned store through temporary-file replacement so failed writes do not expose partial JSON. An application service coordinates validation and persistence while mapping records into deliberately limited summary and detail contracts. A dedicated App Router server-action file exposes only asynchronous, validated operations and never returns repository failures or raw stored records. The initial JSON store is workspace-local and writable, matching the approved small file-backed architecture; no API routes, client-side data access, framework migration, or external database are introduced.",
+  "target": {
+    "kind": "existing",
+    "projectId": "prj_9a550361e7f327b4"
+  },
+  "modules": [
+    {
+      "name": "Complaint Domain",
+      "path": "src/complaints/domain",
+      "purpose": "Own the complaint information contract and deterministic validation rules without depending on persistence or Next.js.",
+      "files": [
+        {
+          "path": "src/complaints/domain/complaint.ts",
+          "kind": "source",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": [
+            {
+              "name": "ComplaintStatus",
+              "kind": "type",
+              "signature": "type ComplaintStatus = \"new\" | \"in-progress\" | \"resolved\"",
+              "purpose": "Restrict every complaint to one recognized workflow status."
+            },
+            {
+              "name": "Complaint",
+              "kind": "interface",
+              "signature": "interface Complaint { id: string; customerName: string; customerContact: string; subject: string; description: string; status: ComplaintStatus; resolution: string | null; createdAt: string; updatedAt: string; }",
+              "purpose": "Represent the complete authoritative complaint record stored by the repository."
+            },
+            {
+              "name": "CreateComplaintInput",
+              "kind": "interface",
+              "signature": "interface CreateComplaintInput { customerName: string; customerContact: string; subject: string; description: string; }",
+              "purpose": "Describe the untrusted information accepted when opening a complaint."
+            },
+            {
+              "name": "ComplaintIdentity",
+              "kind": "interface",
+              "signature": "interface ComplaintIdentity { id: string; timestamp: string; }",
+              "purpose": "Supply deterministic server-generated identity and time values when creating a record."
+            },
+            {
+              "name": "ComplaintValidationIssue",
+              "kind": "interface",
+              "signature": "interface ComplaintValidationIssue { field: keyof Complaint; message: string; }",
+              "purpose": "Report a specific invalid complaint field without exposing infrastructure details."
+            },
+            {
+              "name": "ComplaintValidationResult",
+              "kind": "type",
+              "signature": "type ComplaintValidationResult = { ok: true; value: Complaint } | { ok: false; issues: ComplaintValidationIssue[] }",
+              "purpose": "Return either one validated complaint or independently testable field issues."
+            },
+            {
+              "name": "isComplaintStatus",
+              "kind": "function",
+              "signature": "function isComplaintStatus(value: unknown): value is ComplaintStatus",
+              "purpose": "Recognize only the approved complaint statuses."
+            },
+            {
+              "name": "parseComplaint",
+              "kind": "function",
+              "signature": "function parseComplaint(value: unknown): ComplaintValidationResult",
+              "purpose": "Validate an unknown stored value as a complete authoritative complaint."
+            },
+            {
+              "name": "buildComplaint",
+              "kind": "function",
+              "signature": "function buildComplaint(input: CreateComplaintInput, identity: ComplaintIdentity): ComplaintValidationResult",
+              "purpose": "Validate complaint intake and construct a new record with the initial status and no resolution."
+            }
+          ]
+        },
+        {
+          "path": "src/complaints/domain/complaint.test.ts",
+          "kind": "test",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": []
+        }
+      ]
+    },
+    {
+      "name": "JSON Complaint Repository",
+      "path": "src/complaints/repository",
+      "purpose": "Isolate authoritative JSON reads and atomic, serialized writes behind a storage-neutral repository contract.",
+      "files": [
+        {
+          "path": "src/complaints/repository/complaint-repository.ts",
+          "kind": "source",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": [
+            {
+              "name": "ComplaintRepositoryFailureCode",
+              "kind": "type",
+              "signature": "type ComplaintRepositoryFailureCode = \"unavailable\" | \"malformed\" | \"write-failed\"",
+              "purpose": "Classify controlled persistence failures without leaking filesystem errors."
+            },
+            {
+              "name": "ComplaintRepositoryFailure",
+              "kind": "interface",
+              "signature": "interface ComplaintRepositoryFailure { code: ComplaintRepositoryFailureCode; message: string; }",
+              "purpose": "Represent a safe persistence failure for the application boundary."
+            },
+            {
+              "name": "ComplaintRepositoryResult",
+              "kind": "type",
+              "signature": "type ComplaintRepositoryResult<T> = { ok: true; value: T } | { ok: false; error: ComplaintRepositoryFailure }",
+              "purpose": "Make all repository success and failure outcomes explicit."
+            },
+            {
+              "name": "ComplaintRepository",
+              "kind": "interface",
+              "signature": "interface ComplaintRepository { list(): Promise<ComplaintRepositoryResult<Complaint[]>>; findById(id: string): Promise<ComplaintRepositoryResult<Complaint | null>>; save(complaint: Complaint): Promise<ComplaintRepositoryResult<Complaint>>; }",
+              "purpose": "Define retrieval and whole-record persistence independently of JSON and filesystem mechanics."
+            }
+          ]
+        },
+        {
+          "path": "src/complaints/repository/json-complaint-repository.ts",
+          "kind": "source",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": [
+            {
+              "name": "createJsonComplaintRepository",
+              "kind": "function",
+              "signature": "function createJsonComplaintRepository(filePath: string): ComplaintRepository",
+              "purpose": "Create a repository that validates a versioned complaint store, preserves unrelated records, serializes mutations, and atomically replaces the JSON file."
+            }
+          ]
+        },
+        {
+          "path": "src/complaints/repository/json-complaint-repository.test.ts",
+          "kind": "test",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": []
+        }
+      ]
+    },
+    {
+      "name": "Complaint Application Service",
+      "path": "src/complaints/application",
+      "purpose": "Coordinate domain validation and persistence while defining the exact complaint information each server interaction may return.",
+      "files": [
+        {
+          "path": "src/complaints/application/complaint-contracts.ts",
+          "kind": "source",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": [
+            {
+              "name": "ComplaintSummary",
+              "kind": "interface",
+              "signature": "interface ComplaintSummary { id: string; subject: string; status: ComplaintStatus; createdAt: string; updatedAt: string; }",
+              "purpose": "Expose only identifying and status information needed by a complaint register."
+            },
+            {
+              "name": "ComplaintDetail",
+              "kind": "interface",
+              "signature": "interface ComplaintDetail { id: string; customerName: string; customerContact: string; subject: string; description: string; status: ComplaintStatus; resolution: string | null; createdAt: string; updatedAt: string; }",
+              "purpose": "Expose the bounded complaint information needed for individual follow-up."
+            },
+            {
+              "name": "ComplaintOperationFailureCode",
+              "kind": "type",
+              "signature": "type ComplaintOperationFailureCode = \"validation\" | \"not-found\" | \"storage\"",
+              "purpose": "Classify application-safe operation failures."
+            },
+            {
+              "name": "ComplaintOperationFailure",
+              "kind": "interface",
+              "signature": "interface ComplaintOperationFailure { code: ComplaintOperationFailureCode; message: string; fieldErrors?: Record<string, string[]>; }",
+              "purpose": "Give staff interactions actionable failures without exposing repository or filesystem details."
+            },
+            {
+              "name": "ComplaintListResult",
+              "kind": "type",
+              "signature": "type ComplaintListResult = { ok: true; complaints: ComplaintSummary[] } | { ok: false; error: ComplaintOperationFailure }",
+              "purpose": "Return either privacy-limited complaint summaries or a controlled failure."
+            },
+            {
+              "name": "ComplaintDetailResult",
+              "kind": "type",
+              "signature": "type ComplaintDetailResult = { ok: true; complaint: ComplaintDetail } | { ok: false; error: ComplaintOperationFailure }",
+              "purpose": "Return one bounded complaint detail or a controlled failure."
+            },
+            {
+              "name": "CreateComplaintResult",
+              "kind": "type",
+              "signature": "type CreateComplaintResult = { ok: true; complaint: ComplaintDetail } | { ok: false; error: ComplaintOperationFailure }",
+              "purpose": "Return the newly persisted complaint or safe validation and storage feedback."
+            }
+          ]
+        },
+        {
+          "path": "src/complaints/application/complaint-service.ts",
+          "kind": "source",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": [
+            {
+              "name": "ComplaintService",
+              "kind": "interface",
+              "signature": "interface ComplaintService { listSummaries(): Promise<ComplaintListResult>; getDetail(id: string): Promise<ComplaintDetailResult>; create(input: CreateComplaintInput): Promise<CreateComplaintResult>; }",
+              "purpose": "Define the complete use-case boundary consumed by server actions."
+            },
+            {
+              "name": "ComplaintServiceDependencies",
+              "kind": "interface",
+              "signature": "interface ComplaintServiceDependencies { repository: ComplaintRepository; generateId(): string; now(): string; }",
+              "purpose": "Inject persistence, identity, and time so application behavior stays deterministic and testable."
+            },
+            {
+              "name": "createComplaintService",
+              "kind": "function",
+              "signature": "function createComplaintService(dependencies: ComplaintServiceDependencies): ComplaintService",
+              "purpose": "Create the coordinator that validates writes, maps repository failures, and shapes summary and detail outputs."
+            }
+          ]
+        },
+        {
+          "path": "src/complaints/application/complaint-service.test.ts",
+          "kind": "test",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": []
+        }
+      ]
+    },
+    {
+      "name": "Complaint Server Actions",
+      "path": "app/actions",
+      "purpose": "Provide the only client-callable complaint boundary as dedicated asynchronous Next.js Server Actions with validated inputs and constrained serialized results.",
+      "files": [
+        {
+          "path": "app/actions/complaints.ts",
+          "kind": "source",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": [
+            {
+              "name": "listComplaintSummariesAction",
+              "kind": "function",
+              "signature": "async function listComplaintSummariesAction(): Promise<ComplaintListResult>",
+              "purpose": "Retrieve only complaint register summaries through the server boundary."
+            },
+            {
+              "name": "getComplaintDetailAction",
+              "kind": "function",
+              "signature": "async function getComplaintDetailAction(id: string): Promise<ComplaintDetailResult>",
+              "purpose": "Validate an identifier and retrieve one privacy-bounded complaint detail."
+            },
+            {
+              "name": "createComplaintAction",
+              "kind": "function",
+              "signature": "async function createComplaintAction(input: CreateComplaintInput): Promise<CreateComplaintResult>",
+              "purpose": "Treat submitted complaint information as untrusted, then validate and persist it through the application service."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Complaint Data Store",
+      "path": "src/data",
+      "purpose": "Provide the versioned initial JSON document used as the authoritative complaint store.",
+      "files": [
+        {
+          "path": "src/data/complaints.json",
+          "kind": "configuration",
+          "language": "typescript",
+          "ownership": "epic",
+          "exports": []
+        }
+      ]
+    }
+  ],
+  "dependencies": [],
+  "impactRequests": []
+}

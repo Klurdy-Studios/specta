@@ -66,6 +66,7 @@ export function createTechnicalDesignWorkflow(
       if (!state?.architecture || !epic) {
         throw new Error("Design requires an Architecture and an Epic in the Workspace Graph.")
       }
+      validateArchitectureMappings(state.architecture.components, draft.modules)
       const target = selectTarget(workspace, draft.target)
       const profile = await profiles.resolve(workspace, target)
       const files = draft.modules.flatMap((module) => module.files)
@@ -97,6 +98,19 @@ export function createTechnicalDesignWorkflow(
       })
       return design
     },
+  }
+}
+
+function validateArchitectureMappings(
+  architectureComponents: readonly string[],
+  modules: TechnicalDesignDraft["modules"],
+): void {
+  const available = new Set(architectureComponents)
+  const unknown = modules.flatMap((module) => (module.architectureComponents ?? [])
+    .filter((component) => !available.has(component))
+    .map((component) => module.name + ": " + component))
+  if (unknown.length > 0) {
+    throw new Error("Technical Design references unknown Architecture components: " + unknown.join(", ") + ".")
   }
 }
 
