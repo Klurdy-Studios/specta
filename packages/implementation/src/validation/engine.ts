@@ -38,6 +38,8 @@ export interface ImplementationValidationRequest {
 }
 
 export interface ImplementationValidationEngine {
+  /** Evaluates one Epic without persisting, for atomic workflow finalization. */
+  evaluate(request: ImplementationValidationRequest): Promise<ValidationReport>
   /** Validates and persists one Epic-scoped report without mutating implementation status. */
   validate(request: ImplementationValidationRequest): Promise<ValidationReport>
 }
@@ -63,8 +65,7 @@ export function createImplementationValidationEngine(
   const reports = options.reports ?? createValidationReportRepository(fileSystem)
   const workflowState = options.workflowState ?? createWorkflowStateRepository(fileSystem)
   const contextEngine = options.contextEngine ?? createContextEngine({ fileSystem })
-  return {
-    async validate(request) {
+  const evaluate = async (request: ImplementationValidationRequest): Promise<ValidationReport> => {
       const mode = request.mode ?? "full"
       const planning = await createPlanningGraphRepository(fileSystem).loadPlanningState(request.workspace)
       if (!planning) throw new Error("Compile planning before validating implementation.")
@@ -223,6 +224,12 @@ export function createImplementationValidationEngine(
         checks: stableChecks,
         commands: commandResults,
       })
+      return report
+  }
+  return {
+    evaluate,
+    async validate(request) {
+      const report = await evaluate(request)
       await reports.save(request.workspace, report)
       return report
     },
@@ -251,7 +258,10 @@ async function validateDesignedFiles(
       }
       const languageValidation = content === undefined
         ? undefined
-        : languages.resolve(file.language).validateFile(file, content, { declarationOnly: false })
+        : languages.resolve(file.language).validateFile(file, content, {
+          declarationOnly: false,
+          validateSignatures: false,
+        })
       const analyzedWhenRequired = file.kind === "configuration" || parsed !== undefined
       const valid = exists && analyzedWhenRequired && (languageValidation?.valid ?? false)
       const fileNodeId = analysis.fileIds.get(workspacePath)
@@ -270,7 +280,8 @@ async function validateDesignedFiles(
         const actual = parsed?.symbols.find((candidate) => candidate.name === symbol.name && candidate.exported)
         const symbolId = analysis.symbolIds.get(workspacePath + "\0" + symbol.name)
         const signatureMatches = symbol.signature === undefined
-          || (actual?.signature !== undefined && normalizeSignature(actual.signature).includes(normalizeSignature(symbol.signature)))
+          || (actual?.signature !== undefined
+            && languages.resolve(file.language).signaturesCompatible(symbol.signature, actual.signature))
         const symbolValid = actual !== undefined && actual.kind === symbol.kind && signatureMatches
         checks.push(validationCheck({
           category: "symbol",
@@ -434,11 +445,11 @@ function validateArchitectureComponents(
   checks: ValidationCheck[],
   dependenciesConform: boolean,
 ): void {
+  const explicitlyMapped = design.modules.some((module) => module.architectureComponents !== undefined)
+  if (!explicitlyMapped) return
   for (const component of components) {
-    const componentKey = normalizedArchitectureLabel(component)
-    const modules = design.modules.filter((module) =>
-      [module.name, module.path, module.purpose].some((value) => normalizedArchitectureLabel(value) === componentKey),
-    )
+    const modules = design.modules.filter((module) => module.architectureComponents?.includes(component) ?? false)
+    if (modules.length === 0) continue
     const paths = new Set(modules.flatMap((module) =>
       module.files.map((file) => projectPath(design.profile.rootPath, file.path)),
     ))
@@ -470,16 +481,8 @@ function validateArchitectureComponents(
   }
 }
 
-function normalizedArchitectureLabel(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()
-}
-
 function projectPath(rootPath: string, filePath: string): string {
   return normalizePath(rootPath === "." ? filePath : posix.join(rootPath, filePath))
-}
-
-function normalizeSignature(value: string): string {
-  return value.replace(/\s+/g, " ").trim()
 }
 
 function uniqueChecks(checks: ValidationCheck[]): ValidationCheck[] {

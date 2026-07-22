@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  codingAgentTokenUsageSchema,
   foundationDraftSchema,
   epicsDraftSchema,
   roadmapDraftSchema,
@@ -9,6 +10,37 @@ import {
 import { validationEvidenceSchema, validationReportSchema } from "../src/validation/index.js"
 
 describe("canonical schemas", () => {
+  it("validates coding-agent token breakdown arithmetic", () => {
+    expect(codingAgentTokenUsageSchema.parse({
+      source: "measured",
+      inputTokens: 100,
+      cachedInputTokens: 40,
+      outputTokens: 25,
+      reasoningTokens: 10,
+      totalTokens: 125,
+    })).toMatchObject({ totalTokens: 125 })
+    expect(codingAgentTokenUsageSchema.parse({
+      source: "unavailable",
+      reason: "The host does not expose telemetry.",
+    })).toMatchObject({ source: "unavailable" })
+    expect(() => codingAgentTokenUsageSchema.parse({
+      source: "reported",
+      inputTokens: 100,
+      cachedInputTokens: 101,
+      outputTokens: 25,
+      reasoningTokens: 10,
+      totalTokens: 125,
+    })).toThrow("Cached input tokens cannot exceed input tokens")
+    expect(() => codingAgentTokenUsageSchema.parse({
+      source: "reported",
+      inputTokens: 100,
+      cachedInputTokens: 0,
+      outputTokens: 25,
+      reasoningTokens: 10,
+      totalTokens: 124,
+    })).toThrow("Total tokens must equal input plus output tokens")
+  })
+
   it("rejects incomplete Foundation drafts", () => {
     expect(() => foundationDraftSchema.parse({
       vision: { title: "Specta", problem: "Planning is fragmented.", audience: "Developers" },

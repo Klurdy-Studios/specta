@@ -133,8 +133,8 @@ describe("SQLite Workspace Graph", () => {
     const provider = createSqliteWorkspaceGraphProvider()
     const planning = planningFixture()
     await createPlanningGraphRepository(undefined, provider).savePlanningState(workspace, planning)
-    const firstDesign = designFixture("design_first", "epic_first")
-    const secondDesign = designFixture("design_second", "epic_second")
+    const firstDesign = designFixture("design_first", "epic_first", "scaffolded")
+    const secondDesign = designFixture("design_second", "epic_second", "scaffolded")
     secondDesign.dependencies = [{ kind: "file", targetDesignId: firstDesign.id, filePath: "src/index.ts" }]
     const designs = createTechnicalDesignGraphRepository(undefined, provider)
     await designs.saveMany(workspace, [firstDesign, secondDesign])
@@ -150,6 +150,11 @@ describe("SQLite Workspace Graph", () => {
         epicId: "epic_first",
         designId: "design_first",
       })
+      await expect(graph.queries.eligibleEpic("epic_first")).resolves.toMatchObject({
+        epicId: "epic_first",
+        designId: "design_first",
+      })
+      await expect(graph.queries.eligibleEpic("epic_second")).resolves.toBeNull()
       const dependencies = await graph.queries.dependencies("epic_second")
       expect(dependencies.nodes.map((node) => node.id)).toContain("epic_first")
       const dependents = await graph.queries.dependents("epic_first")
@@ -186,6 +191,8 @@ describe("SQLite Workspace Graph", () => {
     await designs.save(workspace, designFixture("design_first_v2", "epic_first", "draft", 2))
     await expect(provider.withGraph(workspace, (graph) => graph.queries.nextEligibleEpic())).resolves.toBeNull()
     await designs.save(workspace, designFixture("design_first_v2", "epic_first", "approved", 2))
+    await expect(provider.withGraph(workspace, (graph) => graph.queries.nextEligibleEpic())).resolves.toBeNull()
+    await designs.save(workspace, designFixture("design_first_v2", "epic_first", "scaffolded", 2))
     await expect(provider.withGraph(workspace, (graph) => graph.queries.nextEligibleEpic()))
       .resolves.toMatchObject({ epicId: "epic_first", designId: "design_first_v2" })
 
@@ -207,10 +214,55 @@ describe("SQLite Workspace Graph", () => {
     await expect(provider.withGraph(workspace, (graph) => graph.queries.nextEligibleEpic())).resolves.toBeNull()
   })
 
+  it("uses authored Epic order and resumes the workspace-wide active Epic first", async () => {
+    const workspace = await temporaryWorkspace()
+    const provider = createSqliteWorkspaceGraphProvider()
+    const planning = planningFixture()
+    planning.epics = [planning.epics![1]!, planning.epics![0]!]
+    planning.relationships = planning.relationships.filter((relationship) =>
+      !(relationship.type === "DEPENDS_ON"
+        && relationship.sourceId === "epic_second"
+        && relationship.targetId === "epic_first"),
+    )
+    await createPlanningGraphRepository(undefined, provider).savePlanningState(workspace, planning)
+    await createTechnicalDesignGraphRepository(undefined, provider).saveMany(workspace, [
+      designFixture("design_first", "epic_first", "scaffolded"),
+      designFixture("design_second", "epic_second", "scaffolded"),
+    ])
+    await expect(provider.withGraph(workspace, (graph) => graph.queries.nextEligibleEpic()))
+      .resolves.toMatchObject({ epicId: "epic_second" })
+
+    const workflow = createWorkflowStateRepository(undefined, provider)
+    const competing = await Promise.allSettled([
+      workflow.saveImplementationCheckpoint(workspace, {
+        runId: "run_first_active",
+        run: { ...workflowRun("epic_first", "in-progress"), technicalDesignId: "design_first" },
+        state: { epicId: "epic_first" as PlanningId, status: "in-progress", activeRunId: "run_first_active", revision: 1 },
+      }),
+      workflow.saveImplementationCheckpoint(workspace, {
+        runId: "run_second_active",
+        run: { ...workflowRun("epic_second", "in-progress"), technicalDesignId: "design_second" },
+        state: { epicId: "epic_second" as PlanningId, status: "in-progress", activeRunId: "run_second_active", revision: 1 },
+      }),
+    ])
+    expect(competing.filter((result) => result.status === "fulfilled")).toHaveLength(1)
+    const activeEpicId = (await workflow.getRun(
+      workspace,
+      competing[0]!.status === "fulfilled" ? "run_first_active" : "run_second_active",
+    ))!.targetId
+    await expect(provider.withGraph(workspace, (graph) => graph.queries.nextEligibleEpic()))
+      .resolves.toMatchObject({ epicId: activeEpicId })
+    const inactiveEpicId = activeEpicId === "epic_first" ? "epic_second" : "epic_first"
+    await expect(provider.withGraph(workspace, (graph) => graph.queries.eligibleEpic(inactiveEpicId)))
+      .resolves.toBeNull()
+  })
+
   it("commits implementation run checkpoints and Epic state together", async () => {
     const workspace = await temporaryWorkspace()
     const provider = createSqliteWorkspaceGraphProvider()
     await createPlanningGraphRepository(undefined, provider).savePlanningState(workspace, planningFixture())
+    await createTechnicalDesignGraphRepository(undefined, provider)
+      .save(workspace, designFixture("design_first", "epic_first", "scaffolded"))
     const repository = createWorkflowStateRepository(undefined, provider)
 
     await repository.saveImplementationCheckpoint(workspace, {
@@ -244,6 +296,23 @@ describe("SQLite Workspace Graph", () => {
     await expect(repository.getEpicState(workspace, "epic_first")).resolves.toMatchObject({
       status: "blocked",
       revision: 2,
+    })
+
+    await expect(repository.saveImplementationCheckpoint(workspace, {
+      runId: "run_second_prepared",
+      run: {
+        ...workflowRun("epic_second", "in-progress"),
+        status: "prepared",
+        phase: "prepared",
+      },
+      state: { epicId: "epic_second" as PlanningId, status: "ready", activeRunId: "run_second_prepared", revision: 1 },
+    })).rejects.toThrow("Another Epic already has an active Implementation Run")
+
+    await repository.saveImplementationCheckpoint(workspace, {
+      runId: "run_blocked",
+      run: { ...workflowRun("epic_first", "complete"), revision: 2 },
+      state: { epicId: "epic_first" as PlanningId, status: "complete", revision: 3 },
+      validationReport: validationReportFixture("epic_first", "run_blocked", "passed"),
     })
 
     await expect(repository.saveImplementationCheckpoint(workspace, {
@@ -389,6 +458,47 @@ describe("SQLite Workspace Graph", () => {
       expect.objectContaining({ name: "web" }),
       expect.objectContaining({ name: "admin" }),
     ]))
+  })
+
+  it("stores an existing-project profile as a distinct node linked to its Project", async () => {
+    const workspace = await temporaryWorkspace()
+    workspace.projects = [{
+      id: "project_existing" as Workspace["projects"][number]["id"],
+      name: "existing",
+      rootPath: ".",
+      kind: "application",
+      manifestPath: "package.json",
+    }]
+    const provider = createSqliteWorkspaceGraphProvider()
+    const repository = createProjectProfileRepository(undefined, provider)
+    await repository.save(workspace, {
+      projectId: workspace.projects[0]!.id,
+      name: "existing",
+      rootPath: ".",
+      state: "existing",
+      language: "typescript",
+      framework: "nextjs",
+      toolchain: "next",
+      packageManager: "pnpm",
+      sourceRoots: ["app", "src"],
+      evidence: [],
+      source: "detected",
+    })
+
+    await provider.withGraph(workspace, async (graph) => {
+      const profiles = await graph.queries.listNodes("ProjectProfile")
+      expect(profiles).toHaveLength(1)
+      expect(profiles[0]!.id).not.toBe(workspace.projects[0]!.id)
+      const ownership = await graph.queries.neighbors({
+        nodeId: workspace.projects[0]!.id,
+        direction: "outgoing",
+        edgeKinds: ["CONTAINS"],
+      })
+      expect(ownership.nodes).toContainEqual(expect.objectContaining({
+        id: profiles[0]!.id,
+        kind: "ProjectProfile",
+      }))
+    })
   })
 
   it("imports every legacy graph shard once without rewriting source files", async () => {

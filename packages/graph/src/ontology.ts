@@ -43,7 +43,9 @@ export const ProjectNode = defineNode("Project", {
 export const ConstitutionNode = defineNode("Constitution", { schema: constitutionSchema.omit({ id: true }) })
 export const ArchitectureNode = defineNode("Architecture", { schema: architectureSchema.omit({ id: true }) })
 export const RoadmapNode = defineNode("Roadmap", { schema: roadmapSchema.omit({ id: true }) })
-export const EpicNode = defineNode("Epic", { schema: epicSchema.omit({ id: true, stories: true }) })
+export const EpicNode = defineNode("Epic", {
+  schema: epicSchema.omit({ id: true, stories: true }).extend({ planningOrder: z.number().int().nonnegative().optional() }),
+})
 export const StoryNode = defineNode("Story", { schema: storySchema.omit({ id: true, acceptanceCriteria: true, tasks: true }) })
 export const AcceptanceCriterionNode = defineNode("AcceptanceCriterion", { schema: acceptanceCriterionSchema.omit({ id: true }) })
 export const TaskNode = defineNode("Task", { schema: taskSchema.omit({ id: true }) })
@@ -126,7 +128,7 @@ export const workspaceGraph = defineGraph({
     CONTAINS: {
       type: ContainsEdge,
       from: [WorkspaceNode, ProjectNode, EpicNode, StoryNode, TechnicalDesignNode, ModuleNode, FileNode, SpecificationDocumentNode, SpecificationEntityNode],
-      to: [ProjectNode, StoryNode, AcceptanceCriterionNode, TaskNode, ModuleNode, FileNode, CodeSymbolNode, SpecificationEntityNode, TestNode, WorkflowRunNode],
+      to: [ProjectNode, ProjectProfileNode, StoryNode, AcceptanceCriterionNode, TaskNode, ModuleNode, FileNode, CodeSymbolNode, SpecificationEntityNode, TestNode, WorkflowRunNode],
     },
     DEPENDS_ON: {
       type: DependsOnEdge,
@@ -135,7 +137,7 @@ export const workspaceGraph = defineGraph({
     },
     IMPLEMENTS: {
       type: ImplementsEdge,
-      from: [EpicNode, TechnicalDesignNode, ModuleNode, FileNode, ScaffoldRunNode],
+      from: [EpicNode, TechnicalDesignNode, ModuleNode, FileNode, CodeSymbolNode, ScaffoldRunNode],
       to: [ArchitectureNode, EpicNode, TechnicalDesignNode, ModuleNode],
     },
     IMPORTS: { type: ImportsEdge, from: [FileNode], to: [FileNode, ExternalDependencyNode] },
@@ -160,7 +162,7 @@ export const workspaceGraph = defineGraph({
     },
     VALIDATES: {
       type: ValidatesEdge,
-      from: [ValidationReportNode],
+      from: [ValidationReportNode, TestNode],
       to: [ProjectNode, ArchitectureNode, EpicNode, StoryNode, AcceptanceCriterionNode, TechnicalDesignNode, ModuleNode, FileNode, CodeSymbolNode, TestNode, ExternalDependencyNode],
     },
   },

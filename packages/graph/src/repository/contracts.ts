@@ -93,6 +93,7 @@ export interface WorkspaceGraphQueries {
   searchNeighbors(request: GraphNeighborQuery): Promise<GraphNeighborRecord[]>
   dependencies(nodeId: string, depth?: number): Promise<GraphSubgraph>
   dependents(nodeId: string, depth?: number): Promise<GraphSubgraph>
+  eligibleEpic(epicId: string): Promise<EligibleEpic | null>
   nextEligibleEpic(): Promise<EligibleEpic | null>
 }
 

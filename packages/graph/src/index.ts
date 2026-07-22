@@ -1,6 +1,7 @@
 export * from "./analysis/index.ts"
 export * from "./context/index.ts"
 export * from "./implementation.ts"
+export * from "./implementation-eligibility.ts"
 export * from "./ontology.ts"
 export * from "./parser/index.ts"
 export * from "./persistence/sqlite.ts"

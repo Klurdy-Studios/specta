@@ -31,7 +31,25 @@ deterministic validation of completed Epic work.
   framework and returns an explicit online npx skills find command. Discovery
   never installs or executes a Skill automatically.
 - implementationWorkflowModule supplies the design, approve-design, scaffold,
-  and validate Workflow Definitions and maintained native Skill assets.
+  validate, and implement Workflow Definitions and maintained native Skill assets.
+
+## Epic implementation workflow
+
+- `createImplementationWorkflowCoordinator()` prepares or resumes exactly one
+  eligible Epic and finalizes it after coding-agent edits.
+- `prepare()` persists a deterministic Implementation Run and immutable,
+  token-bounded Context Packet. Explicit and `next` selection both require a
+  finalized scaffold and completed predecessor Epics.
+- `finalize()` recompiles source analysis, evaluates full validation, derives
+  planned-to-implemented relationships, and commits the report, run, Epic
+  status, and relationships atomically.
+- Finalization records coding-agent token telemetry when the host exposes it.
+  Otherwise it completes normally and explicitly reports telemetry as
+  unavailable. The rendered breakdown joins that observation with the Context
+  Packet's authoritative estimate without duplicating it in Workflow Run state.
+- `renderImplementationPreparation()` and `renderImplementationFinalization()`
+  provide concise agent-readable output; JSON CLI output carries the complete
+  packet and canonical result.
 
 ## Validation
 

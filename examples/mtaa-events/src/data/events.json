@@ -1,1 +1,37 @@
-[]
+[
+  {
+    "id": "ngara-rooftop-jazz",
+    "title": "Ngara Rooftop Jazz",
+    "category": "Music",
+    "location": "Ngara",
+    "schedule": {
+      "startsAt": "2026-08-01T16:00:00+03:00",
+      "endsAt": "2026-08-01T20:00:00+03:00"
+    },
+    "description": "An evening of live jazz by Nairobi artists overlooking the city.",
+    "attendanceInfo": "Advance ticket required; the venue is wheelchair accessible."
+  },
+  {
+    "id": "kibera-community-market",
+    "title": "Kibera Community Market",
+    "category": "Market",
+    "location": "Kibera",
+    "schedule": {
+      "startsAt": "2026-08-08T09:00:00+03:00",
+      "endsAt": "2026-08-08T16:00:00+03:00"
+    },
+    "description": "Local food, crafts, and clothing from independent neighborhood traders.",
+    "attendanceInfo": "Free entry; bring a reusable shopping bag."
+  },
+  {
+    "id": "ngara-family-art-day",
+    "title": "Ngara Family Art Day",
+    "category": "Art",
+    "location": "Ngara",
+    "schedule": {
+      "startsAt": "2026-08-15T10:00:00+03:00"
+    },
+    "description": "Drop-in painting and printmaking activities for children and caregivers.",
+    "attendanceInfo": "Free; children must attend with a caregiver."
+  }
+]

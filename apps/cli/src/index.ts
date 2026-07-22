@@ -22,6 +22,7 @@ import {
   renderValidationReport,
 } from "@specta/implementation"
 import { createPlanWorkflow, planningWorkflowModule, type PlanWorkflowInput } from "@specta/planner"
+import { runImplementCommand } from "./commands/implement.ts"
 
 const workflowModules = [planningWorkflowModule, implementationWorkflowModule]
 
@@ -86,6 +87,14 @@ if (command === "init") {
     console.error(error instanceof Error ? "specta: " + error.message : "specta: Unable to validate implementation.")
     process.exitCode = 1
   }
+} else if (command === "implement") {
+  try {
+    const result = await runImplementCommand(arguments_)
+    if (result.validationFailed) process.exitCode = 1
+  } catch (error) {
+    console.error(error instanceof Error ? "specta: " + error.message : "specta: Unable to execute implementation workflow.")
+    process.exitCode = 1
+  }
 } else if (command === "plan") {
   try {
     const request = await parsePlanRequest(arguments_)
@@ -135,7 +144,7 @@ if (command === "init") {
     process.exitCode = 1
   }
 } else {
-  console.error("Usage: specta init [path] [--skill-target <target>] | specta compile | specta context <epic-id> [--run <implementation-run-id>] [--max-tokens <count>] [--json] | specta validate <epic-id> [--run <implementation-run-id>] [--evidence <evidence.json>] [--json] | specta plan [foundation <brief> | architecture | roadmap | epics | <brief>] | specta design <epic-id> --draft <draft.json> | specta approve-design <design-id> | specta scaffold <design-id> --prepare | --finalize <scaffold-run-id>")
+  console.error("Usage: specta init [path] [--skill-target <target>] | specta compile | specta context <epic-id> [--run <implementation-run-id>] [--max-tokens <count>] [--json] | specta validate <epic-id> [--run <implementation-run-id>] [--evidence <evidence.json>] [--json] | specta implement <epic-id|next> --prepare | <implementation-run-id> --finalize --evidence <evidence.json> [--token-usage <token-usage.json>] | specta plan [foundation <brief> | architecture | roadmap | epics | <brief>] | specta design <epic-id> --draft <draft.json> | specta approve-design <design-id> | specta scaffold <design-id> --prepare | --finalize <scaffold-run-id>")
   process.exitCode = 1
 }
 

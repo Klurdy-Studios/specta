@@ -52,6 +52,11 @@ describe("implementation validation", () => {
       category: "acceptance-criterion",
       status: "passed",
     }))
+    expect(report.checks).toContainEqual(expect.objectContaining({
+      category: "architecture",
+      subject: expect.objectContaining({ name: "Session boundary" }),
+      status: "passed",
+    }))
     expect(renderValidationReport(report)).toContain("Status: passed")
     await expect(createValidationReportRepository().get(workspace, report.id)).resolves.toEqual(report)
   })
@@ -212,7 +217,7 @@ describe("implementation validation", () => {
     expect(report.contextFingerprint).toBe(packet.sourceFingerprint)
   })
 
-  it("fails an architecture component without an explicit Technical Design module mapping", async () => {
+  it("does not require one Epic to implement unrelated Architecture components", async () => {
     const workspace = await validationWorkspace()
     const planning = planningFixture()
     planning.architecture!.components = ["Unmapped boundary"]
@@ -227,11 +232,10 @@ describe("implementation validation", () => {
       },
     })
 
-    expect(report.status).toBe("failed")
-    expect(report.checks).toContainEqual(expect.objectContaining({
+    expect(report.status).toBe("passed")
+    expect(report.checks).not.toContainEqual(expect.objectContaining({
       category: "architecture",
       subject: expect.objectContaining({ name: "Unmapped boundary" }),
-      message: "No Technical Design module explicitly maps to this architecture component.",
     }))
   })
 
@@ -399,12 +403,18 @@ function designFixture(workspace: Workspace): TechnicalDesign {
       name: "Sessions",
       path: "src",
       purpose: "Session boundary.",
+      architectureComponents: ["Session boundary"],
       files: [{
         path: "src/session.ts",
         kind: "source",
         language: "typescript",
         ownership: "epic",
-        exports: [{ name: "SessionService", kind: "interface", purpose: "Starts sessions." }],
+        exports: [{
+          name: "SessionService",
+          kind: "interface",
+          signature: "export interface SessionService { start(): string }",
+          purpose: "Starts sessions.",
+        }],
       }],
     }],
     dependencies: [],

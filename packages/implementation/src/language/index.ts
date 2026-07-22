@@ -8,7 +8,13 @@ let compiler: typeof TypeScript | undefined
 export interface LanguageAdapter {
   readonly language: string
   validateDesign(files: TechnicalFile[], profile: ProjectProfile): ValidationResult
-  validateFile(file: TechnicalFile, content: string, options?: { declarationOnly?: boolean }): ValidationResult
+  validateFile(
+    file: TechnicalFile,
+    content: string,
+    options?: { declarationOnly?: boolean; validateSignatures?: boolean },
+  ): ValidationResult
+  /** Compares a designed declaration with an analyzed declaration using language semantics. */
+  signaturesCompatible(expected: string, actual: string): boolean
 }
 
 export interface LanguageAdapterRegistry {
@@ -63,13 +69,16 @@ export const typeScriptLanguageAdapter: LanguageAdapter = {
       if (declaration.kind !== "unknown" && declaration.kind !== symbol.kind) {
         issues.push("Export " + symbol.name + " must be declared as " + symbol.kind + " in " + file.path + ".")
       }
-      if (symbol.signature !== undefined && !normalize(declaration.text).includes(normalize(symbol.signature))) {
+      if (options.validateSignatures !== false
+        && symbol.signature !== undefined
+        && !typeScriptSignaturesCompatible(symbol.signature, declaration.text)) {
         issues.push("Export " + symbol.name + " does not match its approved signature in " + file.path + ".")
       }
     }
     if (options.declarationOnly !== false) inspectExecutableBodies(source, issues)
     return validation(issues, "TypeScript declarations are valid.")
   },
+  signaturesCompatible: typeScriptSignaturesCompatible,
 }
 
 function exportedDeclarations(source: TypeScript.SourceFile): Map<string, { kind: string, text: string }> {
@@ -139,8 +148,36 @@ function typescript(): typeof TypeScript {
   return compiler
 }
 
-function normalize(value: string): string {
-  return value.replace(/\s+/g, " ").trim()
+function typeScriptSignaturesCompatible(expected: string, actual: string): boolean {
+  return canonicalTypeScriptSignature(expected) === canonicalTypeScriptSignature(actual)
+}
+
+function canonicalTypeScriptSignature(value: string): string {
+  const ts = typescript()
+  const source = ts.createSourceFile("signature.ts", value, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  const statement = source.statements[0]
+  if (statement === undefined) return normalizeSignatureText(value)
+  let text = statement.getText(source)
+  if (ts.isFunctionDeclaration(statement) && statement.body !== undefined) {
+    text = value.slice(statement.getStart(source), statement.body.getStart(source))
+  } else if (ts.isVariableStatement(statement)) {
+    const declaration = statement.declarationList.declarations[0]
+    if (declaration !== undefined) {
+      const keyword = (statement.declarationList.flags & ts.NodeFlags.Const) !== 0 ? "const"
+        : (statement.declarationList.flags & ts.NodeFlags.Let) !== 0 ? "let" : "var"
+      text = keyword + " " + declaration.name.getText(source)
+        + (declaration.type === undefined ? "" : ":" + declaration.type.getText(source))
+    }
+  }
+  return normalizeSignatureText(text)
+}
+
+function normalizeSignatureText(value: string): string {
+  return value
+    .replace(/^\s*export\s+/, "")
+    .replace(/^\s*declare\s+/, "")
+    .replace(/;\s*$/, "")
+    .replace(/\s+/g, "")
 }
 
 function validation(issues: string[], success: string): ValidationResult {

@@ -84,7 +84,83 @@ it("runs independent Epic validation and persists a failed report", async () => 
     .resolves.toMatchObject(report)
 }, 15_000)
 
+it("prepares and finalizes an agent implementation run with token accounting", async () => {
+  const workspace = await createCliWorkspace()
+  const preparationResult = await runCli(workspace.rootPath, ["implement", "next", "--prepare", "--json"])
+  const preparation = JSON.parse(preparationResult.stdout) as { runId: string, context: { epicId: string } }
+  expect(preparation.context.epicId).toBe("epic_cli_context")
+
+  await nodeFileSystem.writeText(join(workspace.rootPath, "evidence.json"), JSON.stringify({
+    epicId: "epic_cli_context",
+    criteria: [{ criterionId: "criterion_cli_context", tests: [{ path: "src/context.test.ts" }] }],
+  }))
+  await nodeFileSystem.writeText(join(workspace.rootPath, "tokens.json"), JSON.stringify({
+    source: "measured",
+    inputTokens: 800,
+    cachedInputTokens: 200,
+    outputTokens: 200,
+    reasoningTokens: 50,
+    totalTokens: 1000,
+  }))
+  const finalizationResult = await runCliResult(workspace.rootPath, [
+    "implement", preparation.runId, "--finalize",
+    "--evidence", "evidence.json",
+    "--token-usage", "tokens.json",
+    "--json",
+  ])
+  const finalization = JSON.parse(finalizationResult.stdout) as {
+    report: { status: string }
+    tokenUsage: { codingAgent: { totalTokens: number }, context: { estimatedTokens: number } }
+  }
+  expect(finalizationResult.code).toBe(1)
+  expect(finalization.report.status).toBe("failed")
+  expect(finalization.tokenUsage.codingAgent.totalTokens).toBe(1000)
+  expect(finalization.tokenUsage.context.estimatedTokens).toBeGreaterThan(0)
+}, 20_000)
+
 it("passes CLI validation with directly executed acceptance evidence", async () => {
+  const workspace = await createPassingCliWorkspace()
+
+  const result = await runCliResult(workspace.rootPath, [
+    "validate", "epic_cli_context", "--evidence", "evidence.json", "--json",
+  ])
+  const report = JSON.parse(result.stdout) as {
+    status: string
+    checks: Array<{ status: string, severity: string, message: string }>
+    commands: Array<{ command: { testPaths?: string[] } }>
+  }
+
+  expect(report.checks.filter((check) => check.status !== "passed" && check.severity === "error")).toEqual([])
+  expect(report.status).toBe("passed")
+  expect(result).toMatchObject({ code: 0, stderr: "" })
+  expect(report.commands).toContainEqual(expect.objectContaining({
+    command: expect.objectContaining({ testPaths: ["src/context.test.ts"] }),
+  }))
+}, 20_000)
+
+it("completes the real implementation workflow when agent telemetry is unavailable", async () => {
+  const workspace = await createPassingCliWorkspace()
+  const prepared = JSON.parse((await runCli(workspace.rootPath, [
+    "implement", "next", "--prepare", "--json",
+  ])).stdout) as { runId: string }
+  const result = await runCliResult(workspace.rootPath, [
+    "implement", prepared.runId, "--finalize", "--evidence", "evidence.json", "--json",
+  ])
+  const finalization = JSON.parse(result.stdout) as {
+    state: { status: string }
+    report: { status: string }
+    implementationLinks: unknown[]
+    tokenUsage: { codingAgent: { source: string }, context: { estimatedTokens: number } }
+  }
+  expect(result).toMatchObject({ code: 0, stderr: "" })
+  expect(finalization.state.status).toBe("complete")
+  expect(finalization.report.status).toBe("passed")
+  expect(finalization.implementationLinks.length).toBeGreaterThan(0)
+  expect(finalization.tokenUsage.codingAgent.source).toBe("unavailable")
+  expect(finalization.tokenUsage.context.estimatedTokens).toBeGreaterThan(0)
+}, 25_000)
+
+async function createPassingCliWorkspace(): Promise<Workspace> {
   const workspace = await createCliWorkspace()
   workspace.packageManager = "npm"
   await createWorkspaceRepository(nodeFileSystem).save(workspace)
@@ -116,23 +192,8 @@ it("passes CLI validation with directly executed acceptance evidence", async () 
       tests: [{ path: "src/context.test.ts", name: "compiles required context" }],
     }],
   }))
-
-  const result = await runCliResult(workspace.rootPath, [
-    "validate", "epic_cli_context", "--evidence", "evidence.json", "--json",
-  ])
-  const report = JSON.parse(result.stdout) as {
-    status: string
-    checks: Array<{ status: string, severity: string, message: string }>
-    commands: Array<{ command: { testPaths?: string[] } }>
-  }
-
-  expect(report.checks.filter((check) => check.status !== "passed" && check.severity === "error")).toEqual([])
-  expect(report.status).toBe("passed")
-  expect(result).toMatchObject({ code: 0, stderr: "" })
-  expect(report.commands).toContainEqual(expect.objectContaining({
-    command: expect.objectContaining({ testPaths: ["src/context.test.ts"] }),
-  }))
-}, 20_000)
+  return workspace
+}
 
 async function createCliWorkspace(): Promise<Workspace> {
   const rootPath = await mkdtemp(join(tmpdir(), "specta-cli-context-"))
@@ -198,7 +259,7 @@ function designFixture(workspace: Workspace): TechnicalDesign {
   return {
     id: "design_cli_context" as TechnicalDesign["id"],
     targetId: "epic_cli_context" as TechnicalDesign["targetId"],
-    status: "approved",
+    status: "scaffolded",
     revision: 1,
     summary: "Context compiler public API.",
     target: { kind: "existing", projectId: workspace.projects[0]!.id },

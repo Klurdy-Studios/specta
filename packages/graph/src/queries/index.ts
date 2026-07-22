@@ -21,6 +21,9 @@ const technicalDesignStateSchema = z.object({
   status: z.enum(["draft", "approved", "superseded", "scaffolded"]),
   revision: z.number().int().positive(),
 })
+const epicNodeStateSchema = epicSchema.omit({ id: true, stories: true }).extend({
+  planningOrder: z.number().int().nonnegative().optional(),
+})
 
 /** Builds bounded, domain-aware queries over the unified Workspace Graph. */
 export function createWorkspaceGraphQueries(
@@ -112,63 +115,78 @@ export function createWorkspaceGraphQueries(
       direction: "incoming",
       edgeKinds: ["DEPENDS_ON", "IMPORTS"],
     }),
+    async eligibleEpic(epicId): Promise<EligibleEpic | null> {
+      return (await eligibleEpics(epicId))[0] ?? null
+    },
     async nextEligibleEpic(): Promise<EligibleEpic | null> {
-      const roadmapNode = (await listNodes("Roadmap"))[0]
-      if (!roadmapNode) return null
-      const roadmap = roadmapSchema.omit({ id: true }).safeParse(roadmapNode.props)
-      if (!roadmap.success) return null
-      const epics = (await listNodes("Epic")).flatMap((node) => {
-        const parsed = epicSchema.omit({ id: true, stories: true }).safeParse(node.props)
-        return parsed.success ? [{ id: node.id, ...parsed.data }] : []
-      })
-      const designs = (await listNodes("TechnicalDesign")).flatMap((node) => {
-        const parsed = technicalDesignStateSchema.safeParse(node.props)
-        return parsed.success ? [{ id: node.id, ...parsed.data }] : []
-      })
-      const states = await listNodes("EpicImplementationState")
-      const statusByEpic = new Map(states.map((state) => [String(state.props.epicId), String(state.props.status)]))
-      const epicIds = new Set(epics.map((epic) => epic.id))
-      const prerequisites = new Map<string, string[]>()
-      for (const value of await store.getEdgeCollectionOrThrow("DEPENDS_ON").find()) {
-        const relationship = edgeRecord(value, "DEPENDS_ON")
-        if (epicIds.has(relationship.sourceId) && epicIds.has(relationship.targetId)) {
-          const current = prerequisites.get(relationship.sourceId) ?? []
-          current.push(relationship.targetId)
-          prerequisites.set(relationship.sourceId, current)
-        }
-      }
-      const milestoneOrder = new Map(roadmap.data.milestones.map((milestone, index) => [milestone.title, index]))
-      const ordered = epics.map((epic, index) => ({ epic, index }))
-        .sort((left, right) =>
-          (milestoneOrder.get(left.epic.roadmapMilestone) ?? Number.MAX_SAFE_INTEGER)
-          - (milestoneOrder.get(right.epic.roadmapMilestone) ?? Number.MAX_SAFE_INTEGER)
-          || left.index - right.index,
-        )
-      for (const item of ordered) {
-        const status = statusByEpic.get(item.epic.id) ?? "planned"
-        if (["complete", "in-progress", "blocked"].includes(status)) continue
-        if ((prerequisites.get(item.epic.id) ?? []).some((id) => statusByEpic.get(id) !== "complete")) continue
-        const design = latestApprovedDesign(designs, item.epic.id)
-        if (!design) continue
-        return {
-          epicId: item.epic.id,
-          title: item.epic.title,
-          designId: design.id,
-          roadmapIndex: milestoneOrder.get(item.epic.roadmapMilestone) ?? Number.MAX_SAFE_INTEGER,
-        }
-      }
-      return null
+      return (await eligibleEpics())[0] ?? null
     },
   }
-}
 
-function latestApprovedDesign(
-  designs: Array<z.infer<typeof technicalDesignStateSchema> & { id: string }>,
-  epicId: string,
-) {
-  const latest = designs.filter((design) => design.targetId === epicId)
-    .sort((left, right) => right.revision - left.revision)[0]
-  return latest && ["approved", "scaffolded"].includes(latest.status) ? latest : undefined
+  async function eligibleEpics(requestedEpicId?: string): Promise<EligibleEpic[]> {
+    const roadmapNode = (await listNodes("Roadmap"))[0]
+    if (!roadmapNode) return []
+    const roadmap = roadmapSchema.omit({ id: true }).safeParse(roadmapNode.props)
+    if (!roadmap.success) return []
+    const epics = (await listNodes("Epic")).flatMap((node) => {
+      const parsed = epicNodeStateSchema.safeParse(node.props)
+      return parsed.success ? [{ id: node.id, ...parsed.data }] : []
+    })
+    const designs = (await listNodes("TechnicalDesign")).flatMap((node) => {
+      const parsed = technicalDesignStateSchema.safeParse(node.props)
+      return parsed.success ? [{ id: node.id, ...parsed.data }] : []
+    })
+    const designById = new Map(designs.map((design) => [design.id, design]))
+    const latestDesignByEpic = new Map<string, (typeof designs)[number]>()
+    for (const design of [...designs].sort((left, right) => right.revision - left.revision)) {
+      if (!latestDesignByEpic.has(design.targetId)) latestDesignByEpic.set(design.targetId, design)
+    }
+    const states = await listNodes("EpicImplementationState")
+    const statusByEpic = new Map(states.map((state) => [String(state.props.epicId), String(state.props.status)]))
+    const stateByEpic = new Map(states.map((state) => [String(state.props.epicId), state.props]))
+    const runsById = new Map((await listNodes("WorkflowRun")).map((run) => [run.id, run.props]))
+    const epicIds = new Set(epics.map((epic) => epic.id))
+    const prerequisites = new Map<string, string[]>()
+    for (const value of await store.getEdgeCollectionOrThrow("DEPENDS_ON").find()) {
+      const relationship = edgeRecord(value, "DEPENDS_ON")
+      if (epicIds.has(relationship.sourceId) && epicIds.has(relationship.targetId)) {
+        const current = prerequisites.get(relationship.sourceId) ?? []
+        current.push(relationship.targetId)
+        prerequisites.set(relationship.sourceId, current)
+      }
+    }
+    const milestoneOrder = new Map(roadmap.data.milestones.map((milestone, index) => [milestone.title, index]))
+    const ordered = epics.map((epic) => ({ epic }))
+      .sort((left, right) =>
+        (milestoneOrder.get(left.epic.roadmapMilestone) ?? Number.MAX_SAFE_INTEGER)
+        - (milestoneOrder.get(right.epic.roadmapMilestone) ?? Number.MAX_SAFE_INTEGER)
+        || (left.epic.planningOrder ?? Number.MAX_SAFE_INTEGER)
+        - (right.epic.planningOrder ?? Number.MAX_SAFE_INTEGER)
+        || left.epic.id.localeCompare(right.epic.id),
+      )
+    const activeStatuses = new Set(["ready", "in-progress", "validation-failed", "blocked"])
+    const active = ordered.filter((item) => activeStatuses.has(statusByEpic.get(item.epic.id) ?? "planned"))
+    const candidates = active.length > 0
+      ? (requestedEpicId && active[0]!.epic.id !== requestedEpicId ? [] : active.slice(0, 1))
+      : requestedEpicId ? ordered.filter((item) => item.epic.id === requestedEpicId) : ordered
+    const eligible: EligibleEpic[] = []
+    for (const item of candidates) {
+      const status = statusByEpic.get(item.epic.id) ?? "planned"
+      if (["complete", "blocked"].includes(status)) continue
+      if ((prerequisites.get(item.epic.id) ?? []).some((id) => statusByEpic.get(id) !== "complete")) continue
+      const activeRunId = String(stateByEpic.get(item.epic.id)?.activeRunId ?? "")
+      const boundDesignId = String(runsById.get(activeRunId)?.technicalDesignId ?? "")
+      const design = boundDesignId ? designById.get(boundDesignId) : latestDesignByEpic.get(item.epic.id)
+      if (!design || design.targetId !== item.epic.id || (!boundDesignId && design.status !== "scaffolded")) continue
+      eligible.push({
+        epicId: item.epic.id,
+        title: item.epic.title,
+        designId: design.id,
+        roadmapIndex: milestoneOrder.get(item.epic.roadmapMilestone) ?? Number.MAX_SAFE_INTEGER,
+      })
+    }
+    return eligible
+  }
 }
 
 function nodeRecord(value: Record<string, unknown>, kind: WorkspaceGraphNodeKind): GraphNodeRecord {

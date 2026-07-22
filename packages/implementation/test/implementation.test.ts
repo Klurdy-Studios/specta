@@ -82,6 +82,44 @@ it("accepts TypeScript declarations and rejects business-logic bodies", () => {
   expect(expression.issues).toContain("Top-level executable expressions are not allowed in declaration-only scaffolds.")
 })
 
+it("treats scaffold-only TypeScript modifiers and executable bodies as signature-compatible", () => {
+  const adapter = createLanguageAdapterRegistry().resolve("typescript")
+  expect(adapter.signaturesCompatible(
+    "export declare function createSession(name: string): Session",
+    "function createSession(name: string): Session",
+  )).toBe(true)
+  expect(adapter.signaturesCompatible(
+    "export declare const session: Session",
+    "const session: Session",
+  )).toBe(true)
+  expect(adapter.signaturesCompatible(
+    "export interface Session { id: string }",
+    "interface Session { id: string }",
+  )).toBe(true)
+  expect(adapter.signaturesCompatible(
+    "export declare function createSession(name: string): Session",
+    "function createSession(id: number): Session",
+  )).toBe(false)
+
+  const file: TechnicalFile = {
+    path: "src/session.ts",
+    kind: "source",
+    language: "typescript",
+    ownership: "epic",
+    exports: [{
+      name: "createSession",
+      kind: "function",
+      purpose: "Creates a session.",
+      signature: "export declare function createSession(name: string): Session",
+    }],
+  }
+  expect(adapter.validateFile(
+    file,
+    "export function createSession(name: string): Session { return { name } as Session }\n",
+    { declarationOnly: false },
+  ).valid).toBe(true)
+})
+
 it("finds installed framework Skills and returns a non-executed online search", async () => {
   const rootPath = await mkdtemp(join(tmpdir(), "specta-skill-discovery-"))
   temporaryDirectories.push(rootPath)
@@ -123,6 +161,48 @@ it("creates blank-project bootstrap commands from the workspace root", () => {
   expect(plan?.command.arguments).toContain("apps/web")
 })
 
+it("persists a Technical Design and distinct profile for an existing Next.js project", async () => {
+  const rootPath = await mkdtemp(join(tmpdir(), "specta-existing-design-"))
+  temporaryDirectories.push(rootPath)
+  await nodeFileSystem.writeText(join(rootPath, "package.json"), JSON.stringify({
+    name: "web",
+    dependencies: { next: "16.0.0", react: "19.0.0", typescript: "5.8.0" },
+    scripts: { dev: "next dev" },
+  }))
+  const workspace = existingWorkspace(rootPath)
+  workspace.projects[0]!.rootPath = "."
+  const planning = createPlanningGraphRepository()
+  await planning.savePlanningState(workspace, implementationPlanningFixture())
+
+  const design = await createTechnicalDesignWorkflow({ planning }).execute({
+    workspace,
+    targetId: "epic_api" as import("@specta/core").PlanningId,
+    draft: {
+      summary: "Add the API boundary to the existing application.",
+      target: { kind: "existing", projectId: workspace.projects[0]!.id },
+      modules: [{
+        name: "API",
+        path: "src/api",
+        purpose: "API boundary.",
+        architectureComponents: ["API"],
+        files: [{
+          path: "src/api.ts",
+          kind: "source",
+          language: "typescript",
+          ownership: "epic",
+          exports: [{ name: "Api", kind: "interface", purpose: "API contract." }],
+        }],
+      }],
+      dependencies: [],
+      impactRequests: [],
+    },
+  })
+
+  expect(design.profile).toMatchObject({ projectId: workspace.projects[0]!.id, framework: "nextjs" })
+  await expect(createTechnicalDesignGraphRepository().get(workspace, design.id)).resolves.toEqual(design)
+  await expect(createProjectProfileRepository().list(workspace)).resolves.toEqual([design.profile])
+})
+
 it("rolls back graph shards when Technical Design artifact persistence fails", async () => {
   const rootPath = await mkdtemp(join(tmpdir(), "specta-design-rollback-"))
   temporaryDirectories.push(rootPath)
@@ -154,6 +234,7 @@ it("rolls back graph shards when Technical Design artifact persistence fails", a
         name: "API",
         path: "src/api",
         purpose: "API boundary.",
+        architectureComponents: ["API"],
         files: [{
           path: "src/api.ts",
           kind: "source",
